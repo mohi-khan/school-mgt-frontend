@@ -48,97 +48,97 @@ export function DashboardSidebar() {
       href: '/dashboard/setup',
       subItems: [
         {
-          title: 'Items',
-          href: '/dashboard/setup/items',
+          title: 'Classes',
+          href: '/dashboard/setup/classes',
         },
-        {
-          title: 'Bank Accounts',
-          href: '/dashboard/setup/bank-accounts',
-        },
-        {
-          title: 'Vendors',
-          href: '/dashboard/setup/vendors',
-        },
-        {
-          title: 'Customers',
-          href: '/dashboard/setup/customers',
-        },
-        {
-          title: 'Account Heads',
-          href: '/dashboard/setup/account-heads',
-        },
+        // {
+        //   title: 'Bank Accounts',
+        //   href: '/dashboard/setup/bank-accounts',
+        // },
+        // {
+        //   title: 'Vendors',
+        //   href: '/dashboard/setup/vendors',
+        // },
+        // {
+        //   title: 'Customers',
+        //   href: '/dashboard/setup/customers',
+        // },
+        // {
+        //   title: 'Account Heads',
+        //   href: '/dashboard/setup/account-heads',
+        // },
       ],
     },
-    {
-      title: 'Trade Management',
-      icon: BriefcaseBusiness,
-      href: '/dashboard/trade-management',
-      subItems: [
-        {
-          title: 'Purchases',
-          href: '/dashboard/trade-management/purchases',
-        },
-        {
-          title: 'Sorting',
-          href: '/dashboard/trade-management/sorting',
-        },
-        {
-          title: 'Stock Adjustment',
-          href: '/dashboard/trade-management/stock-adjustments',
-        },
-        {
-          title: 'Sales',
-          href: '/dashboard/trade-management/sales',
-        },
-        {
-          title: 'Expenses',
-          href: '/dashboard/trade-management/expenses',
-        },
-        {
-          title: 'Transactions',
-          href: '/dashboard/trade-management/transactions',
-        },
-        {
-          title: 'Bank Transactions',
-          href: '/dashboard/trade-management/bank-transactions',
-        },
-        {
-          title: 'Loans',
-          href: '/dashboard/trade-management/loans',
-        },
-        {
-          title: 'Opening Balance',
-          href: '/dashboard/trade-management/opening-balance',
-        },
-        {
-          title: 'Wastages',
-          href: '/dashboard/trade-management/wastages',
-        },
-      ],
-    },
-    {
-      title: 'Reports',
-      icon: FileChartColumn,
-      href: '/dashboard/report',
-      subItems: [
-        {
-          title: 'Cash Report',
-          href: '/dashboard/report/cash-report',
-        },
-        {
-          title: 'Party Report',
-          href: '/dashboard/report/party-report',
-        },
-        {
-          title: 'Stock Ledger',
-          href: '/dashboard/report/stock-ledger',
-        },
-        {
-          title: 'Loan Report',
-          href: '/dashboard/report/loan-report',
-        },
-      ],
-    },
+    // {
+    //   title: 'Trade Management',
+    //   icon: BriefcaseBusiness,
+    //   href: '/dashboard/trade-management',
+    //   subItems: [
+    //     {
+    //       title: 'Purchases',
+    //       href: '/dashboard/trade-management/purchases',
+    //     },
+    //     {
+    //       title: 'Sorting',
+    //       href: '/dashboard/trade-management/sorting',
+    //     },
+    //     {
+    //       title: 'Stock Adjustment',
+    //       href: '/dashboard/trade-management/stock-adjustments',
+    //     },
+    //     {
+    //       title: 'Sales',
+    //       href: '/dashboard/trade-management/sales',
+    //     },
+    //     {
+    //       title: 'Expenses',
+    //       href: '/dashboard/trade-management/expenses',
+    //     },
+    //     {
+    //       title: 'Transactions',
+    //       href: '/dashboard/trade-management/transactions',
+    //     },
+    //     {
+    //       title: 'Bank Transactions',
+    //       href: '/dashboard/trade-management/bank-transactions',
+    //     },
+    //     {
+    //       title: 'Loans',
+    //       href: '/dashboard/trade-management/loans',
+    //     },
+    //     {
+    //       title: 'Opening Balance',
+    //       href: '/dashboard/trade-management/opening-balance',
+    //     },
+    //     {
+    //       title: 'Wastages',
+    //       href: '/dashboard/trade-management/wastages',
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: 'Reports',
+    //   icon: FileChartColumn,
+    //   href: '/dashboard/report',
+    //   subItems: [
+    //     {
+    //       title: 'Cash Report',
+    //       href: '/dashboard/report/cash-report',
+    //     },
+    //     {
+    //       title: 'Party Report',
+    //       href: '/dashboard/report/party-report',
+    //     },
+    //     {
+    //       title: 'Stock Ledger',
+    //       href: '/dashboard/report/stock-ledger',
+    //     },
+    //     {
+    //       title: 'Loan Report',
+    //       href: '/dashboard/report/loan-report',
+    //     },
+    //   ],
+    // },
   ]
 
   // Check if the current path is in the submenu items
