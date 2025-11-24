@@ -29,11 +29,21 @@ import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
 import {
   useAddClass,
+  useDeleteClass,
   useGetClasses,
   useGetSections,
   useUpdateClass,
 } from '@/hooks/use-api'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const Classes = () => {
   useInitializeUser()
@@ -56,6 +66,9 @@ const Classes = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingClassId, setEditingClassId] = useState<number | null>(null)
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingClassId, setDeletingClassId] = useState<number | null>(null)
 
   const [formData, setFormData] = useState<CreateClassType>({
     classData: {
@@ -122,6 +135,17 @@ const Classes = () => {
     onClose: closePopup,
     reset: resetForm,
   })
+
+  const deleteMutation = useDeleteClass({
+    onClose: closePopup, // optional if you want popup to close
+    reset: resetForm, // optional, resets form state
+  })
+
+  const handleDeleteClick = (classId: number) => {
+    if (confirm('Are you sure you want to delete this class?')) {
+      deleteMutation.mutate({ id: classId })
+    }
+  }
 
   const handleSort = (column: 'className') => {
     if (column === sortColumn) {
@@ -324,6 +348,10 @@ const Classes = () => {
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:text-red-700"
+                        onClick={() => {
+                          setDeletingClassId(classItem.classData.classId)
+                          setIsDeleteDialogOpen(true)
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -497,6 +525,37 @@ const Classes = () => {
           </div>
         </form>
       </Popup>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent className='bg-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Class</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this class? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingClassId) {
+                  deleteMutation.mutate({ id: deletingClassId })
+                }
+                setIsDeleteDialogOpen(false)
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

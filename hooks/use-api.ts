@@ -3,7 +3,7 @@ import { useAtom } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import { unique } from 'next/dist/build/utils'
-import { createClass, editClass, getAllClasses, getAllSections } from '@/utils/api'
+import { createClass, deleteClass, editClass, getAllClasses, getAllSections } from '@/utils/api'
 import { CreateClassType, GetClassType } from '@/utils/type'
 
 //section
@@ -105,6 +105,40 @@ export const useUpdateClass = ({
     },
     onError: (error) => {
       console.error('Error editing classes:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteClass = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteClass(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'class is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['classes'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
     },
   })
 
