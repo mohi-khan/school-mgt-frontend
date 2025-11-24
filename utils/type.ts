@@ -40,3 +40,29 @@ export const SignInResponseSchema = z.object({
 })
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
+
+export const sectionsSchema = z.object({
+  sectionId: z.number().int().optional(),
+  sectionName: z.string().min(1),
+  sectionCode: z.string().max(20).nullable().optional(),
+  description: z.string().max(255).nullable().optional(),
+  isActive: z.boolean().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+})
+export type GetSectionsType = z.infer<typeof sectionsSchema>
+
+export const createClassSchema = z.object({
+  classData: z.object({
+    classId: z.number().optional(),
+    className: z.string(),
+    classCode: z.string(),
+    description: z.string().optional().nullable(),
+    isActive: z.boolean(),
+  }),
+  sectionIds: z
+    .array(z.number())
+    .min(1, 'At least one section must be selected'),
+})
+export type CreateClassType = z.infer<typeof createClassSchema>
+export type GetClassType = z.infer<typeof createClassSchema>
