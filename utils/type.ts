@@ -54,6 +54,7 @@ export type GetSectionsType = z.infer<typeof sectionsSchema>
 
 export const createClassSchema = z.object({
   classData: z.object({
+    classId: z.number().optional(),
     className: z.string(),
     classCode: z.string(),
     description: z.string().optional().nullable(),

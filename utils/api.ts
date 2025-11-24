@@ -69,3 +69,14 @@ export async function editClass(
     },
   })
 }
+
+export async function deleteClass(id: number, token: string) {
+  return fetchApi<{id: number }>({
+    url: `api/classes/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}

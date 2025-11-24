@@ -41,6 +41,7 @@ const Classes = () => {
   const [token] = useAtom(tokenAtom)
 
   const { data: classes } = useGetClasses()
+  console.log('🚀 ~ Classes ~ classes:', classes)
   const { data: sections } = useGetSections()
 
   const router = useRouter()
@@ -157,34 +158,52 @@ const Classes = () => {
 
   const totalPages = Math.ceil(sortedClasses.length / classesPerPage)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      console.log(
+        'Submit - isEditMode:',
+        isEditMode,
+        'editingClassId:',
+        editingClassId
+      )
+      setError(null)
 
-    if (selectedSectionIds.length === 0) {
-      setError('At least one section must be selected')
-      return
-    }
-
-    try {
-      const submitData: CreateClassType = {
-        classData: formData.classData,
-        sectionIds: selectedSectionIds,
+      if (selectedSectionIds.length === 0) {
+        setError('At least one section must be selected')
+        return
       }
 
-      if (isEditMode && editingClassId) {
-        await updateMutation.mutate({
-          classId: editingClassId,
-          data: submitData,
-        })
-      } else {
-        await addMutation.mutate(submitData)
+      try {
+        const submitData: CreateClassType = {
+          classData: formData.classData,
+          sectionIds: selectedSectionIds,
+        }
+
+        if (isEditMode && editingClassId) {
+          updateMutation.mutate({
+            id: editingClassId,
+            data: submitData,
+          })
+          console.log('check', isEditMode, editingClassId)
+        } else {
+          addMutation.mutate(submitData)
+          console.log('create')
+        }
+      } catch (err) {
+        setError('Failed to save class')
+        console.error(err)
       }
-    } catch (err) {
-      setError('Failed to save class')
-      console.error(err)
-    }
-  }
+    },
+    [
+      formData,
+      selectedSectionIds,
+      isEditMode,
+      editingClassId,
+      addMutation,
+      updateMutation,
+    ]
+  )
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
@@ -199,12 +218,13 @@ const Classes = () => {
       .filter(Boolean)
   }
 
-  const handleEditClick = (
-    classItem: CreateClassType & { classId: number }
-  ) => {
-    setFormData(classItem)
+  const handleEditClick = (classItem: any) => {
+    setFormData({
+      classData: classItem.classData,
+      sectionIds: classItem.sectionIds,
+    })
     setSelectedSectionIds(classItem.sectionIds)
-    setEditingClassId(classItem.classId)
+    setEditingClassId(classItem.classData.classId) // ← Changed from classItem.classId
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -271,17 +291,20 @@ const Classes = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedClasses.map((classItem: any) => (
-                <TableRow key={classItem.classId}>
+              paginatedClasses.map((classItem: any, index) => (
+                <TableRow key={index}>
                   <TableCell className="font-medium">
                     {classItem.classData.className}
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
+                    <div className="flex flex-wrap gap-2">
                       {getSectionNames(classItem.sectionIds).map(
                         (sectionName, idx) => (
-                          <div key={idx} className="text-sm">
-                            {sectionName}
+                          <div
+                            key={idx}
+                            className="text-sm inline-flex items-center"
+                          >
+                            <p>{sectionName}</p>
                           </div>
                         )
                       )}
@@ -377,7 +400,7 @@ const Classes = () => {
 
       <Popup
         isOpen={isPopupOpen}
-        onClose={resetForm}
+        onClose={closePopup}
         title={isEditMode ? 'Edit Class' : 'Add Class'}
         size="sm:max-w-md"
       >
@@ -433,9 +456,11 @@ const Classes = () => {
                     >
                       <Checkbox
                         id={`section-${section.sectionId}`}
-                        checked={selectedSectionIds.includes(section.sectionId)}
+                        checked={selectedSectionIds.includes(
+                          section.sectionId ?? 0
+                        )}
                         onCheckedChange={() =>
-                          handleSectionToggle(section.sectionId)
+                          handleSectionToggle(section.sectionId ?? 0)
                         }
                       />
                       <Label
@@ -458,7 +483,7 @@ const Classes = () => {
           )}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={resetForm}>
+            <Button type="button" variant="outline" onClick={closePopup}>
               Cancel
             </Button>
             <Button
