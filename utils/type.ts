@@ -73,6 +73,17 @@ export const feesGroupSchema = z.object({
   description: z.string().nullable().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
-});
-export type GetFeesGroupType = z.infer<typeof feesGroupSchema>;
-export type CreateFeesGroupType = z.infer<typeof feesGroupSchema>;
+})
+export type GetFeesGroupType = z.infer<typeof feesGroupSchema>
+export type CreateFeesGroupType = z.infer<typeof feesGroupSchema>
+
+export const feesTypeSchema = z.object({
+  feesTypeId: z.number().optional(),
+  typeName: z.string().max(100),
+  feesCode: z.string().max(50).optional().nullable(),
+  description: z.string().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+})
+export type GetFeesTypeType = z.infer<typeof feesTypeSchema>
+export type CreateFeesTypeType = z.infer<typeof feesTypeSchema>

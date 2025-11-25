@@ -1,11 +1,18 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useCallback, useEffect, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type React from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Pagination,
   PaginationContent,
@@ -13,14 +20,19 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from "lucide-react"
-import { Popup } from "@/utils/popup"
-import type { CreateFeesGroupType } from "@/utils/type"
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
-import { useAtom } from "jotai"
-import { useRouter } from "next/navigation"
-import { useAddFeesGroup, useDeleteFeesGroup, useGetFeesGroups, useUpdateFeesGroup } from "@/hooks/use-api"
+} from '@/components/ui/pagination'
+import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
+import { Popup } from '@/utils/popup'
+import type { CreateFeesGroupType } from '@/utils/type'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/navigation'
+import {
+  useAddFeesGroup,
+  useDeleteFeesGroup,
+  useGetFeesGroups,
+  useUpdateFeesGroup,
+} from '@/hooks/use-api'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +41,7 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 
 const FeesGroups = () => {
   useInitializeUser()
@@ -37,30 +49,36 @@ const FeesGroups = () => {
   const [token] = useAtom(tokenAtom)
 
   const { data: feesGroups } = useGetFeesGroups()
-  console.log("🚀 ~ FeesGroups ~ feesGroups:", feesGroups)
+  console.log('🚀 ~ FeesGroups ~ feesGroups:', feesGroups)
 
   const router = useRouter()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [feesGroupsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<"groupName">("groupName")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [sortColumn, setSortColumn] = useState<'groupName'>('groupName')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingFeesGroupId, setEditingFeesGroupId] = useState<number | null>(null)
+  const [editingFeesGroupId, setEditingFeesGroupId] = useState<number | null>(
+    null
+  )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingFeesGroupId, setDeletingFeesGroupId] = useState<number | null>(null)
+  const [deletingFeesGroupId, setDeletingFeesGroupId] = useState<number | null>(
+    null
+  )
 
   const [formData, setFormData] = useState<CreateFeesGroupType>({
-    groupName: "",
+    groupName: '',
     description: null,
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
@@ -70,7 +88,7 @@ const FeesGroups = () => {
 
   const resetForm = () => {
     setFormData({
-      groupName: "",
+      groupName: '',
       description: null,
     })
     setEditingFeesGroupId(null)
@@ -101,30 +119,34 @@ const FeesGroups = () => {
   })
 
   const handleDeleteClick = (feesGroupId: number) => {
-    if (confirm("Are you sure you want to delete this fees group?")) {
+    if (confirm('Are you sure you want to delete this fees group?')) {
       deleteMutation.mutate({ id: feesGroupId })
     }
   }
 
-  const handleSort = (column: "groupName") => {
+  const handleSort = (column: 'groupName') => {
     if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortColumn(column)
-      setSortDirection("asc")
+      setSortDirection('asc')
     }
   }
 
   const filteredFeesGroups = useMemo(() => {
     if (!feesGroups?.data) return []
-    return feesGroups.data.filter((group: any) => group.groupName?.toLowerCase().includes(searchTerm.toLowerCase()))
+    return feesGroups.data.filter((group: any) =>
+      group.groupName?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   }, [feesGroups?.data, searchTerm])
 
   const sortedFeesGroups = useMemo(() => {
     return [...filteredFeesGroups].sort((a, b) => {
-      const aValue = a.groupName ?? ""
-      const bValue = b.groupName ?? ""
-      return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      const aValue = a.groupName ?? ''
+      const bValue = b.groupName ?? ''
+      return sortDirection === 'asc'
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     })
   }, [filteredFeesGroups, sortDirection])
 
@@ -138,7 +160,12 @@ const FeesGroups = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Submit - isEditMode:", isEditMode, "editingFeesGroupId:", editingFeesGroupId)
+      console.log(
+        'Submit - isEditMode:',
+        isEditMode,
+        'editingFeesGroupId:',
+        editingFeesGroupId
+      )
       setError(null)
 
       try {
@@ -152,22 +179,22 @@ const FeesGroups = () => {
             id: editingFeesGroupId,
             data: submitData,
           })
-          console.log("update", isEditMode, editingFeesGroupId)
+          console.log('update', isEditMode, editingFeesGroupId)
         } else {
           addMutation.mutate(submitData)
-          console.log("create")
+          console.log('create')
         }
       } catch (err) {
-        setError("Failed to save fees group")
+        setError('Failed to save fees group')
         console.error(err)
       }
     },
-    [formData, isEditMode, editingFeesGroupId, addMutation, updateMutation],
+    [formData, isEditMode, editingFeesGroupId, addMutation, updateMutation]
   )
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError("Error saving fees group")
+      setError('Error saving fees group')
     }
   }, [addMutation.error, updateMutation.error])
 
@@ -200,7 +227,10 @@ const FeesGroups = () => {
               className="pl-10 w-64"
             />
           </div>
-          <Button className="bg-amber-400 hover:bg-amber-500 text-black" onClick={() => setIsPopupOpen(true)}>
+          <Button
+            className="bg-amber-400 hover:bg-amber-500 text-black"
+            onClick={() => setIsPopupOpen(true)}
+          >
             Add
           </Button>
         </div>
@@ -210,7 +240,10 @@ const FeesGroups = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("groupName")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('groupName')}
+                className="cursor-pointer"
+              >
                 Group Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Description</TableHead>
@@ -239,8 +272,10 @@ const FeesGroups = () => {
             ) : (
               paginatedFeesGroups.map((group: any, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{group.groupName}</TableCell>
-                  <TableCell>{group.description || "-"}</TableCell>
+                  <TableCell className="font-medium">
+                    {group.groupName}
+                  </TableCell>
+                  <TableCell>{group.description || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -277,21 +312,35 @@ const FeesGroups = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
 
               {[...Array(totalPages)].map((_, index) => {
-                if (index === 0 || index === totalPages - 1 || (index >= currentPage - 2 && index <= currentPage + 2)) {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= currentPage - 2 && index <= currentPage + 2)
+                ) {
                   return (
                     <PaginationItem key={`page-${index}`}>
-                      <PaginationLink onClick={() => setCurrentPage(index + 1)} isActive={currentPage === index + 1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(index + 1)}
+                        isActive={currentPage === index + 1}
+                      >
                         {index + 1}
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -304,8 +353,14 @@ const FeesGroups = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -316,7 +371,7 @@ const FeesGroups = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? "Edit Fees Group" : "Add Fees Group"}
+        title={isEditMode ? 'Edit Fees Group' : 'Add Fees Group'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -325,7 +380,13 @@ const FeesGroups = () => {
               <Label htmlFor="groupName">
                 Group Name <span className="text-red-500">*</span>
               </Label>
-              <Input id="groupName" name="groupName" value={formData.groupName} onChange={handleInputChange} required />
+              <Input
+                id="groupName"
+                name="groupName"
+                value={formData.groupName}
+                onChange={handleInputChange}
+                required
+              />
             </div>
 
             <div className="space-y-2">
@@ -333,35 +394,50 @@ const FeesGroups = () => {
               <Input
                 id="description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleInputChange}
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={closePopup}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
-              {addMutation.isPending || updateMutation.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              disabled={addMutation.isPending || updateMutation.isPending}
+            >
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Fees Group</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this fees group? This action cannot be undone.
+              Are you sure you want to delete this fees group? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingFeesGroupId) {

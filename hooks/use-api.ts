@@ -2,8 +2,29 @@ import { tokenAtom, useInitializeUser } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
-import { createClass, createFeesGroup, deleteClass, deleteFeesGroup, editClass, editFeesGroup, getAllClasses, getAllFeesGroups, getAllSections } from '@/utils/api'
-import { CreateClassType, CreateFeesGroupType, GetClassType, GetFeesGroupType } from '@/utils/type'
+import {
+  createClass,
+  createFeesGroup,
+  createFeesType,
+  deleteClass,
+  deleteFeesGroup,
+  deleteFeesType,
+  editClass,
+  editFeesGroup,
+  editFeesType,
+  getAllClasses,
+  getAllFeesGroups,
+  getAllFeesTypes,
+  getAllSections,
+} from '@/utils/api'
+import {
+  CreateClassType,
+  CreateFeesGroupType,
+  CreateFeesTypeType,
+  GetClassType,
+  GetFeesGroupType,
+  GetFeesTypeType,
+} from '@/utils/type'
 
 //section
 export const useGetSections = () => {
@@ -253,6 +274,127 @@ export const useDeleteFeesGroup = ({
         description: 'fees group is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['fees-groups'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//fees type
+export const useGetFeesTypes = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['fees-types'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllFeesTypes(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddFeesType = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateFeesTypeType) => {
+      return createFeesType(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('fees types added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['fees-types'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding classes:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateFeesType = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetFeesTypeType }) => {
+      return editFeesType(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'fees group edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['fees-types'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing fees group:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteFeesType = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteFeesType(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'fees group is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['fees-types'] })
 
       reset()
       onClose()

@@ -2,8 +2,10 @@ import { fetchApi } from '@/utils/http'
 import {
   CreateClassType,
   CreateFeesGroupType,
+  CreateFeesTypeType,
   GetClassType,
   GetFeesGroupType,
+  GetFeesTypeType,
   GetSectionsType,
   SignInRequest,
   SignInResponse,
@@ -43,10 +45,7 @@ export async function getAllClasses(token: string) {
   })
 }
 
-export async function createClass(
-  data: CreateClassType,
-  token: string
-) {
+export async function createClass(data: CreateClassType, token: string) {
   return fetchApi<CreateClassType>({
     url: 'api/classes/create',
     method: 'POST',
@@ -58,11 +57,7 @@ export async function createClass(
   })
 }
 
-export async function editClass(
-  id: number,
-  data: GetClassType,
-  token: string
-) {
+export async function editClass(id: number, data: GetClassType, token: string) {
   return fetchApi<GetClassType>({
     url: `api/classes/edit/${id}`,
     method: 'PATCH',
@@ -75,7 +70,7 @@ export async function editClass(
 }
 
 export async function deleteClass(id: number, token: string) {
-  return fetchApi<{id: number }>({
+  return fetchApi<{ id: number }>({
     url: `api/classes/delete/${id}`,
     method: 'DELETE',
     headers: {
@@ -129,8 +124,59 @@ export async function editFeesGroup(
 }
 
 export async function deleteFeesGroup(id: number, token: string) {
-  return fetchApi<{id: number }>({
+  return fetchApi<{ id: number }>({
     url: `api/fees-groups/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//fees types APIs
+export async function getAllFeesTypes(token: string) {
+  return fetchApi<GetFeesTypeType[]>({
+    url: 'api/fees-types/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createFeesType(data: CreateFeesTypeType, token: string) {
+  return fetchApi<CreateFeesTypeType>({
+    url: 'api/fees-types/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editFeesType(
+  id: number,
+  data: GetFeesTypeType,
+  token: string
+) {
+  return fetchApi<GetFeesTypeType>({
+    url: `api/fees-types/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteFeesType(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/fees-types/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
