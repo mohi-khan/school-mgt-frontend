@@ -52,7 +52,7 @@ export const sectionsSchema = z.object({
 })
 export type GetSectionsType = z.infer<typeof sectionsSchema>
 
-export const createClassSchema = z.object({
+export const classSchema = z.object({
   classData: z.object({
     classId: z.number().optional(),
     className: z.string(),
@@ -64,5 +64,15 @@ export const createClassSchema = z.object({
     .array(z.number())
     .min(1, 'At least one section must be selected'),
 })
-export type CreateClassType = z.infer<typeof createClassSchema>
-export type GetClassType = z.infer<typeof createClassSchema>
+export type CreateClassType = z.infer<typeof classSchema>
+export type GetClassType = z.infer<typeof classSchema>
+
+export const feesGroupSchema = z.object({
+  feesGroupId: z.number().optional(),
+  groupName: z.string().max(100),
+  description: z.string().nullable().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+export type GetFeesGroupType = z.infer<typeof feesGroupSchema>;
+export type CreateFeesGroupType = z.infer<typeof feesGroupSchema>;

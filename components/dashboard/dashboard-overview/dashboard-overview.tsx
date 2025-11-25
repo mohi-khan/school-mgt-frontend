@@ -25,14 +25,6 @@ import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import {
-  useGetInventoryItems,
-  useGetCustomerPaymentDetails,
-  useGetCashInHand,
-  useGetProfitSummary,
-  useGetBankAccountBalanceSummary,
-  useGetPurchaseSummary,
-} from '@/hooks/use-api'
 import { Popup } from '@/utils/popup'
 import {
   Table,
@@ -42,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { GetPurchaseSummaryType } from '@/utils/type'
 
 const DashboardOverview = () => {
   useInitializeUser()
@@ -61,20 +52,20 @@ const DashboardOverview = () => {
     title: '',
   })
 
-  const { data: InventoryItems } = useGetInventoryItems()
+  const { data: InventoryItems } = []
   console.log('🚀 ~ DashboardOverview ~ InventoryItems:', InventoryItems)
-  const { data: customerPaymentDetails } = useGetCustomerPaymentDetails()
+  const { data: customerPaymentDetails } = []
   console.log(
     '🚀 ~ DashboardOverview ~ customerPaymentDetails:',
     customerPaymentDetails
   )
-  const { data: cashInHand } = useGetCashInHand()
+  const { data: cashInHand } = []
   console.log('🚀 ~ DashboardOverview ~ cashInHand:', cashInHand)
-  const { data: profitSummary } = useGetProfitSummary()
+  const { data: profitSummary } = []
   console.log('🚀 ~ DashboardOverview ~ profitSummary:', profitSummary)
-  const { data: purchaseSummary } = useGetPurchaseSummary()
+  const { data: purchaseSummary } = []
   console.log('🚀 ~ DashboardOverview ~ purchaseSummary:', purchaseSummary)
-  const { data: bankBalanceSummary } = useGetBankAccountBalanceSummary()
+  const { data: bankBalanceSummary } = []
 
   const totalAmount = InventoryItems?.data?.reduce((sum: number, item: any) => {
     const qty = Math.max(item.totQty, 0)
@@ -344,7 +335,7 @@ const DashboardOverview = () => {
               </TableHeader>
               <TableBody>
                 {purchaseSummary?.data?.map(
-                  (item: GetPurchaseSummaryType, index: number) => (
+                  (item: any, index: number) => (
                     <TableRow key={index}>
                       <TableCell>{item.month}</TableCell>
                       <TableCell className="text-right font-semibold">

@@ -3,8 +3,10 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
+  BookOpen,
   BriefcaseBusiness,
   ChevronDown,
+  DollarSign,
   FileChartColumn,
   Home,
   NotebookText,
@@ -43,30 +45,27 @@ export function DashboardSidebar() {
       href: '/dashboard/dashboard-overview',
     },
     {
-      title: 'Setup',
-      icon: Settings,
-      href: '/dashboard/setup',
+      title: 'Classes',
+      icon: BookOpen,
+      href: '/dashboard/classes',
+    },
+    {
+      title: 'Fees Management',
+      icon: DollarSign,
+      href: '/dashboard/fees-management',
       subItems: [
         {
-          title: 'Classes',
-          href: '/dashboard/setup/classes',
+          title: 'Fees Groups',
+          href: '/dashboard/fees-management/fees-groups',
         },
-        // {
-        //   title: 'Bank Accounts',
-        //   href: '/dashboard/setup/bank-accounts',
-        // },
-        // {
-        //   title: 'Vendors',
-        //   href: '/dashboard/setup/vendors',
-        // },
-        // {
-        //   title: 'Customers',
-        //   href: '/dashboard/setup/customers',
-        // },
-        // {
-        //   title: 'Account Heads',
-        //   href: '/dashboard/setup/account-heads',
-        // },
+        {
+          title: 'Fees Types',
+          href: '/dashboard/fees-management/fees-types',
+        },
+        {
+          title: 'Fees Master',
+          href: '/dashboard/fees-management/fees-master',
+        },
       ],
     },
     // {

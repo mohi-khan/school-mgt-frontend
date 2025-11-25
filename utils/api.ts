@@ -1,7 +1,9 @@
 import { fetchApi } from '@/utils/http'
 import {
   CreateClassType,
+  CreateFeesGroupType,
   GetClassType,
+  GetFeesGroupType,
   GetSectionsType,
   SignInRequest,
   SignInResponse,
@@ -17,6 +19,7 @@ export async function signIn(credentials: SignInRequest) {
   })
 }
 
+//sections APIs
 export async function getAllSections(token: string) {
   return fetchApi<GetSectionsType[]>({
     url: 'api/sections/getall',
@@ -28,6 +31,7 @@ export async function getAllSections(token: string) {
   })
 }
 
+//classes APIs
 export async function getAllClasses(token: string) {
   return fetchApi<GetClassType[]>({
     url: 'api/classes/getall',
@@ -73,6 +77,60 @@ export async function editClass(
 export async function deleteClass(id: number, token: string) {
   return fetchApi<{id: number }>({
     url: `api/classes/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//fees group APIs
+export async function getAllFeesGroups(token: string) {
+  return fetchApi<GetFeesGroupType[]>({
+    url: 'api/fees-groups/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createFeesGroup(
+  data: CreateFeesGroupType,
+  token: string
+) {
+  return fetchApi<CreateFeesGroupType>({
+    url: 'api/fees-groups/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editFeesGroup(
+  id: number,
+  data: GetFeesGroupType,
+  token: string
+) {
+  return fetchApi<GetFeesGroupType>({
+    url: `api/fees-groups/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteFeesGroup(id: number, token: string) {
+  return fetchApi<{id: number }>({
+    url: `api/fees-groups/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
