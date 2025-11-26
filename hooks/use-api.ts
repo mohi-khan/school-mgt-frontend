@@ -5,24 +5,30 @@ import { toast } from './use-toast'
 import {
   createClass,
   createFeesGroup,
+  createFeesMaster,
   createFeesType,
   deleteClass,
   deleteFeesGroup,
+  deleteFeesMaster,
   deleteFeesType,
   editClass,
   editFeesGroup,
+  editFeesMaster,
   editFeesType,
   getAllClasses,
   getAllFeesGroups,
+  getAllFeesMasters,
   getAllFeesTypes,
   getAllSections,
 } from '@/utils/api'
 import {
   CreateClassType,
   CreateFeesGroupType,
+  CreateFeesMasterType,
   CreateFeesTypeType,
   GetClassType,
   GetFeesGroupType,
+  GetFeesMasterType,
   GetFeesTypeType,
 } from '@/utils/type'
 
@@ -395,6 +401,127 @@ export const useDeleteFeesType = ({
         description: 'fees group is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['fees-types'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//fees master
+export const useGetFeesMasters = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['fees-masters'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllFeesMasters(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddFeesMaster = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateFeesMasterType) => {
+      return createFeesMaster(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('fees masters added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['fees-masters'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding fees master:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateFeesMaster = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetFeesMasterType }) => {
+      return editFeesMaster(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'fees master edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['fees-masters'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing fees master:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteFeesMaster = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteFeesMaster(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'fees master is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['fees-masters'] })
 
       reset()
       onClose()

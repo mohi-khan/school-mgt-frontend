@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/pagination'
 import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateFeesGroupType } from '@/utils/type'
+import type { CreateFeesGroupType, GetFeesGroupType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
@@ -56,7 +56,7 @@ const FeesGroups = () => {
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [feesGroupsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<'groupName'>('groupName')
+  const [sortColumn, setSortColumn] = useState<keyof GetFeesGroupType>('groupName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -124,7 +124,7 @@ const FeesGroups = () => {
     }
   }
 
-  const handleSort = (column: 'groupName') => {
+  const handleSort = (column: keyof GetFeesGroupType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -246,7 +246,12 @@ const FeesGroups = () => {
               >
                 Group Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead
+                onClick={() => handleSort('description')}
+                className="cursor-pointer"
+              >
+                Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>

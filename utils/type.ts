@@ -87,3 +87,21 @@ export const feesTypeSchema = z.object({
 })
 export type GetFeesTypeType = z.infer<typeof feesTypeSchema>
 export type CreateFeesTypeType = z.infer<typeof feesTypeSchema>
+
+export const feesMasterSchema = z.object({
+  feesMasterId: z.number().optional(),
+  feesGroupId: z.number().nullable().optional(),
+  feesTypeId: z.number().nullable().optional(),
+  dueDate: z.string(),
+  amount: z.number(),
+  fineType: z.enum(["none", "percentage", "fixed amount"]),
+  percentageFineAmount: z.number().optional().nullable(),
+  fixedFineAmount: z.number().optional().nullable(),
+  fineAmount: z.number(),
+  perDay: z.boolean().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export type GetFeesMasterType = z.infer<typeof feesMasterSchema>;
+export type CreateFeesMasterType = z.infer<typeof feesMasterSchema>;

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/pagination'
 import { ArrowUpDown, Search, Tag, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateFeesTypeType } from '@/utils/type'
+import type { CreateFeesTypeType, GetFeesTypeType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
@@ -56,7 +56,7 @@ const FeesTypes = () => {
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [feesTypesPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<'typeName'>('typeName')
+  const [sortColumn, setSortColumn] = useState<keyof GetFeesTypeType>('typeName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -126,7 +126,7 @@ const FeesTypes = () => {
     }
   }
 
-  const handleSort = (column: 'typeName') => {
+  const handleSort = (column: keyof GetFeesTypeType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -250,8 +250,18 @@ const FeesTypes = () => {
               >
                 Type Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Fees Code</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead
+                onClick={() => handleSort('feesCode')}
+                className="cursor-pointer"
+              >
+                Fees Code <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('description')}
+                className="cursor-pointer"
+              >
+                Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
