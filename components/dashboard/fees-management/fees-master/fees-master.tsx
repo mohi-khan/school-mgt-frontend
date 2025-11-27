@@ -34,7 +34,11 @@ import type { CreateFeesMasterType, GetFeesMasterType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
-import { formatDate, formatDateForInput, formatNumber } from '@/utils/conversions'
+import {
+  formatDate,
+  formatDateForInput,
+  formatNumber,
+} from '@/utils/conversions'
 import {
   useAddFeesMaster,
   useGetFeesMasters,
@@ -92,7 +96,6 @@ const FeesMaster = () => {
     fineType: 'none',
     percentageFineAmount: null,
     fixedFineAmount: null,
-    fineAmount: 0,
     perDay: false,
   })
 
@@ -138,7 +141,6 @@ const FeesMaster = () => {
       fineType: 'none',
       percentageFineAmount: null,
       fixedFineAmount: null,
-      fineAmount: 0,
       perDay: false,
     })
     setEditingFeesMasterId(null)
@@ -294,7 +296,6 @@ const FeesMaster = () => {
       fineType: fees.fineType,
       percentageFineAmount: fees.percentageFineAmount ?? null,
       fixedFineAmount: fees.fixedFineAmount ?? null,
-      fineAmount: fees.fineAmount,
       perDay: fees.perDay ?? false,
     })
     setEditingFeesMasterId(fees.feesMasterId || null)
@@ -345,6 +346,24 @@ const FeesMaster = () => {
           <TableHeader className="bg-amber-100">
             <TableRow>
               <TableHead
+                onClick={() => handleSort('feesGroupName')}
+                className="cursor-pointer"
+              >
+                Fees Group <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('feesTypeName')}
+                className="cursor-pointer"
+              >
+                Fees Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('fineType')}
+                className="cursor-pointer"
+              >
+                Fine Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
                 onClick={() => handleSort('dueDate')}
                 className="cursor-pointer"
               >
@@ -357,18 +376,11 @@ const FeesMaster = () => {
                 Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('fineType')}
+                onClick={() => handleSort('amount')}
                 className="cursor-pointer"
               >
-                Fine Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Per Day <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead
-                onClick={() => handleSort('fineAmount')}
-                className="cursor-pointer"
-              >
-                Fine Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Per Day</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -394,12 +406,15 @@ const FeesMaster = () => {
             ) : (
               paginatedFeesMasters.map((fees) => (
                 <TableRow key={fees.feesMasterId}>
+                  <TableCell className="capitalize">
+                    {fees.feesGroupName}
+                  </TableCell>
+                  <TableCell className="capitalize">
+                    {fees.feesTypeName}
+                  </TableCell>
+                  <TableCell className="capitalize">{fees.fineType}</TableCell>
                   <TableCell>{formatDate(new Date(fees.dueDate))}</TableCell>
                   <TableCell>{formatNumber(fees.amount.toFixed(2))}</TableCell>
-                  <TableCell className="capitalize">{fees.fineType}</TableCell>
-                  <TableCell>
-                    {formatNumber(fees.fineAmount.toFixed(2))}
-                  </TableCell>
                   <TableCell>{fees.perDay ? 'Yes' : 'No'}</TableCell>
                   <TableCell>
                     <div className="flex justify-start gap-2">
@@ -647,22 +662,6 @@ const FeesMaster = () => {
                 />
               </div>
             )}
-
-            {/* Fine Amount - Read Only */}
-            <div className="space-y-2">
-              <Label htmlFor="fineAmount">Fine Amount</Label>
-              <Input
-                id="fineAmount"
-                name="fineAmount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.fineAmount}
-                disabled
-                readOnly
-                className="bg-gray-100 cursor-not-allowed"
-              />
-            </div>
 
             {/* Per Day */}
             <div className="space-y-2 flex items-end">

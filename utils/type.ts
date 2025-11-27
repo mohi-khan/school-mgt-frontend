@@ -97,11 +97,12 @@ export const feesMasterSchema = z.object({
   fineType: z.enum(["none", "percentage", "fixed amount"]),
   percentageFineAmount: z.number().optional().nullable(),
   fixedFineAmount: z.number().optional().nullable(),
-  fineAmount: z.number(),
   perDay: z.boolean().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
-
-export type GetFeesMasterType = z.infer<typeof feesMasterSchema>;
 export type CreateFeesMasterType = z.infer<typeof feesMasterSchema>;
+export type GetFeesMasterType = z.infer<typeof feesMasterSchema> & {
+  feesGroupName: string;
+  feesTypeName: string;
+};

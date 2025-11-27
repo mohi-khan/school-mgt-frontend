@@ -213,10 +213,10 @@ export async function createFeesMaster(data: CreateFeesMasterType, token: string
 
 export async function editFeesMaster(
   id: number,
-  data: GetFeesMasterType,
+  data: CreateFeesMasterType,
   token: string
 ) {
-  return fetchApi<GetFeesMasterType>({
+  return fetchApi<CreateFeesMasterType>({
     url: `api/fees-master/edit/${id}`,
     method: 'PATCH',
     body: data,

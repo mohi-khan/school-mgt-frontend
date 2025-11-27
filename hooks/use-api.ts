@@ -479,7 +479,7 @@ export const useUpdateFeesMaster = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: GetFeesMasterType }) => {
+    mutationFn: ({ id, data }: { id: number; data: CreateFeesMasterType }) => {
       return editFeesMaster(id, data, token)
     },
     onSuccess: () => {
