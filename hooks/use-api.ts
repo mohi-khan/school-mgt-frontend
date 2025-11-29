@@ -7,6 +7,7 @@ import {
   createFeesGroup,
   createFeesMaster,
   createFeesType,
+  createStudentWithFees,
   deleteClass,
   deleteFeesGroup,
   deleteFeesMaster,
@@ -26,6 +27,7 @@ import {
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
+  CreateStudentWithFeesType,
   GetClassType,
   GetFeesGroupType,
   GetFeesMasterType,
@@ -528,6 +530,42 @@ export const useDeleteFeesMaster = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//students
+export const useAddStudent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateStudentWithFeesType) => {
+      return createStudentWithFees(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('students added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding students:', error)
     },
   })
 

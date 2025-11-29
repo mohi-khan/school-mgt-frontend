@@ -1,9 +1,10 @@
-import { fetchApi } from '@/utils/http'
+import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CreateClassType,
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
+  CreateStudentWithFeesType,
   GetClassType,
   GetFeesGroupType,
   GetFeesMasterType,
@@ -199,7 +200,10 @@ export async function getAllFeesMasters(token: string) {
   })
 }
 
-export async function createFeesMaster(data: CreateFeesMasterType, token: string) {
+export async function createFeesMaster(
+  data: CreateFeesMasterType,
+  token: string
+) {
   return fetchApi<CreateFeesMasterType>({
     url: 'api/fees-master/create',
     method: 'POST',
@@ -231,6 +235,22 @@ export async function deleteFeesMaster(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/fees-master/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//students APIs
+export async function createStudentWithFees(
+  data: CreateStudentWithFeesType,
+  token: string
+) {
+  return fetchApiWithFile<CreateStudentWithFeesType>({
+    url: 'api/students/create',
+    method: 'POST',
+    body: data,
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

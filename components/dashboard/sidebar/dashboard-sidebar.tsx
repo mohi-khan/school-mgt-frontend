@@ -12,6 +12,7 @@ import {
   NotebookText,
   Settings,
   SquarePlus,
+  User2,
   UserCog,
 } from 'lucide-react'
 
@@ -65,6 +66,17 @@ export function DashboardSidebar() {
         {
           title: 'Fees Master',
           href: '/dashboard/fees-management/fees-master',
+        },
+      ],
+    },
+    {
+      title: 'Students Management',
+      icon: User2,
+      href: '/dashboard/students-management',
+      subItems: [
+        {
+          title: 'Create Student',
+          href: '/dashboard/students-management/create-student',
         },
       ],
     },
