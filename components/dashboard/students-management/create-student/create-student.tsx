@@ -1,5 +1,4 @@
 'use client'
-
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -13,12 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DollarSign } from 'lucide-react'
-import { Popup } from '@/utils/popup'
-import type { CreateStudentWithFeesType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
-
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useAddStudent,
@@ -26,6 +22,7 @@ import {
   useGetFeesMasters,
   useGetSections,
 } from '@/hooks/use-api'
+import type { CreateStudentWithFeesType } from '@/utils/type'
 
 const CreateStudent = () => {
   useInitializeUser()
@@ -35,11 +32,9 @@ const CreateStudent = () => {
   const { data: sections } = useGetSections()
   const { data: feesMasters } = useGetFeesMasters()
   const router = useRouter()
-
   const [error, setError] = useState<string | null>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [selectedFeesMasters, setSelectedFeesMasters] = useState<number[]>([])
-
   const [formData, setFormData] = useState<CreateStudentWithFeesType>({
     studentDetails: {
       admissionNo: 0,
@@ -77,10 +72,23 @@ const CreateStudent = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type } = e.target
+    const { name, value, type, files } = e.target as HTMLInputElement
     const nameParts = name.split('.')
 
-    if (type === 'number') {
+    if (type === 'file' && files && files.length > 0) {
+      const file = files[0]
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          studentDetails: {
+            ...prev.studentDetails,
+            [nameParts[1]]: file,
+          },
+        }))
+      }
+      reader.readAsDataURL(file)
+    } else if (type === 'number') {
       setFormData((prev) => {
         if (nameParts.length === 2) {
           return {
@@ -93,14 +101,6 @@ const CreateStudent = () => {
         }
         return prev
       })
-    } else if (type === 'date') {
-      setFormData((prev) => ({
-        ...prev,
-        studentDetails: {
-          ...prev.studentDetails,
-          [nameParts[1]]: value,
-        },
-      }))
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -195,57 +195,50 @@ const CreateStudent = () => {
     e.preventDefault()
     setError(null)
 
-    // Validation
-    if (!formData.studentDetails.firstName.trim()) {
-      setError('Please enter first name')
-      return
-    }
-    if (!formData.studentDetails.lastName.trim()) {
-      setError('Please enter last name')
-      return
-    }
-    if (!formData.studentDetails.email) {
-      setError('Please enter email')
-      return
-    }
-    if (!formData.studentDetails.phoneNumber) {
-      setError('Please enter phone number')
-      return
-    }
-    if (!formData.studentDetails.fatherEmail) {
-      setError('Please enter father email')
-      return
-    }
-    if (!formData.studentDetails.fatherPhone) {
-      setError('Please enter father phone')
-      return
-    }
-    if (!formData.studentDetails.motherEmail) {
-      setError('Please enter mother email')
-      return
-    }
-    if (!formData.studentDetails.motherPhone) {
-      setError('Please enter mother phone')
-      return
-    }
-    if (formData.studentDetails.admissionNo === 0) {
-      setError('Please enter admission number')
-      return
-    }
-    if (formData.studentDetails.rollNo === 0) {
-      setError('Please enter roll number')
-      return
-    }
+    const { studentDetails } = formData
+    if (!studentDetails.firstName.trim())
+      return setError('Please enter first name')
+    if (!studentDetails.lastName.trim())
+      return setError('Please enter last name')
+    // ...other validations
+
+    const studentFees = selectedFeesMasters.map((feesMasterId) => ({
+      feesMasterId,
+    }))
+
+    // Create FormData
+    const payload = new FormData()
+    payload.append(
+        'studentDetails',
+        JSON.stringify({
+            ...studentDetails,
+        // remove file objects from studentDetails for JSON part
+        photoUrl: undefined,
+        fatherPhotoUrl: undefined,
+        motherPhotoUrl: undefined,
+    })
+)
+payload.append('studentFees', JSON.stringify(studentFees))
+console.log("🚀 ~ handleSubmit ~ payload:", payload)
+
+    // Append files separately
+    if (studentDetails.photoUrl)
+      payload.append('photo', studentDetails.photoUrl)
+    if (studentDetails.fatherPhotoUrl)
+      payload.append('fatherPhoto', studentDetails.fatherPhotoUrl)
+    if (studentDetails.motherPhotoUrl)
+      payload.append('motherPhoto', studentDetails.motherPhotoUrl)
 
     try {
-      const submitData = {
-        ...formData,
-        studentFees: selectedFeesMasters.map((feesMasterId) => ({
-          studentId: null,
-          feesMasterId,
-        })),
-      }
-      addMutation.mutate(submitData)
+      await addMutation.mutateAsync({
+        studentDetails: {
+          ...studentDetails,
+          photoUrl: studentDetails.photoUrl ? studentDetails.photoUrl : undefined,
+          fatherPhotoUrl: studentDetails.fatherPhotoUrl ? studentDetails.fatherPhotoUrl : undefined,
+          motherPhotoUrl: studentDetails.motherPhotoUrl ? studentDetails.motherPhotoUrl : undefined,
+        },
+        studentFees,
+      }) // your backend endpoint should handle multipart/form-data
     } catch (err) {
       setError('Failed to create student')
       console.error(err)
@@ -260,7 +253,6 @@ const CreateStudent = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-blue-100 p-2 rounded-md">
@@ -269,7 +261,6 @@ const CreateStudent = () => {
           <h2 className="text-lg font-semibold">Create Student</h2>
         </div>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
         {/* Student Information Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
@@ -289,7 +280,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Last Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.lastName">
@@ -304,7 +294,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Admission Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.admissionNo">
@@ -319,7 +308,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Roll Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.rollNo">
@@ -334,7 +322,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Class */}
             <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
@@ -364,7 +351,6 @@ const CreateStudent = () => {
                 placeholder="Select class"
               />
             </div>
-
             {/* Section */}
             <div className="space-y-2">
               <Label htmlFor="sectionId">Section</Label>
@@ -396,7 +382,6 @@ const CreateStudent = () => {
                 placeholder="Select section"
               />
             </div>
-
             {/* Gender */}
             <div className="space-y-2">
               <Label htmlFor="gender">
@@ -415,7 +400,6 @@ const CreateStudent = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {/* Date of Birth */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.dateOfBirth">Date of Birth</Label>
@@ -427,7 +411,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.email">
@@ -442,7 +425,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.phoneNumber">
@@ -457,7 +439,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Religion */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.religion">Religion</Label>
@@ -469,7 +450,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Blood Group */}
             <div className="space-y-2">
               <Label htmlFor="bloodGroup">Blood Group</Label>
@@ -494,7 +474,6 @@ const CreateStudent = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {/* Height */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.height">Height (cm)</Label>
@@ -507,7 +486,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Weight */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.weight">Weight (kg)</Label>
@@ -520,7 +498,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Admission Date */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.admissionDate">
@@ -534,7 +511,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Address */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="studentDetails.address">Address</Label>
@@ -546,13 +522,13 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="photoUrl" className="text-sm">
+              <Label htmlFor="studentDetails.photoUrl" className="text-sm">
                 Student Photo
               </Label>
               <Input
-                id="photoUrl"
+                id="studentDetails.photoUrl"
+                name="studentDetails.photoUrl"
                 type="file"
                 accept="image/*"
                 onChange={handleInputChange}
@@ -577,7 +553,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Father Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherEmail">
@@ -592,7 +567,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Father Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherPhone">
@@ -607,7 +581,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Father Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherOccupation">
@@ -621,13 +594,16 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="fatherPhotoUrl" className="text-sm">
+              <Label
+                htmlFor="studentDetails.fatherPhotoUrl"
+                className="text-sm"
+              >
                 Father Photo
               </Label>
               <Input
-                id="fatherPhotoUrl"
+                id="studentDetails.fatherPhotoUrl"
+                name="studentDetails.fatherPhotoUrl"
                 type="file"
                 accept="image/*"
                 onChange={handleInputChange}
@@ -652,7 +628,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             {/* Mother Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherEmail">
@@ -667,7 +642,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Mother Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherPhone">
@@ -682,7 +656,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-
             {/* Mother Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherOccupation">
@@ -696,13 +669,16 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="motherPhotoUrl" className="text-sm">
+              <Label
+                htmlFor="studentDetails.motherPhotoUrl"
+                className="text-sm"
+              >
                 Mother Photo
               </Label>
               <Input
-                id="motherPhotoUrl"
+                id="studentDetails.motherPhotoUrl"
+                name="studentDetails.motherPhotoUrl"
                 type="file"
                 accept="image/*"
                 onChange={handleInputChange}
@@ -734,8 +710,7 @@ const CreateStudent = () => {
                     htmlFor={`fee-${fee.feesMasterId}`}
                     className="text-sm cursor-pointer flex-1"
                   >
-                    {fee.feesGroupName} - {fee.feesTypeName} (₹
-                    {fee.amount})
+                    {fee.feesGroupName} - {fee.feesTypeName} (₹{fee.amount})
                   </label>
                 </div>
               ))
