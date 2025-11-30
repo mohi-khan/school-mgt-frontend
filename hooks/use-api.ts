@@ -577,7 +577,7 @@ export const useGetAllStudents = () => {
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['fees-masters'],
+    queryKey: ['students'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
@@ -631,7 +631,7 @@ export const useUpdateStudentWithFees = ({
         title: 'Success!',
         description: 'student edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['fees-masters'] })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
 
       reset()
       onClose()

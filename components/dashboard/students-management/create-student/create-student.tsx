@@ -40,6 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatDate, formatNumber } from '@/utils/conversions'
+import { toast } from '@/hooks/use-toast'
 
 const CreateStudent = () => {
   useInitializeUser()
@@ -300,6 +301,10 @@ const CreateStudent = () => {
     try {
       await addMutation.mutateAsync(form as any)
       console.log('✅ Student created successfully!')
+      toast({
+        title: 'Success!',
+        description: 'student is added successfully.',
+      })
     } catch (err) {
       setError('Failed to create student')
       console.error('❌ Error creating student:', err)
