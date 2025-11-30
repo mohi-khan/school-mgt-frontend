@@ -121,3 +121,35 @@ console.log(`${API_BASE_URL}/${url}`)
   return { data: jsonData as T, error: null }
   
 }
+
+export async function fetchApiWithFile<T>({
+  url,
+  method,
+  headers = {},
+  body,
+}: {
+  url: string
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  headers?: HeadersInit
+  body?: any
+}): Promise<T> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL 
+  const isFormData = body instanceof FormData
+
+  const finalHeaders = isFormData
+    ? headers // Do NOT set Content-Type for FormData
+    : { "Content-Type": "application/json", ...headers }
+
+  const response = await fetch(`${baseUrl}/${url}`, {
+    method,
+    headers: finalHeaders,
+    body: isFormData ? body : JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(errorText || "Request failed")
+  }
+
+  return response.json()
+}
