@@ -243,17 +243,27 @@ export async function deleteFeesMaster(id: number, token: string) {
 }
 
 //students APIs
-export async function createStudentWithFees(
-  data: CreateStudentWithFeesType,
-  token: string
-) {
+// export async function createStudentWithFees(
+//   data: CreateStudentWithFeesType,
+//   token: string
+// ) {
+//   return fetchApiWithFile<CreateStudentWithFeesType>({
+//     url: 'api/students/create',
+//     method: 'POST',
+//     body: data,
+//     headers: {
+//       Authorization: token,
+//     },
+//   })
+// }
+
+export async function createStudentWithFees(token: string, formData: FormData) {
   return fetchApiWithFile<CreateStudentWithFeesType>({
     url: 'api/students/create',
     method: 'POST',
-    body: data,
     headers: {
-      Authorization: token,
-      'Content-Type': 'application/json',
+      Authorization: `${token}`,
     },
+    body: formData, // Pass FormData directly
   })
 }

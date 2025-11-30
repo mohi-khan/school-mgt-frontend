@@ -549,22 +549,18 @@ export const useAddStudent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: CreateStudentWithFeesType) => {
-      return createStudentWithFees(data, token)
+    mutationFn: (formData: FormData) => {
+      return createStudentWithFees(token, formData)
     },
     onSuccess: (data) => {
       console.log('students added successfully:', data)
 
       queryClient.invalidateQueries({ queryKey: ['students'] })
 
-      // Reset form fields after success
       reset()
-
-      // Close the form modal
       onClose()
     },
     onError: (error) => {
-      // Handle error
       console.error('Error adding students:', error)
     },
   })

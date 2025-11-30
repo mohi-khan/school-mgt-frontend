@@ -1,4 +1,5 @@
 'use client'
+
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,23 @@ import {
   useGetFeesMasters,
   useGetSections,
 } from '@/hooks/use-api'
-import type { CreateStudentWithFeesType } from '@/utils/type'
+import type { CreateStudentWithFeesType, GetFeesMasterType } from '@/utils/type'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { formatDate, formatNumber } from '@/utils/conversions'
 
 const CreateStudent = () => {
   useInitializeUser()
@@ -35,6 +52,11 @@ const CreateStudent = () => {
   const [error, setError] = useState<string | null>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [selectedFeesMasters, setSelectedFeesMasters] = useState<number[]>([])
+
+  const [studentPhotoFile, setStudentPhotoFile] = useState<File | null>(null)
+  const [fatherPhotoFile, setFatherPhotoFile] = useState<File | null>(null)
+  const [motherPhotoFile, setMotherPhotoFile] = useState<File | null>(null)
+
   const [formData, setFormData] = useState<CreateStudentWithFeesType>({
     studentDetails: {
       admissionNo: 0,
@@ -72,43 +94,46 @@ const CreateStudent = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type, files } = e.target as HTMLInputElement
+    const { name, value, type } = e.target as HTMLInputElement
     const nameParts = name.split('.')
 
-    if (type === 'file' && files && files.length > 0) {
-      const file = files[0]
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          studentDetails: {
-            ...prev.studentDetails,
-            [nameParts[1]]: file,
-          },
-        }))
-      }
-      reader.readAsDataURL(file)
-    } else if (type === 'number') {
-      setFormData((prev) => {
-        if (nameParts.length === 2) {
-          return {
-            ...prev,
-            [nameParts[0]]: {
-              ...prev[nameParts[0] as keyof CreateStudentWithFeesType],
-              [nameParts[1]]: value ? Number(value) : 0,
-            },
-          }
-        }
-        return prev
-      })
+    if (type === 'number') {
+      setFormData((prev) => ({
+        ...prev,
+        studentDetails: {
+          ...prev.studentDetails,
+          [nameParts[1]]: value ? Number(value) : null,
+        },
+      }))
     } else {
       setFormData((prev) => ({
         ...prev,
         studentDetails: {
           ...prev.studentDetails,
-          [nameParts[1]]: value,
+          [nameParts[1]]: value || null,
         },
       }))
+    }
+  }
+
+  const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setStudentPhotoFile(file)
+    }
+  }
+
+  const handleFatherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFatherPhotoFile(file)
+    }
+  }
+
+  const handleMotherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setMotherPhotoFile(file)
     }
   }
 
@@ -177,6 +202,9 @@ const CreateStudent = () => {
       studentFees: [],
     })
     setSelectedFeesMasters([])
+    setStudentPhotoFile(null)
+    setFatherPhotoFile(null)
+    setMotherPhotoFile(null)
     setIsPopupOpen(false)
     setError(null)
   }
@@ -194,69 +222,112 @@ const CreateStudent = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
     const { studentDetails } = formData
+    console.log('=== FORM SUBMISSION START ===')
+    console.log('📋 Student Details:', studentDetails)
+    console.log('💰 Selected Fees Masters:', selectedFeesMasters)
+
+    // Validations
     if (!studentDetails.firstName.trim())
       return setError('Please enter first name')
     if (!studentDetails.lastName.trim())
       return setError('Please enter last name')
-    // ...other validations
+    if (!studentDetails.admissionNo || studentDetails.admissionNo <= 0)
+      return setError('Please enter valid admission number')
+    if (!studentDetails.rollNo || studentDetails.rollNo <= 0)
+      return setError('Please enter valid roll number')
+    if (!studentDetails.email.trim()) return setError('Please enter email')
+    if (!studentDetails.phoneNumber.trim())
+      return setError('Please enter phone number')
+    if (!studentDetails.fatherPhone.trim())
+      return setError('Please enter father phone')
+    if (!studentDetails.fatherEmail.trim())
+      return setError('Please enter father email')
+    if (!studentDetails.motherPhone.trim())
+      return setError('Please enter mother phone')
+    if (!studentDetails.motherEmail.trim())
+      return setError('Please enter mother email')
 
+    // Prepare student fees
     const studentFees = selectedFeesMasters.map((feesMasterId) => ({
       feesMasterId,
+      studentId: null,
     }))
+    console.log('💵 Prepared Student Fees:', studentFees)
 
-    // Create FormData
-    const payload = new FormData()
-    payload.append(
-        'studentDetails',
-        JSON.stringify({
-            ...studentDetails,
-        // remove file objects from studentDetails for JSON part
-        photoUrl: undefined,
-        fatherPhotoUrl: undefined,
-        motherPhotoUrl: undefined,
-    })
-)
-payload.append('studentFees', JSON.stringify(studentFees))
-console.log("🚀 ~ handleSubmit ~ payload:", payload)
+    const form = new FormData()
 
-    // Append files separately
-    if (studentDetails.photoUrl)
-      payload.append('photo', studentDetails.photoUrl)
-    if (studentDetails.fatherPhotoUrl)
-      payload.append('fatherPhoto', studentDetails.fatherPhotoUrl)
-    if (studentDetails.motherPhotoUrl)
-      payload.append('motherPhoto', studentDetails.motherPhotoUrl)
+    // Add student details as JSON (excluding photo URLs)
+    const studentDetailsPayload = {
+      ...studentDetails,
+      photoUrl: null,
+      fatherPhotoUrl: null,
+      motherPhotoUrl: null,
+    }
+    console.log(
+      '📦 Student Details Payload (without photos):',
+      studentDetailsPayload
+    )
+    form.append('studentDetails', JSON.stringify(studentDetailsPayload))
+    form.append('studentFees', JSON.stringify(studentFees))
+
+    // Append photos only if they are selected
+    if (studentPhotoFile) {
+      form.append('photoUrl', studentPhotoFile)
+      console.log(`✅ Appended photoUrl to FormData`)
+    }
+    if (fatherPhotoFile) {
+      form.append('fatherPhotoUrl', fatherPhotoFile)
+      console.log(`✅ Appended fatherPhotoUrl to FormData`)
+    }
+    if (motherPhotoFile) {
+      form.append('motherPhotoUrl', motherPhotoFile)
+      console.log(`✅ Appended motherPhotoUrl to FormData`)
+    }
+
+    console.log('📤 FormData contents:')
+    for (const pair of form.entries()) {
+      if (pair[1] instanceof File) {
+        console.log(
+          `  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`
+        )
+      } else {
+        console.log(`  ${pair[0]}: ${pair[1]}`)
+      }
+    }
+    console.log('=== FORM SUBMISSION END ===')
 
     try {
-      await addMutation.mutateAsync({
-        studentDetails: {
-          ...studentDetails,
-          photoUrl: studentDetails.photoUrl ? studentDetails.photoUrl : undefined,
-          fatherPhotoUrl: studentDetails.fatherPhotoUrl ? studentDetails.fatherPhotoUrl : undefined,
-          motherPhotoUrl: studentDetails.motherPhotoUrl ? studentDetails.motherPhotoUrl : undefined,
-        },
-        studentFees,
-      }) // your backend endpoint should handle multipart/form-data
+      await addMutation.mutateAsync(form as any)
+      console.log('✅ Student created successfully!')
     } catch (err) {
       setError('Failed to create student')
-      console.error(err)
+      console.error('❌ Error creating student:', err)
     }
   }
 
   useEffect(() => {
     if (addMutation.error) {
       setError('Error creating student')
+      console.error('❌ Mutation error:', addMutation.error)
     }
   }, [addMutation.error])
+
+  const grouped = feesMasters?.data?.reduce(
+    (acc, fee) => {
+      if (!acc[fee.feesGroupName]) acc[fee.feesGroupName] = []
+      acc[fee.feesGroupName].push(fee)
+      return acc
+    },
+    {} as Record<string, GetFeesMasterType[]>
+  )
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-blue-100 p-2 rounded-md">
-            <DollarSign className="text-blue-600" />
+          <div className="bg-amber-100 p-2 rounded-md">
+            <DollarSign className="text-amber-600" />
           </div>
           <h2 className="text-lg font-semibold">Create Student</h2>
         </div>
@@ -303,7 +374,7 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
                 id="studentDetails.admissionNo"
                 name="studentDetails.admissionNo"
                 type="number"
-                value={formData.studentDetails.admissionNo}
+                value={formData.studentDetails.admissionNo || ''}
                 onChange={handleInputChange}
                 required
               />
@@ -317,7 +388,7 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
                 id="studentDetails.rollNo"
                 name="studentDetails.rollNo"
                 type="number"
-                value={formData.studentDetails.rollNo}
+                value={formData.studentDetails.rollNo || ''}
                 onChange={handleInputChange}
                 required
               />
@@ -512,7 +583,7 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
               />
             </div>
             {/* Address */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="studentDetails.address">Address</Label>
               <Input
                 id="studentDetails.address"
@@ -522,18 +593,23 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
                 onChange={handleInputChange}
               />
             </div>
+            {/* Student Photo */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.photoUrl" className="text-sm">
+              <Label htmlFor="studentPhoto" className="text-sm">
                 Student Photo
               </Label>
               <Input
-                id="studentDetails.photoUrl"
-                name="studentDetails.photoUrl"
+                id="studentPhoto"
                 type="file"
                 accept="image/*"
-                onChange={handleInputChange}
+                onChange={handleStudentPhotoChange}
                 className="text-sm"
               />
+              {studentPhotoFile && (
+                <p className="text-xs text-green-600">
+                  ✓ Photo selected: {studentPhotoFile.name}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -594,21 +670,23 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
                 onChange={handleInputChange}
               />
             </div>
+            {/* Father Photo */}
             <div className="space-y-2">
-              <Label
-                htmlFor="studentDetails.fatherPhotoUrl"
-                className="text-sm"
-              >
+              <Label htmlFor="fatherPhoto" className="text-sm">
                 Father Photo
               </Label>
               <Input
-                id="studentDetails.fatherPhotoUrl"
-                name="studentDetails.fatherPhotoUrl"
+                id="fatherPhoto"
                 type="file"
                 accept="image/*"
-                onChange={handleInputChange}
+                onChange={handleFatherPhotoChange}
                 className="text-sm"
               />
+              {fatherPhotoFile && (
+                <p className="text-xs text-green-600">
+                  ✓ Photo selected: {fatherPhotoFile.name}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -669,21 +747,23 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
                 onChange={handleInputChange}
               />
             </div>
+            {/* Mother Photo */}
             <div className="space-y-2">
-              <Label
-                htmlFor="studentDetails.motherPhotoUrl"
-                className="text-sm"
-              >
+              <Label htmlFor="motherPhoto" className="text-sm">
                 Mother Photo
               </Label>
               <Input
-                id="studentDetails.motherPhotoUrl"
-                name="studentDetails.motherPhotoUrl"
+                id="motherPhoto"
                 type="file"
                 accept="image/*"
-                onChange={handleInputChange}
+                onChange={handleMotherPhotoChange}
                 className="text-sm"
               />
+              {motherPhotoFile && (
+                <p className="text-xs text-green-600">
+                  ✓ Photo selected: {motherPhotoFile.name}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -691,31 +771,79 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
         {/* Student Fees Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Student Fees</h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-            {!feesMasters || feesMasters.data?.length === 0 ? (
-              <p className="text-sm text-gray-500">No fees masters available</p>
-            ) : (
-              feesMasters.data?.map((fee) => (
-                <div key={fee.feesMasterId} className="flex items-center gap-2">
-                  <Input
-                    type="checkbox"
-                    id={`fee-${fee.feesMasterId}`}
-                    checked={selectedFeesMasters.includes(
-                      fee.feesMasterId || 0
-                    )}
-                    onChange={() => toggleFeesMaster(fee.feesMasterId || 0)}
-                    className="w-4 h-4"
-                  />
-                  <label
-                    htmlFor={`fee-${fee.feesMasterId}`}
-                    className="text-sm cursor-pointer flex-1"
-                  >
-                    {fee.feesGroupName} - {fee.feesTypeName} (₹{fee.amount})
-                  </label>
-                </div>
-              ))
-            )}
-          </div>
+
+          <Accordion type="multiple" className="w-full">
+            {Object.entries(grouped ?? {}).map(([groupName, groupFees]) => {
+              // All fee IDs under this group
+              const groupFeeIds = groupFees.map((f) => f.feesMasterId || 0)
+
+              // Check if the entire group is selected
+              const isGroupSelected = groupFeeIds.every((id) =>
+                selectedFeesMasters.includes(id)
+              )
+
+              return (
+                <AccordionItem key={groupName} value={groupName}>
+                  <div className="flex items-center gap-2 px-2">
+                    {/* GROUP CHECKBOX */}
+                    <Input
+                      type="checkbox"
+                      className="w-4 h-4"
+                      checked={isGroupSelected}
+                      onChange={() => {
+                        if (isGroupSelected) {
+                          // Unselect all
+                          groupFeeIds.forEach((id) => toggleFeesMaster(id))
+                        } else {
+                          // Select all
+                          groupFeeIds.forEach((id) => {
+                            if (!selectedFeesMasters.includes(id))
+                              toggleFeesMaster(id)
+                          })
+                        }
+                      }}
+                    />
+
+                    <AccordionTrigger className="flex-1 text-sm font-medium">
+                      {groupName}
+                    </AccordionTrigger>
+                  </div>
+
+                  <AccordionContent>
+                    <div className="border rounded-md overflow-hidden bg-white">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-1/2">Fees Type</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Amount (BDT)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+
+                        <TableBody>
+                          {groupFees.map((fee) => (
+                            <TableRow key={fee.feesMasterId}>
+                              <TableCell className="text-sm">
+                                {fee.feesTypeName}
+                              </TableCell>
+
+                              <TableCell className="text-sm">
+                                {formatDate(new Date(fee.dueDate))}
+                              </TableCell>
+
+                              <TableCell className="text-sm font-medium">
+                                {formatNumber(fee.amount)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )
+            })}
+          </Accordion>
         </div>
 
         {error && (
@@ -723,7 +851,6 @@ console.log("🚀 ~ handleSubmit ~ payload:", payload)
             {error}
           </div>
         )}
-
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={resetForm}>
             Reset Fields
