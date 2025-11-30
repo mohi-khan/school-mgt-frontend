@@ -78,6 +78,10 @@ export function DashboardSidebar() {
           title: 'Create Student',
           href: '/dashboard/students-management/create-student',
         },
+        {
+          title: 'Students',
+          href: '/dashboard/students-management/students',
+        },
       ],
     },
     // {

@@ -12,15 +12,19 @@ import {
   deleteFeesGroup,
   deleteFeesMaster,
   deleteFeesType,
+  deleteStudent,
   editClass,
   editFeesGroup,
   editFeesMaster,
   editFeesType,
+  editStudentWithFees,
   getAllClasses,
   getAllFeesGroups,
   getAllFeesMasters,
   getAllFeesTypes,
   getAllSections,
+  getAllStudents,
+  getStudentById,
 } from '@/utils/api'
 import {
   CreateClassType,
@@ -562,6 +566,112 @@ export const useAddStudent = ({
     },
     onError: (error) => {
       console.error('Error adding students:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useGetAllStudents = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['fees-masters'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllStudents(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetStudentById= (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['students', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getStudentById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useUpdateStudentWithFees = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateFeesMasterType }) => {
+      const formData = new FormData()
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value as any)
+        }
+      })
+      return editStudentWithFees(id, formData, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'student edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['fees-masters'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing student:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteStudent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteStudent(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'student is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
     },
   })
 

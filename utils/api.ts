@@ -10,6 +10,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetSectionsType,
+  GetStudentWithFeesType,
   SignInRequest,
   SignInResponse,
   SignInResponseSchema,
@@ -243,19 +244,27 @@ export async function deleteFeesMaster(id: number, token: string) {
 }
 
 //students APIs
-// export async function createStudentWithFees(
-//   data: CreateStudentWithFeesType,
-//   token: string
-// ) {
-//   return fetchApiWithFile<CreateStudentWithFeesType>({
-//     url: 'api/students/create',
-//     method: 'POST',
-//     body: data,
-//     headers: {
-//       Authorization: token,
-//     },
-//   })
-// }
+export async function getAllStudents(token: string) {
+  return fetchApi<GetStudentWithFeesType[]>({
+    url: 'api/students/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getStudentById(token: string, id: number) {
+  return fetchApi<GetStudentWithFeesType[]>({
+    url: `api/students/get/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
 
 export async function createStudentWithFees(token: string, formData: FormData) {
   return fetchApiWithFile<CreateStudentWithFeesType>({
@@ -264,6 +273,28 @@ export async function createStudentWithFees(token: string, formData: FormData) {
     headers: {
       Authorization: `${token}`,
     },
-    body: formData, // Pass FormData directly
+    body: formData,
+  })
+}
+
+export async function editStudentWithFees(id: number, formData: FormData, token: string) {
+  return fetchApiWithFile<CreateStudentWithFeesType>({
+    url: `api/students/edit/${id}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
+    },
+    body: formData,
+  })
+}
+
+export async function deleteStudent(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/students/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
   })
 }
