@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table'
 import Image from 'next/image'
 import { useGetStudentById } from '@/hooks/use-api'
-import React, { useState } from 'react'
+import React from 'react'
 import { formatDate, formatNumber } from '@/utils/conversions'
 import {
   Accordion,
@@ -147,28 +147,28 @@ const StudentDetailsPage = () => {
                   <table className="table-auto border-collapse">
                     <tbody>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Father Name:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Father Name:
                         </td>
-                        <td className="py-1">{studentDetails.fatherName}</td>
+                        <td className="pb-4">{studentDetails.fatherName}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Father Phone:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Father Phone:
                         </td>
-                        <td className="py-1">{studentDetails.fatherPhone}</td>
+                        <td className="pb-4">{studentDetails.fatherPhone}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Father Email:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Father Email:
                         </td>
-                        <td className="py-1">{studentDetails.fatherEmail}</td>
+                        <td className="pb-4">{studentDetails.fatherEmail}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Father Occupation:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Father Occupation:
                         </td>
-                        <td className="py-1">
+                        <td className="pb-4">
                           {studentDetails.fatherOccupation}
                         </td>
                       </tr>
@@ -194,28 +194,28 @@ const StudentDetailsPage = () => {
                   <table className="table-auto border-collapse">
                     <tbody>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Mother Name:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Mother Name:
                         </td>
-                        <td className="py-1">{studentDetails.motherName}</td>
+                        <td className="pb-4">{studentDetails.motherName}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Mother Phone:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Mother Phone:
                         </td>
-                        <td className="py-1">{studentDetails.motherPhone}</td>
+                        <td className="pb-4">{studentDetails.motherPhone}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Mother Email:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Mother Email:
                         </td>
-                        <td className="py-1">{studentDetails.motherEmail}</td>
+                        <td className="pb-4">{studentDetails.motherEmail}</td>
                       </tr>
                       <tr>
-                        <td className="w-36 font-semibold py-1">
-                          {'Mother Occupation:'}
+                        <td className="w-36 font-semibold pb-4">
+                          Mother Occupation:
                         </td>
-                        <td className="py-1">
+                        <td className="pb-4">
                           {studentDetails.motherOccupation}
                         </td>
                       </tr>
