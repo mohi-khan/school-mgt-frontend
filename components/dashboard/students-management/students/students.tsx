@@ -212,7 +212,7 @@ const Students = () => {
               paginatedStudents.map((student) => (
                 <TableRow key={student.studentDetails.studentId}>
                   <TableCell>
-                    <Link href={'/student-details'} className='text-amber-600 font-semibold'>
+                    <Link href={`/dashboard/students-management/student-details/${student.studentDetails.studentId}`} className='text-amber-600 font-semibold'>
                       {`${student.studentDetails.firstName} ${student.studentDetails.lastName}`}
                     </Link>
                   </TableCell>
@@ -232,7 +232,7 @@ const Students = () => {
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
                         onClick={() =>
-                          handleEditClick(student.studentDetails.studentId)
+                          handleEditClick(student.studentDetails.studentId ?? 0)
                         }
                       >
                         <Edit2 className="h-4 w-4" />
@@ -242,7 +242,7 @@ const Students = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() =>
-                          handleDeleteClick(student.studentDetails.studentId)
+                          handleDeleteClick(student.studentDetails.studentId ?? 0)
                         }
                       >
                         <Trash2 className="h-4 w-4" />

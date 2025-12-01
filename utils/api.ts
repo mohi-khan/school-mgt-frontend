@@ -257,7 +257,7 @@ export async function getAllStudents(token: string) {
 
 export async function getStudentById(token: string, id: number) {
   return fetchApi<GetStudentWithFeesType[]>({
-    url: `api/students/get/${id}`,
+    url: `api/students/getById/${id}`,
     method: 'GET',
     headers: {
       Authorization: token,
