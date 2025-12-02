@@ -3,6 +3,7 @@ import { useAtom } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
+  collectFees,
   createClass,
   createFeesGroup,
   createFeesMaster,
@@ -25,6 +26,7 @@ import {
   getAllSections,
   getAllStudents,
   getStudentById,
+  getStudentFeesById,
 } from '@/utils/api'
 import {
   CreateClassType,
@@ -36,6 +38,7 @@ import {
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
+  GetStudentFeesType,
 } from '@/utils/type'
 
 //section
@@ -589,7 +592,7 @@ export const useGetAllStudents = () => {
   })
 }
 
-export const useGetStudentById= (id: number) => {
+export const useGetStudentById = (id: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
@@ -672,6 +675,59 @@ export const useDeleteStudent = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//student fees
+export const useGetStudentFeesById = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['studentFees', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getStudentFeesById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useCollectFees = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: GetStudentFeesType[]) => {
+      return collectFees(data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Student fees collected successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['studentFees'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error collecting student fees:', error)
+      toast({
+        title: 'Error',
+        description: error?.message || 'Something went wrong.',
+      })
     },
   })
 

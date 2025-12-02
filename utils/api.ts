@@ -10,6 +10,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetSectionsType,
+  GetStudentFeesType,
   GetStudentWithFeesType,
   SignInRequest,
   SignInResponse,
@@ -292,6 +293,32 @@ export async function deleteStudent(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/students/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getStudentFeesById(token: string, id: number) {
+  return fetchApi<GetStudentFeesType[]>({
+    url: `api/student-fees/get-fees/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function collectFees(
+  data: GetStudentFeesType[],
+  token: string
+) {
+  return fetchApi<GetStudentFeesType[]>({
+    url: 'api/student-fees/collect-fees',
+    method: 'PATCH',
+    body: data,
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

@@ -159,3 +159,21 @@ export const studnentWithFeesSchema = z.object({
 })
 export type CreateStudentWithFeesType = z.infer<typeof studnentWithFeesSchema>
 export type GetStudentWithFeesType = z.infer<typeof studnentWithFeesSchema>
+export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
+  amount: number
+  paidAmount: number
+  remainingAmount: number
+  status: 'Paid' | 'Unpaid' | 'Partial'
+  studentName?: string
+  photoUrl?: string
+  classId?: number
+  className?: string
+  sectionName?: string
+  phoneNumber?: string
+  gender?: string
+  admissionNo?: string
+  rollNo?: string
+  feesMasterId?: number
+  feesTypeId?: number
+  feesTypeName?: string
+}

@@ -269,11 +269,13 @@ const StudentDetailsPage = () => {
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
-                                      <TableHead className="w-1/2">
+                                      <TableHead>
                                         Fees Type
                                       </TableHead>
                                       <TableHead>Due Date</TableHead>
                                       <TableHead>Amount (BDT)</TableHead>
+                                      <TableHead>Paid Amount (BDT)</TableHead>
+                                      <TableHead>Remaining Amount (BDT)</TableHead>
                                       <TableHead>Status</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -290,8 +292,26 @@ const StudentDetailsPage = () => {
                                         <TableCell className="text-sm font-medium">
                                           {formatNumber(fee.amount)}
                                         </TableCell>
-                                        <TableCell className="text-sm">
-                                          {fee.studentId ? 'Assigned' : 'N/A'}
+                                        <TableCell className="text-sm font-medium">
+                                          {formatNumber(fee.paidAmount)}
+                                        </TableCell>
+                                        <TableCell className="text-sm font-medium">
+                                          {formatNumber(fee.remainingAmount)}
+                                        </TableCell>
+                                        <TableCell>
+                                          <span
+                                            className={`text-xs badge px-2 py-1 rounded ${
+                                              fee.status === 'Unpaid'
+                                                ? 'bg-red-200 text-red-700'
+                                                : fee.status === 'Paid'
+                                                  ? 'bg-green-200 text-green-700'
+                                                  : fee.status === 'Partial'
+                                                    ? 'bg-orange-200 text-orange-700'
+                                                    : ''
+                                            }`}
+                                          >
+                                            {fee.status}
+                                          </span>
                                         </TableCell>
                                       </TableRow>
                                     ))}
