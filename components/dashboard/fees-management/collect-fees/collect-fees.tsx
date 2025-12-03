@@ -2,8 +2,10 @@
 
 import { useCallback, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowUpDown, Check } from 'lucide-react'
+import { ArrowUpDown, DollarSign, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -13,41 +15,64 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Checkbox } from '@/components/ui/checkbox'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useGetStudentFeesById, useCollectFees } from '@/hooks/use-api'
-// import { PartialPaymentModal } from '@/components/fees/partial-payment-modal'
-import type { GetStudentFeesType } from '@/utils/type'
+import type { GetStudentFeesType, CollectFeesType } from '@/utils/type'
+import { Popup } from '@/utils/popup'
+import { formatNumber } from '@/utils/conversions'
 
 const CollectFees = () => {
   const { studentId } = useParams()
   const { data: studentFees, isLoading } = useGetStudentFeesById(
     Number(studentId)
   )
+  console.log('🚀 ~ CollectFees ~ studentFees:', studentFees)
 
   const [sortColumn, setSortColumn] = useState<string>('feesTypeName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [selectedFees, setSelectedFees] = useState<Set<number>>(new Set())
-  const [isFullPaymentDialogOpen, setIsFullPaymentDialogOpen] = useState(false)
-  const [isPartialPaymentOpen, setIsPartialPaymentOpen] = useState(false)
-  const [partialPaymentFees, setPartialPaymentFees] = useState<
-    GetStudentFeesType[]
-  >([])
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [selectedFee, setSelectedFee] = useState<GetStudentFeesType | null>(
+    null
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  const [formData, setFormData] = useState<CollectFeesType>({
+    studentFeesId: 0,
+    method: 'cash',
+    paidAmount: 0,
+    paymentDate: new Date().toISOString().split('T')[0],
+    remarks: '',
+  })
+
+  const closePopup = useCallback(() => {
+    setIsPopupOpen(false)
+    setSelectedFee(null)
+    setError(null)
+  }, [])
+
+  const resetForm = () => {
+    setFormData({
+      studentFeesId: 0,
+      method: 'cash',
+      paidAmount: 0,
+      paymentDate: new Date().toISOString().split('T')[0],
+      remarks: '',
+    })
+    setSelectedFee(null)
+    setIsPopupOpen(false)
+    setError(null)
+  }
 
   const collectFeesMutation = useCollectFees({
-    onClose: () => {
-      setSelectedFees(new Set())
-      setIsFullPaymentDialogOpen(false)
-      setIsPartialPaymentOpen(false)
-    },
-    reset: () => setSelectedFees(new Set()),
+    onClose: closePopup,
+    reset: resetForm,
   })
 
   const handleSort = (column: string) => {
@@ -59,10 +84,20 @@ const CollectFees = () => {
     }
   }
 
-  const sortedFees = useMemo(() => {
+  const filteredFees = useMemo(() => {
     if (!studentFees?.data) return []
+    return studentFees.data.filter((fee: GetStudentFeesType) => {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        fee.feesTypeName?.toLowerCase().includes(searchLower) ||
+        fee.amount?.toString().includes(searchLower) ||
+        fee.status?.toLowerCase().includes(searchLower)
+      )
+    })
+  }, [studentFees?.data, searchTerm])
 
-    return [...studentFees.data].sort((a, b) => {
+  const sortedFees = useMemo(() => {
+    return [...filteredFees].sort((a, b) => {
       const aValue: any = a[sortColumn as keyof GetStudentFeesType] ?? ''
       const bValue: any = b[sortColumn as keyof GetStudentFeesType] ?? ''
 
@@ -78,62 +113,62 @@ const CollectFees = () => {
 
       return 0
     })
-  }, [studentFees?.data, sortColumn, sortDirection])
+  }, [filteredFees, sortColumn, sortDirection])
 
-  const isAllSelected = useMemo(() => {
-    return sortedFees.length > 0 && selectedFees.size === sortedFees.length
-  }, [sortedFees, selectedFees])
-
-  const handleSelectAll = useCallback(() => {
-    if (isAllSelected) {
-      setSelectedFees(new Set())
-    } else {
-      const allIds = new Set(sortedFees.map((fee) => fee.studentFeesId))
-      setSelectedFees(allIds)
-    }
-  }, [isAllSelected, sortedFees])
-
-  const handleSelectFee = useCallback((studentFeesId: number) => {
-    setSelectedFees((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(studentFeesId)) {
-        newSet.delete(studentFeesId)
-      } else {
-        newSet.add(studentFeesId)
-      }
-      return newSet
+  const handleCollectClick = (fee: GetStudentFeesType) => {
+    setSelectedFee(fee)
+    setFormData({
+      studentFeesId: fee.studentFeesId || 0,
+      method: 'cash',
+      paidAmount: fee.remainingAmount || 0,
+      paymentDate: new Date().toISOString().split('T')[0],
+      remarks: '',
     })
-  }, [])
+    setIsPopupOpen(true)
+  }
 
-  const handleFullPayment = useCallback(() => {
-    const selectedFeesData = sortedFees.filter((fee) =>
-      selectedFees.has(fee.studentFeesId!)
-    )
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target
+    if (type === 'number') {
+      setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : 0 }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
+  }
 
-    const payloadData = selectedFeesData.map((fee) => ({
-      studentFeesId: fee.studentFeesId,
-      paymentType: 'Paid' as const,
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
     }))
+  }
 
-    collectFeesMutation.mutate(payloadData)
-    setIsFullPaymentDialogOpen(false)
-  }, [sortedFees, selectedFees, collectFeesMutation])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
 
-  const handlePartialPaymentClick = useCallback(() => {
-    const selectedFeesData = sortedFees.filter((fee) =>
-      selectedFees.has(fee.studentFeesId!)
-    )
-    setPartialPaymentFees(selectedFeesData)
-    setIsPartialPaymentOpen(true)
-  }, [sortedFees, selectedFees])
+    if (!formData.paidAmount || formData.paidAmount <= 0) {
+      setError('Please enter a valid payment amount')
+      return
+    }
 
-  const handlePartialPaymentSubmit = useCallback(
-    (paymentData: any[]) => {
-      collectFeesMutation.mutate(paymentData)
-      setIsPartialPaymentOpen(false)
-    },
-    [collectFeesMutation]
-  )
+    if (
+      selectedFee &&
+      formData.paidAmount > (selectedFee.remainingAmount || 0)
+    ) {
+      setError('Payment amount cannot exceed remaining amount')
+      return
+    }
+
+    try {
+      collectFeesMutation.mutate(formData)
+    } catch (err) {
+      setError('Failed to collect fees')
+      console.error(err)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -148,44 +183,32 @@ const CollectFees = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <div className="bg-blue-100 p-2 rounded-md">
-            <Check className="text-blue-600" />
+          <div className="bg-amber-100 p-2 rounded-md">
+            <DollarSign className="text-amber-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Collect Fees</h2>
-            <p className="text-sm text-gray-500">Student ID: {studentId}</p>
+            <p className="text-sm text-gray-500">
+              Student : {studentFees?.data && studentFees?.data[0]?.studentName}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            disabled={selectedFees.size === 0}
-            onClick={handlePartialPaymentClick}
-          >
-            Partial Payment
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            disabled={selectedFees.size === 0}
-            onClick={() => setIsFullPaymentDialogOpen(true)}
-          >
-            Full Payment
-          </Button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search fees..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-64"
+          />
         </div>
       </div>
 
       {/* Table */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-blue-100">
+          <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all fees"
-                />
-              </TableHead>
               <TableHead
                 onClick={() => handleSort('feesTypeName')}
                 className="cursor-pointer"
@@ -196,19 +219,21 @@ const CollectFees = () => {
                 onClick={() => handleSort('amount')}
                 className="cursor-pointer"
               >
-                Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Amount (BDT) <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('paidAmount')}
                 className="cursor-pointer"
               >
-                Paid Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Paid Amount (BDT){' '}
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('remainingAmount')}
                 className="cursor-pointer"
               >
-                Remaining <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Remaining Amount (BDT){' '}
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('status')}
@@ -216,36 +241,34 @@ const CollectFees = () => {
               >
                 Status <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedFees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-4">
-                  No fees found for this student
+                  {searchTerm
+                    ? 'No fees match your search'
+                    : 'No fees found for this student'}
                 </TableCell>
               </TableRow>
             ) : (
               sortedFees.map((fee) => (
                 <TableRow key={fee.studentFeesId}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedFees.has(fee.studentFeesId!)}
-                      onCheckedChange={() =>
-                        handleSelectFee(fee.studentFeesId!)
-                      }
-                      aria-label={`Select ${fee.feesTypeName}`}
-                    />
-                  </TableCell>
                   <TableCell className="font-medium">
                     {fee.feesTypeName}
                   </TableCell>
-                  <TableCell>₹{fee.amount}</TableCell>
-                  <TableCell>₹{fee.paidAmount}</TableCell>
-                  <TableCell>₹{fee.remainingAmount}</TableCell>
+                  <TableCell>{formatNumber(fee.amount.toFixed(2))}</TableCell>
+                  <TableCell>
+                    {formatNumber(fee.paidAmount.toFixed(2))}
+                  </TableCell>
+                  <TableCell>
+                    {formatNumber(fee.remainingAmount.toFixed(2))}
+                  </TableCell>
                   <TableCell>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
                         fee.status === 'Paid'
                           ? 'bg-green-100 text-green-700'
                           : fee.status === 'Partial'
@@ -256,6 +279,17 @@ const CollectFees = () => {
                       {fee.status}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-amber-200 hover:bg-amber-300 text-black"
+                      onClick={() => handleCollectClick(fee)}
+                      disabled={fee.status === 'Paid'}
+                    >
+                      Collect Fee
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -263,54 +297,137 @@ const CollectFees = () => {
         </Table>
       </div>
 
-      {/* Selected Fees Summary */}
-      {selectedFees.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm font-medium">
-            {selectedFees.size} fee(s) selected for payment
-          </p>
-        </div>
-      )}
-
-      {/* Full Payment Dialog */}
-      <AlertDialog
-        open={isFullPaymentDialogOpen}
-        onOpenChange={setIsFullPaymentDialogOpen}
+      {/* Collect Fee Popup */}
+      <Popup
+        isOpen={isPopupOpen}
+        onClose={resetForm}
+        title="Collect Fee Payment"
+        size="sm:max-w-lg"
       >
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Full Payment</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to collect full payment for {selectedFees.size}{' '}
-              fee(s). This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel
-              onClick={() => setIsFullPaymentDialogOpen(false)}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleFullPayment}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Confirm Payment
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        {selectedFee && (
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            {/* Fee Information */}
+            <div className="bg-gray-50 p-4 rounded-md space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Fee Type:</span>
+                <span className="text-sm font-medium">
+                  {selectedFee.feesTypeName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total Amount:</span>
+                <span className="text-sm font-medium">
+                  {formatNumber(selectedFee.amount.toFixed(2))} BDT
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Already Paid:</span>
+                <span className="text-sm font-medium">
+                  {formatNumber(selectedFee.paidAmount.toFixed(2))} BDT
+                </span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm font-semibold">Remaining:</span>
+                <span className="text-sm font-semibold text-red-600">
+                  {formatNumber(selectedFee.remainingAmount.toFixed(2))} BDT
+                </span>
+              </div>
+            </div>
 
-      {/* Partial Payment Modal */}
-      {isPartialPaymentOpen && (
-        <PartialPaymentModal
-          fees={partialPaymentFees}
-          isOpen={isPartialPaymentOpen}
-          onClose={() => setIsPartialPaymentOpen(false)}
-          onSubmit={handlePartialPaymentSubmit}
-          isLoading={collectFeesMutation.isPending}
-        />
-      )}
+            <div className="grid gap-4">
+              {/* Payment Method */}
+              <div className="space-y-2">
+                <Label htmlFor="method">
+                  Payment Method <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  name="method"
+                  value={formData.method}
+                  onValueChange={(value) => handleSelectChange('method', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank</SelectItem>
+                    <SelectItem value="bkash">bKash</SelectItem>
+                    <SelectItem value="nagad">Nagad</SelectItem>
+                    <SelectItem value="rocket">Rocket</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Paid Amount */}
+              <div className="space-y-2">
+                <Label htmlFor="paidAmount">
+                  Paid Amount <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="paidAmount"
+                  name="paidAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={selectedFee.remainingAmount}
+                  value={formData.paidAmount}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              {/* Payment Date */}
+              <div className="space-y-2">
+                <Label htmlFor="paymentDate">
+                  Payment Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="paymentDate"
+                  name="paymentDate"
+                  type="date"
+                  value={formData.paymentDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              {/* Remarks */}
+              <div className="space-y-2">
+                <Label htmlFor="remarks">Remarks</Label>
+                <Input
+                  id="remarks"
+                  name="remarks"
+                  type="text"
+                  placeholder="Optional notes..."
+                  value={formData.remarks}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={resetForm}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={collectFeesMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                {collectFeesMutation.isPending
+                  ? 'Processing...'
+                  : 'Collect Payment'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Popup>
     </div>
   )
 }

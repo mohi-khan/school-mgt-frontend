@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
+  CollectFeesType,
   CreateClassType,
   CreateFeesGroupType,
   CreateFeesMasterType,
@@ -312,10 +313,10 @@ export async function getStudentFeesById(token: string, id: number) {
 }
 
 export async function collectFees(
-  data: GetStudentFeesType[],
+  data: CollectFeesType,
   token: string
 ) {
-  return fetchApi<GetStudentFeesType[]>({
+  return fetchApi<CollectFeesType>({
     url: 'api/student-fees/collect-fees',
     method: 'PATCH',
     body: data,

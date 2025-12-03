@@ -29,6 +29,7 @@ import {
   getStudentFeesById,
 } from '@/utils/api'
 import {
+  CollectFeesType,
   CreateClassType,
   CreateFeesGroupType,
   CreateFeesMasterType,
@@ -710,7 +711,7 @@ export const useCollectFees = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: GetStudentFeesType[]) => {
+    mutationFn: (data: CollectFeesType) => {
       return collectFees(data, token)
     },
     onSuccess: () => {
