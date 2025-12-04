@@ -25,6 +25,7 @@ import {
   getAllFeesTypes,
   getAllSections,
   getAllStudents,
+  getAllStudentsByClassSection,
   getStudentById,
   getStudentFeesById,
 } from '@/utils/api'
@@ -605,6 +606,23 @@ export const useGetStudentById = (id: number) => {
     },
     enabled: !!token && id > 0,
     select: (data) => data,
+  })
+}
+
+export const useGetStudentFeesByClassSection = (
+  classId: number,
+  sectionId: number
+) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['studentFees', classId, sectionId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllStudentsByClassSection(token, classId, sectionId)
+    },
+    enabled: !!token && classId > 0 && sectionId > 0,
   })
 }
 

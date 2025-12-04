@@ -418,7 +418,6 @@ const CollectFees = () => {
               <Button
                 type="submit"
                 disabled={collectFeesMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700"
               >
                 {collectFeesMutation.isPending
                   ? 'Processing...'

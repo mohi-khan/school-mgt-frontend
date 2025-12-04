@@ -8,6 +8,7 @@ import {
   ChevronDown,
   DollarSign,
   FileChartColumn,
+  Goal,
   Home,
   NotebookText,
   Settings,
@@ -81,6 +82,21 @@ export function DashboardSidebar() {
         {
           title: 'Students',
           href: '/dashboard/students-management/students',
+        },
+        {
+          title: 'Promote Student',
+          href: '/dashboard/students-management/promote-students',
+        },
+      ],
+    },
+    {
+      title: 'Exam Management',
+      icon: Goal,
+      href: '/dashboard/exam-management',
+      subItems: [
+        {
+          title: 'Exam Group',
+          href: '/dashboard/exam-management/exam-groups',
         },
       ],
     },
