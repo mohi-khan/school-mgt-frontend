@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
+  CollectFeesType,
   CreateClassType,
   CreateFeesGroupType,
   CreateFeesMasterType,
@@ -10,6 +11,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetSectionsType,
+  GetStudentFeesType,
   GetStudentWithFeesType,
   SignInRequest,
   SignInResponse,
@@ -246,7 +248,7 @@ export async function deleteFeesMaster(id: number, token: string) {
 //students APIs
 export async function getAllStudents(token: string) {
   return fetchApi<GetStudentWithFeesType[]>({
-    url: 'api/students/getall',
+    url: 'api/students/getall?classId=&sectionId=',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -266,6 +268,21 @@ export async function getStudentById(token: string, id: number) {
   })
 }
 
+export async function getAllStudentsByClassSection(
+  token: string,
+  classId: number,
+  sectionId: number
+) {
+  return fetchApi<GetStudentWithFeesType[]>({
+    url: `api/students/getall?classId=${classId}&sectionId=${sectionId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function createStudentWithFees(token: string, formData: FormData) {
   return fetchApiWithFile<CreateStudentWithFeesType>({
     url: 'api/students/create',
@@ -277,7 +294,11 @@ export async function createStudentWithFees(token: string, formData: FormData) {
   })
 }
 
-export async function editStudentWithFees(id: number, formData: FormData, token: string) {
+export async function editStudentWithFees(
+  id: number,
+  formData: FormData,
+  token: string
+) {
   return fetchApiWithFile<CreateStudentWithFeesType>({
     url: `api/students/edit/${id}`,
     method: 'PATCH',
@@ -292,6 +313,29 @@ export async function deleteStudent(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/students/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getStudentFeesById(token: string, id: number) {
+  return fetchApi<GetStudentFeesType[]>({
+    url: `api/student-fees/get-fees/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function collectFees(data: CollectFeesType, token: string) {
+  return fetchApi<CollectFeesType>({
+    url: 'api/student-fees/collect-fees',
+    method: 'PATCH',
+    body: data,
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

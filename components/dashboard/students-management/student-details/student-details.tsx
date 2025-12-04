@@ -21,6 +21,9 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion'
+import { DollarSign } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 const StudentDetailsPage = () => {
   const { studentId } = useParams()
@@ -242,9 +245,22 @@ const StudentDetailsPage = () => {
           <TabsContent value="fees" className="mt-4">
             <Card>
               <CardHeader className="bg-slate-100 mb-4">
-                <CardTitle className="text-xl font-semibold">
-                  Student Fees
-                </CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-semibold">
+                    Student Fees
+                  </CardTitle>
+                  <Link
+                    href={`/dashboard/fees-management/collect-fees/${studentDetails.studentId}`}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-green-600 hover:text-green-700 border bg-green-200 hover:bg-green-300"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
                 {studentFees.length === 0 ? (
@@ -269,11 +285,13 @@ const StudentDetailsPage = () => {
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
-                                      <TableHead className="w-1/2">
-                                        Fees Type
-                                      </TableHead>
+                                      <TableHead>Fees Type</TableHead>
                                       <TableHead>Due Date</TableHead>
                                       <TableHead>Amount (BDT)</TableHead>
+                                      <TableHead>Paid Amount (BDT)</TableHead>
+                                      <TableHead>
+                                        Remaining Amount (BDT)
+                                      </TableHead>
                                       <TableHead>Status</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -290,8 +308,26 @@ const StudentDetailsPage = () => {
                                         <TableCell className="text-sm font-medium">
                                           {formatNumber(fee.amount)}
                                         </TableCell>
-                                        <TableCell className="text-sm">
-                                          {fee.studentId ? 'Assigned' : 'N/A'}
+                                        <TableCell className="text-sm font-medium">
+                                          {formatNumber(fee.paidAmount)}
+                                        </TableCell>
+                                        <TableCell className="text-sm font-medium">
+                                          {formatNumber(fee.remainingAmount)}
+                                        </TableCell>
+                                        <TableCell>
+                                          <span
+                                            className={`text-xs badge px-2 py-1 rounded ${
+                                              fee.status === 'Unpaid'
+                                                ? 'bg-red-100 text-red-700'
+                                                : fee.status === 'Paid'
+                                                  ? 'bg-green-100 text-green-700'
+                                                  : fee.status === 'Partial'
+                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                    : ''
+                                            }`}
+                                          >
+                                            {fee.status}
+                                          </span>
                                         </TableCell>
                                       </TableRow>
                                     ))}

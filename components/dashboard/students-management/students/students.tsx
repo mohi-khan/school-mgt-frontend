@@ -18,7 +18,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, Users, Edit2, Trash2 } from 'lucide-react'
+import {
+  ArrowUpDown,
+  Search,
+  Users,
+  Edit2,
+  Trash2,
+  DollarSign,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   AlertDialog,
@@ -80,9 +87,13 @@ const Students = () => {
         String(student.studentDetails.admissionNo)
           .toLowerCase()
           .includes(searchLower) ||
-        String(student.studentDetails.rollNo).toLowerCase().includes(searchLower) ||
+        String(student.studentDetails.rollNo)
+          .toLowerCase()
+          .includes(searchLower) ||
         String(student.studentDetails.phoneNumber).includes(searchLower) ||
-        String(student.studentDetails.className).toLowerCase().includes(searchLower)
+        String(student.studentDetails.className)
+          .toLowerCase()
+          .includes(searchLower)
       )
     })
   }, [studentsData?.data, searchTerm])
@@ -186,7 +197,7 @@ const Students = () => {
               >
                 Phone <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Action</TableHead>
+              <TableHead className="pl-8">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -212,7 +223,10 @@ const Students = () => {
               paginatedStudents.map((student) => (
                 <TableRow key={student.studentDetails.studentId}>
                   <TableCell>
-                    <Link href={`/dashboard/students-management/student-details/${student.studentDetails.studentId}`} className='text-amber-600 font-semibold'>
+                    <Link
+                      href={`/dashboard/students-management/student-details/${student.studentDetails.studentId}`}
+                      className="text-amber-600 font-semibold"
+                    >
                       {`${student.studentDetails.firstName} ${student.studentDetails.lastName}`}
                     </Link>
                   </TableCell>
@@ -227,6 +241,17 @@ const Students = () => {
                   <TableCell>{student.studentDetails.phoneNumber}</TableCell>
                   <TableCell>
                     <div className="flex justify-start gap-2">
+                      <Link
+                        href={`/dashboard/fees-management/collect-fees/${student.studentDetails.studentId}`}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -242,7 +267,9 @@ const Students = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() =>
-                          handleDeleteClick(student.studentDetails.studentId ?? 0)
+                          handleDeleteClick(
+                            student.studentDetails.studentId ?? 0
+                          )
                         }
                       >
                         <Trash2 className="h-4 w-4" />
