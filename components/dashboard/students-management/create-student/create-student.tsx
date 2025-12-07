@@ -22,6 +22,7 @@ import {
   useGetClasses,
   useGetFeesMasters,
   useGetSections,
+  useGetSessions,
 } from '@/hooks/use-api'
 import type { CreateStudentWithFeesType, GetFeesMasterType } from '@/utils/type'
 import {
@@ -48,6 +49,7 @@ const CreateStudent = () => {
   const [token] = useAtom(tokenAtom)
   const { data: classes } = useGetClasses()
   const { data: sections } = useGetSections()
+  const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +66,7 @@ const CreateStudent = () => {
       rollNo: 0,
       classId: null,
       sectionId: null,
+      sessionId: null,
       firstName: '',
       lastName: '',
       gender: 'male',
@@ -175,6 +178,7 @@ const CreateStudent = () => {
         rollNo: 0,
         classId: null,
         sectionId: null,
+        sessionId: null,
         firstName: '',
         lastName: '',
         gender: 'male',
@@ -456,6 +460,38 @@ const CreateStudent = () => {
                   )
                 }
                 placeholder="Select section"
+              />
+            </div>
+
+            {/* session */}
+            <div className="space-y-2">
+              <Label htmlFor="sessionId">Session</Label>
+              <CustomCombobox
+                items={
+                  sessions?.data?.map((session) => ({
+                    id: session?.sessionId?.toString() || '0',
+                    name: session.sessionName || 'Unnamed session',
+                  })) || []
+                }
+                value={
+                  formData.studentDetails.sessionId
+                    ? {
+                        id: formData.studentDetails.sessionId.toString(),
+                        name:
+                          sessions?.data?.find(
+                            (s) =>
+                              s.sessionId === formData.studentDetails.sessionId
+                          )?.sessionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'sessionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select session"
               />
             </div>
             {/* Gender */}

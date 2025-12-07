@@ -11,11 +11,14 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetSectionsType,
+  GetSessionsType,
   GetStudentFeesType,
   GetStudentWithFeesType,
+  PromotionResponseType,
   SignInRequest,
   SignInResponse,
   SignInResponseSchema,
+  StudentPromotionsType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -245,6 +248,18 @@ export async function deleteFeesMaster(id: number, token: string) {
   })
 }
 
+//sessions APIs
+export async function getAllSessions(token: string) {
+  return fetchApi<GetSessionsType[]>({
+    url: 'api/sessions/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //students APIs
 export async function getAllStudents(token: string) {
   return fetchApi<GetStudentWithFeesType[]>({
@@ -320,6 +335,7 @@ export async function deleteStudent(id: number, token: string) {
   })
 }
 
+//student fees APIs
 export async function getStudentFeesById(token: string, id: number) {
   return fetchApi<GetStudentFeesType[]>({
     url: `api/student-fees/get-fees/${id}`,
@@ -338,6 +354,22 @@ export async function collectFees(data: CollectFeesType, token: string) {
     body: data,
     headers: {
       Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//promote student APIs
+export async function promoteStudents(
+  data: StudentPromotionsType,
+  token: string
+) {
+  return fetchApi<PromotionResponseType>({
+    url: 'api/student-promotions/promote',
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })

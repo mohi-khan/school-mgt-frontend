@@ -24,10 +24,12 @@ import {
   getAllFeesMasters,
   getAllFeesTypes,
   getAllSections,
+  getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
   getStudentById,
   getStudentFeesById,
+  promoteStudents,
 } from '@/utils/api'
 import {
   CollectFeesType,
@@ -41,6 +43,8 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetStudentFeesType,
+  PromotionResponseType,
+  StudentPromotionsType,
 } from '@/utils/type'
 
 //section
@@ -180,6 +184,23 @@ export const useDeleteClass = ({
   })
 
   return mutation
+}
+
+export const useGetSessions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllSessions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
 }
 
 //fees group
@@ -694,6 +715,57 @@ export const useDeleteStudent = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const usePromoteStudents = ({
+  onClose,
+  reset,
+  setFailedPromotions,
+  setShowFailedPopup,
+  onSuccess,
+}: {
+  onClose: () => void
+  reset: () => void
+  setFailedPromotions: (
+    data: PromotionResponseType['notPromotedStudents']
+  ) => void
+  setShowFailedPopup: (value: boolean) => void
+  onSuccess: (response: PromotionResponseType) => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ data }: { data: StudentPromotionsType }) => {
+      const response = await promoteStudents(data, token)
+      return response.data! // <-- add ! to assert non-null
+    },
+    onSuccess: (response: PromotionResponseType) => {
+      console.log('🚀 ~ usePromoteStudents ~ response:', response)
+
+      if (response.notPromotedStudents?.length > 0) {
+        setFailedPromotions(response.notPromotedStudents)
+        setShowFailedPopup(true)
+      } else {
+        toast({
+          title: 'Success!',
+          description: 'All students promoted successfully.',
+        })
+      }
+
+      onSuccess(response)
+
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error promoting students:', error)
     },
   })
 

@@ -83,6 +83,9 @@ const StudentDetailsPage = () => {
               <strong>Section:</strong> {studentDetails.sectionName}
             </p>
             <p>
+              <strong>Session:</strong> {studentDetails.sessionName}
+            </p>
+            <p>
               <strong>Gender:</strong> {studentDetails.gender}
             </p>
             <p>
