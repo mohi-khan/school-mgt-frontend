@@ -107,12 +107,19 @@ export type GetFeesMasterType = z.infer<typeof feesMasterSchema> & {
   feesTypeName: string
 }
 
+export const sessionsSchema = z.object({
+  sessionId: z.number().optional(),
+  sessionName: z.string(),
+})
+export type GetSessionsType = z.infer<typeof sessionsSchema>
+
 export const studentSchema = z.object({
-  studentId: z.number().optional(), // auto-increment
+  studentId: z.number().optional(),
   admissionNo: z.number().positive(),
   rollNo: z.number().positive(),
   classId: z.number().nullable().optional(),
   sectionId: z.number().nullable().optional(),
+  sessionId: z.number().nullable().optional(),
   firstName: z.string().min(1).max(50),
   lastName: z.string().min(1).max(50),
   gender: z.enum(['male', 'female']),
@@ -169,6 +176,7 @@ export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
   classId?: number
   className?: string
   sectionName?: string
+  sessionName?: string
   phoneNumber?: string
   gender?: string
   admissionNo?: string
@@ -186,3 +194,19 @@ export const collectFeesSchema = z.object({
   remarks: z.string(),
 })
 export type CollectFeesType = z.infer<typeof collectFeesSchema>
+
+export const promoteStudentsSchema = z.object({
+  students: z
+    .array(
+      z.object({
+        studentId: z.number(),
+        classId: z.number(),
+        secitionId: z.number(),
+        sessionId: z.number(),
+        currentResult: z.enum(['Pass', 'Fail']),
+        nextSession: z.enum(['Continue', 'Leave']),
+      })
+    ),
+  feesMasterIds: z.array(z.number()),
+})
+export type StudentPromotionsType = z.infer<typeof promoteStudentsSchema>

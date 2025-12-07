@@ -24,6 +24,7 @@ import {
   getAllFeesMasters,
   getAllFeesTypes,
   getAllSections,
+  getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
   getStudentById,
@@ -180,6 +181,23 @@ export const useDeleteClass = ({
   })
 
   return mutation
+}
+
+export const useGetSssions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllSessions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
 }
 
 //fees group
