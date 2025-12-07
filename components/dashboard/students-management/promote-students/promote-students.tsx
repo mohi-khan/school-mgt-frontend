@@ -13,10 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Users } from 'lucide-react'
+import { Users, AlertCircle } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import { CustomCombobox } from '@/utils/custom-combobox'
-import type { StudentPromotionsType } from '@/utils/type'
+import type { PromotionResponseType, StudentPromotionsType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
@@ -42,6 +42,11 @@ const PromoteStudents = () => {
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
     null
   )
+  const [failedPromotions, setFailedPromotions] = useState<
+    PromotionResponseType['notPromotedStudents']
+  >([])
+  console.log('🚀 ~ PromoteStudents ~ failedPromotions:', failedPromotions)
+  const [showFailedPopup, setShowFailedPopup] = useState(false)
 
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(
     new Set()
@@ -142,6 +147,16 @@ const PromoteStudents = () => {
 
   const promoteMutation = usePromoteStudents({
     onClose: () => setIsPromotionPopupOpen(false),
+    setFailedPromotions: setFailedPromotions,
+    setShowFailedPopup: setShowFailedPopup,
+    onSuccess: (response) => {
+      console.log('🚀 ~ PromoteStudents ~ response:', response)
+
+      if (response.notPromotedStudents?.length > 0) {
+        setFailedPromotions(response.notPromotedStudents)
+        setShowFailedPopup(true)
+      }
+    },
     reset: () => {
       setSelectedStudents(new Set())
       setSelectAll(false)
@@ -543,6 +558,62 @@ const PromoteStudents = () => {
             </Button>
           </div>
         </form>
+      </Popup>
+
+      <Popup
+        isOpen={showFailedPopup}
+        onClose={() => setShowFailedPopup(false)}
+        title="Promotion failed for following students"
+        size="max-w-4xl"
+      >
+        <div className="py-4 space-y-4">
+          <div className="flex items-start gap-3 bg-red-50 p-4 rounded-md border border-red-200">
+            <AlertCircle
+              className="text-red-600 flex-shrink-0 mt-0.5"
+              size={20}
+            />
+            <div>
+              <p className="text-sm text-red-800 font-medium">
+                {failedPromotions.length} student(s) could not be promoted due
+                to the following reasons:
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-md border overflow-hidden bg-white">
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead>Roll No</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Reason</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {failedPromotions.map((student, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {student.rollNo}
+                    </TableCell>
+                    <TableCell>{student.studentName}</TableCell>
+                    <TableCell className="text-red-600 text-sm">
+                      {student.message}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setShowFailedPopup(false)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
       </Popup>
     </div>
   )

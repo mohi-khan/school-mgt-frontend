@@ -202,6 +202,26 @@ export const promoteStudentsSchema = z.object({
 })
 export type StudentPromotionsType = z.infer<typeof promoteStudentsSchema>
 
+export const promotionResponseSchema = z.object({
+  promotedStudents: z.array(
+    z.object({
+      studentId: z.number(),
+      studentName: z.string(),
+      rollNo: z.number(),
+    })
+  ),
+
+  notPromotedStudents: z.array(
+    z.object({
+      studentId: z.number(),
+      studentName: z.string(),
+      rollNo: z.number(),
+      message: z.string(),
+    })
+  ),
+});
+export type PromotionResponseType = z.infer<typeof promotionResponseSchema>
+
 export const collectFeesSchema = z.object({
   studentFeesId: z.number(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),

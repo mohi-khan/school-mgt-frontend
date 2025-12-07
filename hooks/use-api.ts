@@ -43,6 +43,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetStudentFeesType,
+  PromotionResponseType,
   StudentPromotionsType,
 } from '@/utils/type'
 
@@ -723,26 +724,43 @@ export const useDeleteStudent = ({
 export const usePromoteStudents = ({
   onClose,
   reset,
+  setFailedPromotions,
+  setShowFailedPopup,
+  onSuccess,
 }: {
   onClose: () => void
   reset: () => void
+  setFailedPromotions: (
+    data: PromotionResponseType['notPromotedStudents']
+  ) => void
+  setShowFailedPopup: (value: boolean) => void
+  onSuccess: (response: PromotionResponseType) => void
 }) => {
   useInitializeUser()
-
   const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ data }: { data: StudentPromotionsType }) => {
-      return promoteStudents(data, token)
+    mutationFn: async ({ data }: { data: StudentPromotionsType }) => {
+      const response = await promoteStudents(data, token)
+      return response.data! // <-- add ! to assert non-null
     },
-    onSuccess: () => {
-      toast({
-        title: 'Success!',
-        description: 'students are pormoted successfully.',
-      })
-      queryClient.invalidateQueries({ queryKey: ['students'] })
+    onSuccess: (response: PromotionResponseType) => {
+      console.log('🚀 ~ usePromoteStudents ~ response:', response)
 
+      if (response.notPromotedStudents?.length > 0) {
+        setFailedPromotions(response.notPromotedStudents)
+        setShowFailedPopup(true)
+      } else {
+        toast({
+          title: 'Success!',
+          description: 'All students promoted successfully.',
+        })
+      }
+
+      onSuccess(response)
+
+      queryClient.invalidateQueries({ queryKey: ['students'] })
       reset()
       onClose()
     },

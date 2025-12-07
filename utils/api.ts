@@ -14,6 +14,7 @@ import {
   GetSessionsType,
   GetStudentFeesType,
   GetStudentWithFeesType,
+  PromotionResponseType,
   SignInRequest,
   SignInResponse,
   SignInResponseSchema,
@@ -363,7 +364,7 @@ export async function promoteStudents(
   data: StudentPromotionsType,
   token: string
 ) {
-  return fetchApi<StudentPromotionsType>({
+  return fetchApi<PromotionResponseType>({
     url: 'api/student-promotions/promote',
     method: 'PATCH',
     body: data,
