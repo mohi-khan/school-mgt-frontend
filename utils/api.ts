@@ -17,6 +17,7 @@ import {
   SignInRequest,
   SignInResponse,
   SignInResponseSchema,
+  StudentPromotionsType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -359,10 +360,10 @@ export async function collectFees(data: CollectFeesType, token: string) {
 
 //promote student APIs
 export async function promoteStudents(
-  data: CreateFeesMasterType,
+  data: StudentPromotionsType,
   token: string
 ) {
-  return fetchApi<CreateFeesMasterType>({
+  return fetchApi<StudentPromotionsType>({
     url: 'api/student-promotions/promote',
     method: 'PATCH',
     body: data,

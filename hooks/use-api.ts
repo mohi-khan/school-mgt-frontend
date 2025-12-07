@@ -29,6 +29,7 @@ import {
   getAllStudentsByClassSection,
   getStudentById,
   getStudentFeesById,
+  promoteStudents,
 } from '@/utils/api'
 import {
   CollectFeesType,
@@ -42,6 +43,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetStudentFeesType,
+  StudentPromotionsType,
 } from '@/utils/type'
 
 //section
@@ -183,7 +185,7 @@ export const useDeleteClass = ({
   return mutation
 }
 
-export const useGetSssions = () => {
+export const useGetSessions = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
@@ -712,6 +714,40 @@ export const useDeleteStudent = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const usePromoteStudents = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ data }: { data: StudentPromotionsType }) => {
+      return promoteStudents(data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'students are pormoted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error promoting students:', error)
     },
   })
 

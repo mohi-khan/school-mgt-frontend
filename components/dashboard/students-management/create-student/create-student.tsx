@@ -22,7 +22,7 @@ import {
   useGetClasses,
   useGetFeesMasters,
   useGetSections,
-  useGetSssions,
+  useGetSessions,
 } from '@/hooks/use-api'
 import type { CreateStudentWithFeesType, GetFeesMasterType } from '@/utils/type'
 import {
@@ -49,7 +49,7 @@ const CreateStudent = () => {
   const [token] = useAtom(tokenAtom)
   const { data: classes } = useGetClasses()
   const { data: sections } = useGetSections()
-  const { data: sessions } = useGetSssions()
+  const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
