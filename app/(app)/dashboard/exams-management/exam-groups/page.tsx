@@ -1,10 +1,10 @@
-import ExamsGroups from '@/components/dashboard/exams-management/exams-groups/exams-groups';
+import ExamGroups from '@/components/dashboard/exams-management/exam-groups/exam-groups';
 import React from 'react';
 
 const examsGroupsPage = () => {
     return (
         <div>
-            <ExamsGroups />
+            <ExamGroups />
         </div>
     );
 };

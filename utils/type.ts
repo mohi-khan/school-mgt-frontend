@@ -239,5 +239,24 @@ export const examsGroupSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type GetExamsGroupType = z.infer<typeof examsGroupSchema>
-export type CreateExamsGroupType = z.infer<typeof examsGroupSchema>
+export type GetExamGroupType = z.infer<typeof examsGroupSchema>
+export type CreateExamGroupType = z.infer<typeof examsGroupSchema>
+
+export const examSubjectsSchema = z.object({
+  examSubjectId: z.number().optional(),
+  subjectName: z.string(),
+  subjectCode: z.string(),
+  examDate: z.string(),
+  startTime: z.string(),
+  duration: z.number(),
+  examMarks: z.number(),
+  classId: z.number().nullable(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExamSubjectsType = z.infer<typeof examSubjectsSchema>
+export type GetExamSubjectsType = z.infer<typeof examSubjectsSchema> & {
+  className: string
+}

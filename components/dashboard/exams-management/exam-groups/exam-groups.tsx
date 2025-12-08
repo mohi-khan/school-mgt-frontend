@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/pagination"
 import { ArrowUpDown, Search, BookOpen, Edit2, Trash2 } from "lucide-react"
 import { Popup } from "@/utils/popup"
-import type { CreateExamsGroupType, GetExamsGroupType } from "@/utils/type"
+import type { CreateExamGroupType, GetExamGroupType } from "@/utils/type"
 import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
 import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
-import { useAddExamsGroup, useDeleteExamsGroup, useGetExamsGroups, useUpdateExamsGroup } from "@/hooks/use-api"
+import { useAddExamGroup, useDeleteExamGroup, useGetExamGroups, useUpdateExamGroup } from "@/hooks/use-api"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,31 +31,31 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-const ExamsGroups = () => {
+const ExamGroups = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
 
-  const { data: examsGroups } = useGetExamsGroups()
-  console.log("🚀 ~ ExamsGroups ~ examsGroups:", examsGroups)
+  const { data: examsGroups } = useGetExamGroups()
+  console.log("🚀 ~ ExamGroups ~ examsGroups:", examsGroups)
 
   const router = useRouter()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [examsGroupsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetExamsGroupType>("examsGroupName")
+  const [sortColumn, setSortColumn] = useState<keyof GetExamGroupType>("examsGroupName")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [searchTerm, setSearchTerm] = useState("")
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingExamsGroupId, setEditingExamsGroupId] = useState<number | null>(null)
+  const [editingExamGroupId, setEditingExamGroupId] = useState<number | null>(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamsGroupId, setDeletingExamsGroupId] = useState<number | null>(null)
+  const [deletingExamGroupId, setDeletingExamGroupId] = useState<number | null>(null)
 
-  const [formData, setFormData] = useState<CreateExamsGroupType>({
+  const [formData, setFormData] = useState<CreateExamGroupType>({
     examsGroupName: "",
     description: null,
     createdBy: userData?.userId || 0,
@@ -75,7 +75,7 @@ const ExamsGroups = () => {
       description: null,
       createdBy: userData?.userId || 0,
     })
-    setEditingExamsGroupId(null)
+    setEditingExamGroupId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
@@ -87,17 +87,17 @@ const ExamsGroups = () => {
     resetForm()
   }, [])
 
-  const addMutation = useAddExamsGroup({
+  const addMutation = useAddExamGroup({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const updateMutation = useUpdateExamsGroup({
+  const updateMutation = useUpdateExamGroup({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const deleteMutation = useDeleteExamsGroup({
+  const deleteMutation = useDeleteExamGroup({
     onClose: closePopup,
     reset: resetForm,
   })
@@ -108,7 +108,7 @@ const ExamsGroups = () => {
     }
   }
 
-  const handleSort = (column: keyof GetExamsGroupType) => {
+  const handleSort = (column: keyof GetExamGroupType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
@@ -117,47 +117,47 @@ const ExamsGroups = () => {
     }
   }
 
-  const filteredExamsGroups = useMemo(() => {
+  const filteredExamGroups = useMemo(() => {
     if (!examsGroups?.data) return []
     return examsGroups.data.filter((group: any) =>
       group.examsGroupName?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }, [examsGroups?.data, searchTerm])
 
-  const sortedExamsGroups = useMemo(() => {
-    return [...filteredExamsGroups].sort((a, b) => {
+  const sortedExamGroups = useMemo(() => {
+    return [...filteredExamGroups].sort((a, b) => {
       const aValue = a.examsGroupName ?? ""
       const bValue = b.examsGroupName ?? ""
       return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
     })
-  }, [filteredExamsGroups, sortDirection])
+  }, [filteredExamGroups, sortDirection])
 
-  const paginatedExamsGroups = useMemo(() => {
+  const paginatedExamGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * examsGroupsPerPage
-    return sortedExamsGroups.slice(startIndex, startIndex + examsGroupsPerPage)
-  }, [sortedExamsGroups, currentPage, examsGroupsPerPage])
+    return sortedExamGroups.slice(startIndex, startIndex + examsGroupsPerPage)
+  }, [sortedExamGroups, currentPage, examsGroupsPerPage])
 
-  const totalPages = Math.ceil(sortedExamsGroups.length / examsGroupsPerPage)
+  const totalPages = Math.ceil(sortedExamGroups.length / examsGroupsPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Submit - isEditMode:", isEditMode, "editingExamsGroupId:", editingExamsGroupId)
+      console.log("Submit - isEditMode:", isEditMode, "editingExamGroupId:", editingExamGroupId)
       setError(null)
 
       try {
-        const submitData: CreateExamsGroupType = {
+        const submitData: CreateExamGroupType = {
           examsGroupName: formData.examsGroupName,
           description: formData.description,
           createdBy: userData?.userId || 0,
         }
 
-        if (isEditMode && editingExamsGroupId) {
+        if (isEditMode && editingExamGroupId) {
           updateMutation.mutate({
-            id: editingExamsGroupId,
+            id: editingExamGroupId,
             data: submitData,
           })
-          console.log("update", isEditMode, editingExamsGroupId)
+          console.log("update", isEditMode, editingExamGroupId)
         } else {
           addMutation.mutate(submitData)
           console.log("create")
@@ -167,7 +167,7 @@ const ExamsGroups = () => {
         console.error(err)
       }
     },
-    [formData, isEditMode, editingExamsGroupId, addMutation, updateMutation, userData],
+    [formData, isEditMode, editingExamGroupId, addMutation, updateMutation, userData],
   )
 
   useEffect(() => {
@@ -182,7 +182,7 @@ const ExamsGroups = () => {
       description: group.description,
       createdBy: userData?.userId || 0,
     })
-    setEditingExamsGroupId(group.examsGroupId)
+    setEditingExamGroupId(group.examsGroupId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -238,14 +238,14 @@ const ExamsGroups = () => {
                   No exams groups found
                 </TableCell>
               </TableRow>
-            ) : paginatedExamsGroups.length === 0 ? (
+            ) : paginatedExamGroups.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-4">
                   No exams groups match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedExamsGroups.map((group: any, index) => (
+              paginatedExamGroups.map((group: any, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{group.examsGroupName}</TableCell>
                   <TableCell>{group.description || "-"}</TableCell>
@@ -264,7 +264,7 @@ const ExamsGroups = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingExamsGroupId(group.examsGroupId)
+                          setDeletingExamGroupId(group.examsGroupId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -279,7 +279,7 @@ const ExamsGroups = () => {
         </Table>
       </div>
 
-      {sortedExamsGroups.length > 0 && (
+      {sortedExamGroups.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -378,8 +378,8 @@ const ExamsGroups = () => {
             <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingExamsGroupId) {
-                  deleteMutation.mutate({ id: deletingExamsGroupId })
+                if (deletingExamGroupId) {
+                  deleteMutation.mutate({ id: deletingExamGroupId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -394,4 +394,4 @@ const ExamsGroups = () => {
   )
 }
 
-export default ExamsGroups
+export default ExamGroups
