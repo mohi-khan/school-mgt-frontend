@@ -21,3 +21,17 @@ export const formatDateForInput = (dateStr: string) => {
   if (!dateStr) return "";
   return new Date(dateStr).toISOString().split("T")[0];
 };
+
+export function formatTime(time: string): string {
+  const [h, m] = time.split(':')
+
+  let hour = parseInt(h)
+  const suffix = hour >= 12 ? 'PM' : 'AM'
+
+  hour = hour % 12 || 12 // 0 → 12, 13 → 1, etc
+
+  const hourStr = hour.toString().padStart(2, '0')
+
+  return `${hourStr}:${m} ${suffix}`
+}
+

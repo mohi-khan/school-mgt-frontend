@@ -2,11 +2,15 @@ import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CollectFeesType,
   CreateClassType,
+  CreateExamGroupType,
+  CreateExamSubjectsType,
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
   CreateStudentWithFeesType,
   GetClassType,
+  GetExamGroupType,
+  GetExamSubjectsType,
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
@@ -370,6 +374,114 @@ export async function promoteStudents(
     body: data,
     headers: {
       Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//exam group APIs
+export async function getAllExamGroups(token: string) {
+  return fetchApi<GetExamGroupType[]>({
+    url: 'api/exam-groups/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createExamGroup(
+  data: CreateExamGroupType,
+  token: string
+) {
+  return fetchApi<CreateExamGroupType>({
+    url: 'api/exam-groups/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editExamGroup(
+  id: number,
+  data: GetExamGroupType,
+  token: string
+) {
+  return fetchApi<GetExamGroupType>({
+    url: `api/exam-groups/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteExamGroup(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/exam-groups/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//exam subject APIs
+export async function getAllExamSubjects(token: string) {
+  return fetchApi<GetExamSubjectsType[]>({
+    url: 'api/exam-subjects/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createExamSubject(
+  data: CreateExamSubjectsType,
+  token: string
+) {
+  return fetchApi<CreateExamSubjectsType>({
+    url: 'api/exam-subjects/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editExamSubject(
+  id: number,
+  data: GetExamSubjectsType,
+  token: string
+) {
+  return fetchApi<GetExamSubjectsType>({
+    url: `api/exam-subjects/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteExamSubject(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/exam-subjects/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
       'Content-Type': 'application/json',
     },
   })

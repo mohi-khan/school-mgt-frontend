@@ -187,17 +187,16 @@ export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
 }
 
 export const promoteStudentsSchema = z.object({
-  students: z
-    .array(
-      z.object({
-        studentId: z.number(),
-        classId: z.number(),
-        secitionId: z.number(),
-        sessionId: z.number(),
-        currentResult: z.enum(['Pass', 'Fail']),
-        nextSession: z.enum(['Continue', 'Leave']),
-      })
-    ),
+  students: z.array(
+    z.object({
+      studentId: z.number(),
+      classId: z.number(),
+      secitionId: z.number(),
+      sessionId: z.number(),
+      currentResult: z.enum(['Pass', 'Fail']),
+      nextSession: z.enum(['Continue', 'Leave']),
+    })
+  ),
   feesMasterIds: z.array(z.number()),
 })
 export type StudentPromotionsType = z.infer<typeof promoteStudentsSchema>
@@ -219,7 +218,7 @@ export const promotionResponseSchema = z.object({
       message: z.string(),
     })
   ),
-});
+})
 export type PromotionResponseType = z.infer<typeof promotionResponseSchema>
 
 export const collectFeesSchema = z.object({
@@ -230,3 +229,34 @@ export const collectFeesSchema = z.object({
   remarks: z.string(),
 })
 export type CollectFeesType = z.infer<typeof collectFeesSchema>
+
+export const examsGroupSchema = z.object({
+  examsGroupId: z.number().optional(), // auto-increment
+  examsGroupName: z.string().min(1, 'Exam group name is required'),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type GetExamGroupType = z.infer<typeof examsGroupSchema>
+export type CreateExamGroupType = z.infer<typeof examsGroupSchema>
+
+export const examSubjectsSchema = z.object({
+  examSubjectId: z.number().optional(),
+  subjectName: z.string(),
+  subjectCode: z.string(),
+  examDate: z.string(),
+  startTime: z.string(),
+  duration: z.number(),
+  examMarks: z.number(),
+  classId: z.number().nullable(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExamSubjectsType = z.infer<typeof examSubjectsSchema>
+export type GetExamSubjectsType = z.infer<typeof examSubjectsSchema> & {
+  className: string
+}

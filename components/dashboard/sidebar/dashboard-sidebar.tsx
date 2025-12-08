@@ -92,11 +92,15 @@ export function DashboardSidebar() {
     {
       title: 'Exam Management',
       icon: Goal,
-      href: '/dashboard/exam-management',
+      href: '/dashboard/exams-management',
       subItems: [
         {
-          title: 'Exam Group',
-          href: '/dashboard/exam-management/exam-groups',
+          title: 'Exam Groups',
+          href: '/dashboard/exams-management/exam-groups',
+        },
+        {
+          title: 'Exam Subjects',
+          href: '/dashboard/exams-management/exam-subjects',
         },
       ],
     },
