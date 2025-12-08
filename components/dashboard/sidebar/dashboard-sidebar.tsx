@@ -90,13 +90,13 @@ export function DashboardSidebar() {
       ],
     },
     {
-      title: 'Exam Management',
+      title: 'Exams Management',
       icon: Goal,
-      href: '/dashboard/exam-management',
+      href: '/dashboard/exams-management',
       subItems: [
         {
-          title: 'Exam Group',
-          href: '/dashboard/exam-management/exam-groups',
+          title: 'Exams Groups',
+          href: '/dashboard/exams-management/exams-groups',
         },
       ],
     },

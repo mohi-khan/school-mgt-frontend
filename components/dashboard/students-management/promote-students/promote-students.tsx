@@ -121,16 +121,6 @@ const PromoteStudents = () => {
     setSelectAll(newSelected.size === students.length && students.length > 0)
   }
 
-  const handleFeesMasterToggle = (feesMasterId: number) => {
-    const newSelected = new Set(selectedFeesMasters)
-    if (newSelected.has(feesMasterId)) {
-      newSelected.delete(feesMasterId)
-    } else {
-      newSelected.add(feesMasterId)
-    }
-    setSelectedFeesMasters(newSelected)
-  }
-
   const handleGroupFeesMastersToggle = (groupFeeIds: number[]) => {
     const newSelected = new Set(selectedFeesMasters)
     const isGroupSelected = groupFeeIds.every((id) =>
@@ -206,6 +196,8 @@ const PromoteStudents = () => {
       }
 
       promoteMutation.mutate({ data: promotionData })
+      setSelectedClassId(null)
+      setSelectedSectionId(null)
     } catch (err) {
       setError('Failed to promote students')
       console.error(err)
@@ -227,7 +219,7 @@ const PromoteStudents = () => {
           <h2 className="text-lg font-semibold">Promote Students</h2>
         </div>
         <Button
-          className="bg-amber-600 hover:bg-amber-700 text-white"
+          className="bg-amber-400 hover:bg-amber-500 text-black"
           onClick={handleOpenPromotePopup}
           disabled={selectedStudents.size === 0}
         >
@@ -321,13 +313,13 @@ const PromoteStudents = () => {
             {!studentsData ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  Loading students...
+                  No students found. Please select class and section.
                 </TableCell>
               </TableRow>
             ) : students.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No students found. Please select class and section.
+                  No students found for this class and section
                 </TableCell>
               </TableRow>
             ) : (
@@ -552,7 +544,6 @@ const PromoteStudents = () => {
             <Button
               type="submit"
               disabled={promoteMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700"
             >
               {promoteMutation.isPending ? 'Promoting...' : 'Confirm Promotion'}
             </Button>

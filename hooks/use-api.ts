@@ -5,21 +5,25 @@ import { toast } from './use-toast'
 import {
   collectFees,
   createClass,
+  createExamsGroup,
   createFeesGroup,
   createFeesMaster,
   createFeesType,
   createStudentWithFees,
   deleteClass,
+  deleteExamsGroup,
   deleteFeesGroup,
   deleteFeesMaster,
   deleteFeesType,
   deleteStudent,
   editClass,
+  editExamsGroup,
   editFeesGroup,
   editFeesMaster,
   editFeesType,
   editStudentWithFees,
   getAllClasses,
+  getAllExamsGroups,
   getAllFeesGroups,
   getAllFeesMasters,
   getAllFeesTypes,
@@ -34,11 +38,13 @@ import {
 import {
   CollectFeesType,
   CreateClassType,
+  CreateExamsGroupType,
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
   CreateStudentWithFeesType,
   GetClassType,
+  GetExamsGroupType,
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
@@ -819,6 +825,127 @@ export const useCollectFees = ({
         title: 'Error',
         description: error?.message || 'Something went wrong.',
       })
+    },
+  })
+
+  return mutation
+}
+
+//exams group
+export const useGetExamsGroups = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['exam-groups'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllExamsGroups(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddExamsGroup = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateExamsGroupType) => {
+      return createExamsGroup(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('exam groups added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['exam-groups'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding exam group:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateExamsGroup = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetExamsGroupType }) => {
+      return editExamsGroup(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam group edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['exam-groups'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing exam group:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteExamsGroup = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteExamsGroup(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam group is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['exam-groups'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
     },
   })
 
