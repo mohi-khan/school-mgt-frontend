@@ -1,7 +1,7 @@
 import ExamGroups from '@/components/dashboard/exams-management/exam-groups/exam-groups';
 import React from 'react';
 
-const examsGroupsPage = () => {
+const examGroupssPage = () => {
     return (
         <div>
             <ExamGroups />
@@ -9,4 +9,4 @@ const examsGroupsPage = () => {
     );
 };
 
-export default examsGroupsPage;
+export default examGroupssPage;

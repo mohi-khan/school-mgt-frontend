@@ -36,15 +36,15 @@ const ExamGroups = () => {
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
 
-  const { data: examsGroups } = useGetExamGroups()
-  console.log("🚀 ~ ExamGroups ~ examsGroups:", examsGroups)
+  const { data: examGroupss } = useGetExamGroups()
+  console.log("🚀 ~ ExamGroups ~ examGroupss:", examGroupss)
 
   const router = useRouter()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [examsGroupsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetExamGroupType>("examsGroupName")
+  const [examGroupssPerPage] = useState(10)
+  const [sortColumn, setSortColumn] = useState<keyof GetExamGroupType>("examGroupName")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -56,7 +56,7 @@ const ExamGroups = () => {
   const [deletingExamGroupId, setDeletingExamGroupId] = useState<number | null>(null)
 
   const [formData, setFormData] = useState<CreateExamGroupType>({
-    examsGroupName: "",
+    examGroupName: "",
     description: null,
     createdBy: userData?.userId || 0,
   })
@@ -71,7 +71,7 @@ const ExamGroups = () => {
 
   const resetForm = () => {
     setFormData({
-      examsGroupName: "",
+      examGroupName: "",
       description: null,
       createdBy: userData?.userId || 0,
     })
@@ -102,9 +102,9 @@ const ExamGroups = () => {
     reset: resetForm,
   })
 
-  const handleDeleteClick = (examsGroupId: number) => {
+  const handleDeleteClick = (examGroupsId: number) => {
     if (confirm("Are you sure you want to delete this exams group?")) {
-      deleteMutation.mutate({ id: examsGroupId })
+      deleteMutation.mutate({ id: examGroupsId })
     }
   }
 
@@ -118,26 +118,26 @@ const ExamGroups = () => {
   }
 
   const filteredExamGroups = useMemo(() => {
-    if (!examsGroups?.data) return []
-    return examsGroups.data.filter((group: any) =>
-      group.examsGroupName?.toLowerCase().includes(searchTerm.toLowerCase()),
+    if (!examGroupss?.data) return []
+    return examGroupss.data.filter((group: any) =>
+      group.examGroupName?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
-  }, [examsGroups?.data, searchTerm])
+  }, [examGroupss?.data, searchTerm])
 
   const sortedExamGroups = useMemo(() => {
     return [...filteredExamGroups].sort((a, b) => {
-      const aValue = a.examsGroupName ?? ""
-      const bValue = b.examsGroupName ?? ""
+      const aValue = a.examGroupName ?? ""
+      const bValue = b.examGroupName ?? ""
       return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
     })
   }, [filteredExamGroups, sortDirection])
 
   const paginatedExamGroups = useMemo(() => {
-    const startIndex = (currentPage - 1) * examsGroupsPerPage
-    return sortedExamGroups.slice(startIndex, startIndex + examsGroupsPerPage)
-  }, [sortedExamGroups, currentPage, examsGroupsPerPage])
+    const startIndex = (currentPage - 1) * examGroupssPerPage
+    return sortedExamGroups.slice(startIndex, startIndex + examGroupssPerPage)
+  }, [sortedExamGroups, currentPage, examGroupssPerPage])
 
-  const totalPages = Math.ceil(sortedExamGroups.length / examsGroupsPerPage)
+  const totalPages = Math.ceil(sortedExamGroups.length / examGroupssPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -147,7 +147,7 @@ const ExamGroups = () => {
 
       try {
         const submitData: CreateExamGroupType = {
-          examsGroupName: formData.examsGroupName,
+          examGroupName: formData.examGroupName,
           description: formData.description,
           createdBy: userData?.userId || 0,
         }
@@ -178,11 +178,11 @@ const ExamGroups = () => {
 
   const handleEditClick = (group: any) => {
     setFormData({
-      examsGroupName: group.examsGroupName,
+      examGroupName: group.examGroupName,
       description: group.description,
       createdBy: userData?.userId || 0,
     })
-    setEditingExamGroupId(group.examsGroupId)
+    setEditingExamGroupId(group.examGroupsId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -194,7 +194,7 @@ const ExamGroups = () => {
           <div className="bg-amber-100 p-2 rounded-md">
             <BookOpen className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Exams Groups</h2>
+          <h2 className="text-lg font-semibold">Exam Groups</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -216,7 +216,7 @@ const ExamGroups = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("examsGroupName")} className="cursor-pointer">
+              <TableHead onClick={() => handleSort("examGroupName")} className="cursor-pointer">
                 Group Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead onClick={() => handleSort("description")} className="cursor-pointer">
@@ -226,13 +226,13 @@ const ExamGroups = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!examsGroups || examsGroups.data === undefined ? (
+            {!examGroupss || examGroupss.data === undefined ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-4">
                   Loading exams groups...
                 </TableCell>
               </TableRow>
-            ) : !examsGroups.data || examsGroups.data.length === 0 ? (
+            ) : !examGroupss.data || examGroupss.data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-4">
                   No exams groups found
@@ -247,7 +247,7 @@ const ExamGroups = () => {
             ) : (
               paginatedExamGroups.map((group: any, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{group.examsGroupName}</TableCell>
+                  <TableCell className="font-medium">{group.examGroupName}</TableCell>
                   <TableCell>{group.description || "-"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -264,7 +264,7 @@ const ExamGroups = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingExamGroupId(group.examsGroupId)
+                          setDeletingExamGroupId(group.examGroupsId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -330,13 +330,13 @@ const ExamGroups = () => {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="examsGroupName">
+              <Label htmlFor="examGroupName">
                 Group Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="examsGroupName"
-                name="examsGroupName"
-                value={formData.examsGroupName}
+                id="examGroupName"
+                name="examGroupName"
+                value={formData.examGroupName}
                 onChange={handleInputChange}
                 required
               />
