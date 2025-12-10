@@ -230,17 +230,17 @@ export const collectFeesSchema = z.object({
 })
 export type CollectFeesType = z.infer<typeof collectFeesSchema>
 
-export const examsGroupSchema = z.object({
-  examsGroupId: z.number().optional(), // auto-increment
-  examsGroupName: z.string().min(1, 'Exam group name is required'),
+export const examGroupsSchema = z.object({
+  examGroupsId: z.number().optional(), // auto-increment
+  examGroupName: z.string().min(1, 'Exam group name is required'),
   description: z.string().nullable().optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type GetExamGroupType = z.infer<typeof examsGroupSchema>
-export type CreateExamGroupType = z.infer<typeof examsGroupSchema>
+export type GetExamGroupType = z.infer<typeof examGroupsSchema>
+export type CreateExamGroupType = z.infer<typeof examGroupsSchema>
 
 export const examSubjectsSchema = z.object({
   examSubjectId: z.number().optional(),
@@ -259,4 +259,44 @@ export const examSubjectsSchema = z.object({
 export type CreateExamSubjectsType = z.infer<typeof examSubjectsSchema>
 export type GetExamSubjectsType = z.infer<typeof examSubjectsSchema> & {
   className: string
+}
+
+export const examsSchema = z.object({
+  examId: z.number().optional(),
+  examName: z.string(),
+  examGroupsId: z.number().nullable(),
+  sessionId: z.number().nullable(),
+  classId: z.number().nullable(),
+  examSubjectId: z.number().nullable(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExamsType = z.infer<typeof examsSchema>
+export type GetExamsType = z.infer<typeof examsSchema> & {
+  examGroupName: string
+  sessionName: string
+  className: string
+  subjectName: string
+}
+
+export const examResultsSchema = z.object({
+  examResultId: z.number().optional(),
+  sessionId: z.number().nullable(),
+  examId: z.number().nullable(),
+  studentId: z.number().nullable(),
+  examSubjectId: z.number().nullable(),
+  gainedMarks: z.number(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExamResultsType = z.infer<typeof examResultsSchema>
+export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
+  sessionName: string
+  examName: string
+  studentName: string
+  examSubjectName: string
 }

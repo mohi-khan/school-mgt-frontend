@@ -5,21 +5,27 @@ import { toast } from './use-toast'
 import {
   collectFees,
   createClass,
+  createExam,
   createExamGroup,
+  createExamResult,
   createExamSubject,
   createFeesGroup,
   createFeesMaster,
   createFeesType,
   createStudentWithFees,
   deleteClass,
+  deleteExam,
   deleteExamGroup,
+  deleteExamResult,
   deleteExamSubject,
   deleteFeesGroup,
   deleteFeesMaster,
   deleteFeesType,
   deleteStudent,
   editClass,
+  editExam,
   editExamGroup,
+  editExamResult,
   editExamSubject,
   editFeesGroup,
   editFeesMaster,
@@ -27,6 +33,8 @@ import {
   editStudentWithFees,
   getAllClasses,
   getAllExamGroups,
+  getAllExamResults,
+  getAllExams,
   getAllExamSubjects,
   getAllFeesGroups,
   getAllFeesMasters,
@@ -43,6 +51,8 @@ import {
   CollectFeesType,
   CreateClassType,
   CreateExamGroupType,
+  CreateExamResultsType,
+  CreateExamsType,
   CreateExamSubjectsType,
   CreateFeesGroupType,
   CreateFeesMasterType,
@@ -50,6 +60,7 @@ import {
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
+  GetExamsType,
   GetExamSubjectsType,
   GetFeesGroupType,
   GetFeesMasterType,
@@ -1067,6 +1078,248 @@ export const useDeleteExamSubject = ({
         description: 'exam subject is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['exam-subjects'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//exam
+export const useGetExams = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['exams'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllExams(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddExam = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateExamsType) => {
+      return createExam(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('exam is added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding exam:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateExam = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateExamsType }) => {
+      return editExam(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam is edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing exam:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteExam = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteExam(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//exam result
+export const useGetExamResults = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['examResults'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllExamResults(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddExamResult = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateExamResultsType) => {
+      return createExamResult(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('exam result is added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['examResults'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding exam result:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateExamResult = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateExamResultsType }) => {
+      return editExamResult(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam result is edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['examResults'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing exam result:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteExamResult = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteExamResult(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'exam result is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['examResults'] })
 
       reset()
       onClose()

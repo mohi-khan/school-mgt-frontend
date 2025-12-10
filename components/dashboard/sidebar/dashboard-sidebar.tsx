@@ -102,6 +102,14 @@ export function DashboardSidebar() {
           title: 'Exam Subjects',
           href: '/dashboard/exams-management/exam-subjects',
         },
+        {
+          title: 'Exams',
+          href: '/dashboard/exams-management/exams',
+        },
+        {
+          title: 'Exam Results',
+          href: '/dashboard/exams-management/exam-results',
+        },
       ],
     },
   ]
