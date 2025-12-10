@@ -280,3 +280,23 @@ export type GetExamsType = z.infer<typeof examsSchema> & {
   className: string
   subjectName: string
 }
+
+export const examResultsSchema = z.object({
+  examResultId: z.number().optional(),
+  sessionId: z.number().nullable(),
+  examId: z.number().nullable(),
+  studentId: z.number().nullable(),
+  examSubjectId: z.number().nullable(),
+  gainedMarks: z.number(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExamResultsType = z.infer<typeof examResultsSchema>
+export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
+  sessionName: string
+  examName: string
+  studentName: string
+  examSubjectName: string
+}

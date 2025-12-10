@@ -106,6 +106,10 @@ export function DashboardSidebar() {
           title: 'Exams',
           href: '/dashboard/exams-management/exams',
         },
+        {
+          title: 'Exam Results',
+          href: '/dashboard/exams-management/exam-results',
+        },
       ],
     },
   ]

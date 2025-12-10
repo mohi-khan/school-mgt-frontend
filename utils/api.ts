@@ -3,6 +3,7 @@ import {
   CollectFeesType,
   CreateClassType,
   CreateExamGroupType,
+  CreateExamResultsType,
   CreateExamsType,
   CreateExamSubjectsType,
   CreateFeesGroupType,
@@ -11,6 +12,7 @@ import {
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
+  GetExamResultsType,
   GetExamsType,
   GetExamSubjectsType,
   GetFeesGroupType,
@@ -535,6 +537,60 @@ export async function editExam(
 export async function deleteExam(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/exams/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//exam result APIs
+export async function getAllExamResults(token: string) {
+  return fetchApi<GetExamResultsType[]>({
+    url: 'api/exam-results/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createExamResult(
+  data: CreateExamResultsType,
+  token: string
+) {
+  return fetchApi<CreateExamResultsType>({
+    url: 'api/exam-results/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editExamResult(
+  id: number,
+  data: CreateExamResultsType,
+  token: string
+) {
+  return fetchApi<CreateExamResultsType>({
+    url: `api/exam-results/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteExamResult(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/exam-results/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
