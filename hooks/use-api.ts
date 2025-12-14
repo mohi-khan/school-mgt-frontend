@@ -12,6 +12,7 @@ import {
   createFeesGroup,
   createFeesMaster,
   createFeesType,
+  createIncome,
   createIncomeHead,
   createStudentWithFees,
   deleteClass,
@@ -22,6 +23,7 @@ import {
   deleteFeesGroup,
   deleteFeesMaster,
   deleteFeesType,
+  deleteIncome,
   deleteIncomeHead,
   deleteStudent,
   editClass,
@@ -32,6 +34,7 @@ import {
   editFeesGroup,
   editFeesMaster,
   editFeesType,
+  editIncome,
   editIncomeHead,
   editStudentWithFees,
   getAllClasses,
@@ -43,6 +46,7 @@ import {
   getAllFeesMasters,
   getAllFeesTypes,
   getAllIncomeHeads,
+  getAllIncomes,
   getAllSections,
   getAllSessions,
   getAllStudents,
@@ -62,6 +66,7 @@ import {
   CreateFeesMasterType,
   CreateFeesTypeType,
   CreateIncomeHeadsType,
+  CreateIncomesType,
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
@@ -71,6 +76,7 @@ import {
   GetFeesMasterType,
   GetFeesTypeType,
   GetIncomeHeadsType,
+  GetIncomesType,
   GetStudentFeesType,
   PromotionResponseType,
   StudentPromotionsType,
@@ -1444,9 +1450,130 @@ export const useDeleteIncomeHead = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'fees group is deleted successfully.',
+        description: 'income head is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['income-heads'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//income
+export const useGetIncomes = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['incomes'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllIncomes(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddIncome = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateIncomesType) => {
+      return createIncome(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('income added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['incomes'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding income:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateIncome = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateIncomesType }) => {
+      return editIncome(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'income edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['incomes'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing income:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteIncome = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteIncome(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'income is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['incomes'] })
 
       reset()
       onClose()

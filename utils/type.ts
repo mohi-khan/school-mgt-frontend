@@ -309,6 +309,24 @@ export const incomeHeadSchema = z.object({
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
-});
+})
 export type CreateIncomeHeadsType = z.infer<typeof incomeHeadSchema>
 export type GetIncomeHeadsType = z.infer<typeof incomeHeadSchema>
+
+export const incomeSchema = z.object({
+  incomeId: z.number().optional(),
+  incomeHeadId: z.number(),
+  name: z.string(),
+  invoiceNumber: z.number(),
+  date: z.string(),
+  amount: z.number(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(), // default now
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateIncomesType = z.infer<typeof incomeSchema>
+export type GetIncomesType = z.infer<typeof incomeSchema> & {
+  incomeHead: string | null
+}

@@ -119,8 +119,12 @@ export function DashboardSidebar() {
       href: '/dashboard/income-management',
       subItems: [
         {
-          title: 'Exam Heads',
+          title: 'Income Heads',
           href: '/dashboard/income-management/income-heads',
+        },
+        {
+          title: 'Incomes',
+          href: '/dashboard/income-management/incomes',
         },
       ],
     },
