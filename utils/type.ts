@@ -300,3 +300,15 @@ export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
   studentName: string
   examSubjectName: string
 }
+
+export const incomeHeadSchema = z.object({
+  incomeHeadId: z.number().optional(),
+  incomeHead: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+});
+export type CreateIncomeHeadsType = z.infer<typeof incomeHeadSchema>
+export type GetIncomeHeadsType = z.infer<typeof incomeHeadSchema>

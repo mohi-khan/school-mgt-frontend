@@ -9,6 +9,7 @@ import {
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
+  CreateIncomeHeadsType,
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
@@ -18,6 +19,7 @@ import {
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
+  GetIncomeHeadsType,
   GetSectionsType,
   GetSessionsType,
   GetStudentFeesType,
@@ -591,6 +593,60 @@ export async function editExamResult(
 export async function deleteExamResult(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/exam-results/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//income head APIs
+export async function getAllIncomeHeads(token: string) {
+  return fetchApi<GetIncomeHeadsType[]>({
+    url: 'api/income-heads/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createIncomeHead(
+  data: CreateIncomeHeadsType,
+  token: string
+) {
+  return fetchApi<CreateIncomeHeadsType>({
+    url: 'api/income-heads/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editIncomeHead(
+  id: number,
+  data: CreateIncomeHeadsType,
+  token: string
+) {
+  return fetchApi<CreateIncomeHeadsType>({
+    url: `api/income-heads/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteIncomeHead(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/income-heads/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

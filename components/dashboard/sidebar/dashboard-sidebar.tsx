@@ -15,6 +15,7 @@ import {
   SquarePlus,
   User2,
   UserCog,
+  Wallet,
 } from 'lucide-react'
 
 import {
@@ -109,6 +110,17 @@ export function DashboardSidebar() {
         {
           title: 'Exam Results',
           href: '/dashboard/exams-management/exam-results',
+        },
+      ],
+    },
+    {
+      title: 'Income Management',
+      icon: Wallet,
+      href: '/dashboard/income-management',
+      subItems: [
+        {
+          title: 'Exam Heads',
+          href: '/dashboard/income-management/income-heads',
         },
       ],
     },
