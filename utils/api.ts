@@ -7,6 +7,7 @@ import {
   CreateExamsType,
   CreateExamSubjectsType,
   CreateExpenseHeadsType,
+  CreateExpensesType,
   CreateFeesGroupType,
   CreateFeesMasterType,
   CreateFeesTypeType,
@@ -19,6 +20,7 @@ import {
   GetExamsType,
   GetExamSubjectsType,
   GetExpenseHeadsType,
+  GetExpensesType,
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
@@ -759,6 +761,59 @@ export async function editExpenseHead(
 export async function deleteExpenseHead(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/expense-heads/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getAllExpenses(token: string) {
+  return fetchApi<GetExpensesType[]>({
+    url: 'api/expenses/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createExpense(
+  data: CreateExpensesType,
+  token: string
+) {
+  return fetchApi<CreateExpensesType>({
+    url: 'api/expenses/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editExpense(
+  id: number,
+  data: CreateExpensesType,
+  token: string
+) {
+  return fetchApi<CreateExpensesType>({
+    url: `api/expenses/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteExpense(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/expenses/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

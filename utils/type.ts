@@ -328,7 +328,7 @@ export const incomeSchema = z.object({
 })
 export type CreateIncomesType = z.infer<typeof incomeSchema>
 export type GetIncomesType = z.infer<typeof incomeSchema> & {
-  incomeHead: string | null
+  incomeHead: string
 }
 
 export const expenseHeadSchema = z.object({
@@ -342,3 +342,21 @@ export const expenseHeadSchema = z.object({
 })
 export type CreateExpenseHeadsType = z.infer<typeof expenseHeadSchema>
 export type GetExpenseHeadsType = z.infer<typeof expenseHeadSchema>
+
+export const expenseSchema = z.object({
+  expenseId: z.number().optional(),
+  expenseHeadId: z.number(),
+  name: z.string(),
+  invoiceNumber: z.number(),
+  date: z.string(),
+  amount: z.number(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(), // default now
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExpensesType = z.infer<typeof expenseSchema>
+export type GetExpensesType = z.infer<typeof expenseSchema> & {
+  expenseHead: string
+}
