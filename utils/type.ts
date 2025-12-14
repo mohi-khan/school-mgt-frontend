@@ -330,3 +330,15 @@ export type CreateIncomesType = z.infer<typeof incomeSchema>
 export type GetIncomesType = z.infer<typeof incomeSchema> & {
   incomeHead: string | null
 }
+
+export const expenseHeadSchema = z.object({
+  expenseHeadId: z.number().optional(),
+  expenseHead: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExpenseHeadsType = z.infer<typeof expenseHeadSchema>
+export type GetExpenseHeadsType = z.infer<typeof expenseHeadSchema>
