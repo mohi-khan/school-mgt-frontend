@@ -300,3 +300,63 @@ export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
   studentName: string
   examSubjectName: string
 }
+
+export const incomeHeadSchema = z.object({
+  incomeHeadId: z.number().optional(),
+  incomeHead: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateIncomeHeadsType = z.infer<typeof incomeHeadSchema>
+export type GetIncomeHeadsType = z.infer<typeof incomeHeadSchema>
+
+export const incomeSchema = z.object({
+  incomeId: z.number().optional(),
+  incomeHeadId: z.number(),
+  name: z.string(),
+  invoiceNumber: z.number(),
+  date: z.string(),
+  amount: z.number(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(), // default now
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateIncomesType = z.infer<typeof incomeSchema>
+export type GetIncomesType = z.infer<typeof incomeSchema> & {
+  incomeHead: string
+}
+
+export const expenseHeadSchema = z.object({
+  expenseHeadId: z.number().optional(),
+  expenseHead: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExpenseHeadsType = z.infer<typeof expenseHeadSchema>
+export type GetExpenseHeadsType = z.infer<typeof expenseHeadSchema>
+
+export const expenseSchema = z.object({
+  expenseId: z.number().optional(),
+  expenseHeadId: z.number(),
+  name: z.string(),
+  invoiceNumber: z.number(),
+  date: z.string(),
+  amount: z.number(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(), // default now
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateExpensesType = z.infer<typeof expenseSchema>
+export type GetExpensesType = z.infer<typeof expenseSchema> & {
+  expenseHead: string
+}

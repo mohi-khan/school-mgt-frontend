@@ -15,6 +15,8 @@ import {
   SquarePlus,
   User2,
   UserCog,
+  BadgePlus,
+  BadgeMinus,
 } from 'lucide-react'
 
 import {
@@ -109,6 +111,36 @@ export function DashboardSidebar() {
         {
           title: 'Exam Results',
           href: '/dashboard/exams-management/exam-results',
+        },
+      ],
+    },
+    {
+      title: 'Income Management',
+      icon: BadgePlus,
+      href: '/dashboard/income-management',
+      subItems: [
+        {
+          title: 'Income Heads',
+          href: '/dashboard/income-management/income-heads',
+        },
+        {
+          title: 'Incomes',
+          href: '/dashboard/income-management/incomes',
+        },
+      ],
+    },
+    {
+      title: 'Expense Management',
+      icon: BadgeMinus,
+      href: '/dashboard/expense-management',
+      subItems: [
+        {
+          title: 'Expense Heads',
+          href: '/dashboard/expense-management/expense-heads',
+        },
+        {
+          title: 'Expenses',
+          href: '/dashboard/expense-management/expenses',
         },
       ],
     },
