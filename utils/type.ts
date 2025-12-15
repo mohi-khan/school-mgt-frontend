@@ -200,6 +200,7 @@ export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
   admissionNo?: string
   rollNo?: string
   feesMasterId?: number
+  bankAccountId?: number
   feesTypeId?: number
   feesTypeName?: string
 }
@@ -242,6 +243,8 @@ export type PromotionResponseType = z.infer<typeof promotionResponseSchema>
 export const collectFeesSchema = z.object({
   studentFeesId: z.number(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
+  bankAccountId: z.number().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
   paidAmount: z.number(),
   paymentDate: z.string(),
   remarks: z.string(),
