@@ -54,6 +54,17 @@ export function DashboardSidebar() {
       href: '/dashboard/classes',
     },
     {
+      title: 'Setup',
+      icon: Settings,
+      href: '/dashboard/setup',
+      subItems: [
+        {
+          title: 'Bank Accounts',
+          href: '/dashboard/setup/bank-accounts',
+        },
+      ],
+    },
+    {
       title: 'Fees Management',
       icon: DollarSign,
       href: '/dashboard/fees-management',

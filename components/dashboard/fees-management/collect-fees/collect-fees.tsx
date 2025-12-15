@@ -21,13 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useGetStudentFeesById, useCollectFees } from '@/hooks/use-api'
+import {
+  useGetStudentFeesById,
+  useCollectFees,
+  useGetBankAccounts,
+} from '@/hooks/use-api'
 import type { GetStudentFeesType, CollectFeesType } from '@/utils/type'
 import { Popup } from '@/utils/popup'
 import { formatNumber } from '@/utils/conversions'
+import { CustomCombobox } from '@/utils/custom-combobox'
 
 const CollectFees = () => {
   const { studentId } = useParams()
+  const { data: bankAccounts } = useGetBankAccounts()
   const { data: studentFees, isLoading } = useGetStudentFeesById(
     Number(studentId)
   )
@@ -46,6 +52,8 @@ const CollectFees = () => {
   const [formData, setFormData] = useState<CollectFeesType>({
     studentFeesId: 0,
     method: 'cash',
+    bankAccountId: null,
+    phoneNumber: '',
     paidAmount: 0,
     paymentDate: new Date().toISOString().split('T')[0],
     remarks: '',
@@ -61,6 +69,8 @@ const CollectFees = () => {
     setFormData({
       studentFeesId: 0,
       method: 'cash',
+      bankAccountId: null,
+      phoneNumber: '',
       paidAmount: 0,
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
@@ -120,6 +130,8 @@ const CollectFees = () => {
     setFormData({
       studentFeesId: fee.studentFeesId || 0,
       method: 'cash',
+      bankAccountId: fee.bankAccountId,
+      phoneNumber: '',
       paidAmount: fee.remainingAmount || 0,
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
@@ -139,10 +151,27 @@ const CollectFees = () => {
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    if (name === 'method') {
+      // Clear bank account when switching away from bank method
+      // Clear phone number when switching away from mobile methods
+      const paymentMethod = value as CollectFeesType['method']
+      setFormData((prev) => ({
+        ...prev,
+        method: paymentMethod,
+        bankAccountId: value === 'bank' ? prev.bankAccountId : null,
+        phoneNumber: ['bkash', 'nagad', 'rocket'].includes(value) ? prev.phoneNumber : '',
+      }))
+    } else if (name === 'bankAccountId') {
+      setFormData((prev) => ({
+        ...prev,
+        bankAccountId: value ? Number(value) : null,
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -358,6 +387,53 @@ const CollectFees = () => {
                 </Select>
               </div>
 
+              {formData.method === 'bank' && (
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccountId">Bank Account</Label>
+                  <CustomCombobox
+                    items={
+                      bankAccounts?.data?.map((b) => ({
+                        id: b.bankAccountId?.toString() || '0',
+                        name: `${b.bankName} - ${b.accountNumber} - ${b.branch}`,
+                      })) || []
+                    }
+                    value={
+                      formData.bankAccountId
+                        ? {
+                            id: formData.bankAccountId.toString(),
+                            name:
+                              bankAccounts?.data?.find(
+                                (b) =>
+                                  b.bankAccountId === formData.bankAccountId
+                              )?.bankName || '',
+                          }
+                        : null
+                    }
+                    onChange={(v) =>
+                      handleSelectChange('bankAccountId', v ? v.id : '0')
+                    }
+                    placeholder="Select bank account"
+                  />
+                </div>
+              )}
+
+              {(formData.method === 'bkash' ||
+                formData.method === 'rocket' ||
+                formData.method === 'nagad') && (
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber ?? ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter bank name"
+                    required
+                    maxLength={100}
+                  />
+                </div>
+              )}
+
               {/* Paid Amount */}
               <div className="space-y-2">
                 <Label htmlFor="paidAmount">
@@ -415,10 +491,7 @@ const CollectFees = () => {
               <Button type="button" variant="outline" onClick={resetForm}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={collectFeesMutation.isPending}
-              >
+              <Button type="submit" disabled={collectFeesMutation.isPending}>
                 {collectFeesMutation.isPending
                   ? 'Processing...'
                   : 'Collect Payment'}

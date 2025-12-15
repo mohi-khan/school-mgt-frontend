@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
   collectFees,
+  createBankAccount,
   createClass,
   createExam,
   createExamGroup,
@@ -17,6 +18,7 @@ import {
   createIncome,
   createIncomeHead,
   createStudentWithFees,
+  deleteBankAccount,
   deleteClass,
   deleteExam,
   deleteExamGroup,
@@ -30,6 +32,7 @@ import {
   deleteIncome,
   deleteIncomeHead,
   deleteStudent,
+  editBankAccount,
   editClass,
   editExam,
   editExamGroup,
@@ -43,6 +46,7 @@ import {
   editIncome,
   editIncomeHead,
   editStudentWithFees,
+  getAllBankAccounts,
   getAllClasses,
   getAllExamGroups,
   getAllExamResults,
@@ -65,6 +69,7 @@ import {
 } from '@/utils/api'
 import {
   CollectFeesType,
+  CreateBankAccountsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -232,6 +237,7 @@ export const useDeleteClass = ({
   return mutation
 }
 
+//session
 export const useGetSessions = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -247,6 +253,126 @@ export const useGetSessions = () => {
     enabled: !!token,
     select: (data) => data,
   })
+}
+
+export const useGetBankAccounts = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['bankAccounts'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllBankAccounts(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddBankAccount = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateBankAccountsType) => {
+      return createBankAccount(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('bank account added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding bank account:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateBankAccount = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateBankAccountsType }) => {
+      return editBankAccount(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank account edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing bank account:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteBankAccount = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteBankAccount(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank account is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
 }
 
 //fees group
