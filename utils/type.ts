@@ -52,6 +52,24 @@ export const sectionsSchema = z.object({
 })
 export type GetSectionsType = z.infer<typeof sectionsSchema>
 
+export const bankAccountSchema = z.object({
+  bankAccountId: z.number().int().optional(),
+  bankName: z.string().min(1, 'Bank name is required').max(100),
+  accountNumber: z.string().min(1, 'Account number is required').max(50),
+  branch: z.string().max(100).optional().nullable(),
+  accountName: z.string().min(1, 'Account name is required').max(100),
+  balance: z.number().min(0, 'Balance must be at least 0'),
+  createdBy: z.number().int(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().optional().nullable(),
+  updatedAt: z.date().optional().nullable(),
+})
+
+export type CreateBankAccountsType = z.infer<typeof bankAccountSchema>
+export type GetBankAccountsType = z.infer<typeof bankAccountSchema> & {
+  bankName: string
+}
+
 export const classSchema = z.object({
   classData: z.object({
     classId: z.number().optional(),

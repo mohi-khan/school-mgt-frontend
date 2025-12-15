@@ -1,6 +1,7 @@
 import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CollectFeesType,
+  CreateBankAccountsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -14,6 +15,7 @@ import {
   CreateIncomeHeadsType,
   CreateIncomesType,
   CreateStudentWithFeesType,
+  GetBankAccountsType,
   GetClassType,
   GetExamGroupType,
   GetExamResultsType,
@@ -269,6 +271,60 @@ export async function getAllSessions(token: string) {
   return fetchApi<GetSessionsType[]>({
     url: 'api/sessions/getall',
     method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//bank accounts APIs
+export async function getAllBankAccounts(token: string) {
+  return fetchApi<GetBankAccountsType[]>({
+    url: 'api/bank-accounts/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createBankAccount(
+  data: CreateBankAccountsType,
+  token: string
+) {
+  return fetchApi<CreateBankAccountsType>({
+    url: 'api/bank-accounts/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editBankAccount(
+  id: number,
+  data: CreateBankAccountsType,
+  token: string
+) {
+  return fetchApi<CreateBankAccountsType>({
+    url: `api/bank-accounts/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteBankAccount(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/bank-accounts/delete/${id}`,
+    method: 'DELETE',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
@@ -769,6 +825,7 @@ export async function deleteExpenseHead(id: number, token: string) {
   })
 }
 
+//expsnse APIs
 export async function getAllExpenses(token: string) {
   return fetchApi<GetExpensesType[]>({
     url: 'api/expenses/getall',
