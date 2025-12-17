@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import {
   Table,
   TableBody,
@@ -13,57 +13,32 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { File, FileSpreadsheet } from 'lucide-react'
+import { File, FileSpreadsheet, Search } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
-import { useGetPaymentReport, useGetAllStudents } from '@/hooks/use-api'
+import { useGetIncomeReport } from '@/hooks/use-api'
 import { formatDate, formatNumber } from '@/utils/conversions'
-import { CustomCombobox } from '@/utils/custom-combobox'
 
-const PaymentReport = () => {
+const IncomeReport = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('')
 
-  const { data: students } = useGetAllStudents()
-  const { data: paymentReports } = useGetPaymentReport(fromDate, toDate)
-
-  // Filter payment data based on selected student
-  const filteredPayments = useMemo(() => {
-    if (!paymentReports?.data) return []
-
-    if (!selectedStudentId) {
-      return paymentReports.data
-    }
-
-    // Find the selected student's name to filter by
-    const selectedStudent = students?.data?.find(
-      (s) => s.studentDetails.studentId?.toString() === selectedStudentId
-    )
-
-    if (!selectedStudent) return paymentReports.data
-
-    const selectedStudentName = `${selectedStudent.studentDetails.firstName} ${selectedStudent.studentDetails.lastName}`
-
-    return paymentReports.data.filter(
-      (payment) => payment.studentName === selectedStudentName
-    )
-  }, [paymentReports, selectedStudentId, students])
+  const { data: incomeReports } = useGetIncomeReport(fromDate, toDate)
 
   const exportToExcel = () => {
-    const flatData = filteredPayments.map((report) => ({
-      'Payment Date': formatDate(new Date(report.paymentDate)),
-      'Student Name': report.studentName,
-      Class: report.studentClass,
-      Section: report.studentSection,
-      'Paid Amount': report.paidAmount,
+    const flatData = incomeReports?.data?.map((report) => ({
+      Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
+      Name: report.name || 'N/A',
+      'Income Head': report.incomeHead || 'N/A',
+      'Invoice Number': report.invoiceNumber || 'N/A',
+      Amount: report.amount || 0,
     }))
 
-    const worksheet = XLSX.utils.json_to_sheet(flatData)
+    const worksheet = XLSX.utils.json_to_sheet(flatData || [])
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payment Report')
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Income Report')
 
     const excelBuffer = XLSX.write(workbook, {
       bookType: 'xlsx',
@@ -74,12 +49,13 @@ const PaymentReport = () => {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
     })
 
-    saveAs(blob, `payment-report-${fromDate}-to-${toDate}.xlsx`)
+    saveAs(blob, `income-report-${fromDate}-to-${toDate}.xlsx`)
   }
 
   const generatePdf = async () => {
-    const targetRef = document.getElementById('payment-report-content')
+    const targetRef = document.getElementById('income-report-content')
     if (!targetRef) return
+
     await new Promise((res) => setTimeout(res, 200))
 
     const canvas = await html2canvas(targetRef, {
@@ -164,7 +140,7 @@ const PaymentReport = () => {
       pdf.text('School Management System', leftTextMargin, 35)
 
       pdf.setFontSize(10)
-      const baseText = `Payment Report from ${fromDate} to ${toDate} ( Date : `
+      const baseText = `Income Report from ${fromDate} to ${toDate} ( Date : `
       pdf.setFont('bold')
       pdf.text(baseText, leftTextMargin, 50)
       let currentX = leftTextMargin + pdf.getTextWidth(baseText)
@@ -185,20 +161,20 @@ const PaymentReport = () => {
       )
     }
 
-    pdf.save(`payment-report-${fromDate}-to-${toDate}.pdf`)
+    pdf.save(`income-report-${fromDate}-to-${toDate}.pdf`)
   }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Payment Report</h2>
+        <h2 className="text-2xl font-bold">Income Report</h2>
         <div className="flex items-center gap-2">
           <Button
             onClick={exportToExcel}
             variant="ghost"
             className="flex items-center gap-2 bg-green-100 text-green-900 hover:bg-green-200"
-            disabled={filteredPayments.length === 0}
+            disabled={!incomeReports?.data || incomeReports.data.length === 0}
           >
             <FileSpreadsheet className="h-4 w-4" />
             Excel
@@ -208,7 +184,7 @@ const PaymentReport = () => {
             variant="outline"
             size="sm"
             className="flex items-center gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 print:hidden"
-            disabled={filteredPayments.length === 0}
+            disabled={!incomeReports?.data || incomeReports.data.length === 0}
           >
             <File className="h-4 w-4" />
             PDF
@@ -246,44 +222,10 @@ const PaymentReport = () => {
             />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="space-y-2">
-            <Label htmlFor="studentId" className="text-sm font-medium">
-              Student (Optional):
-            </Label>
-            <CustomCombobox
-              items={
-                students?.data?.map((student) => ({
-                  id: student?.studentDetails?.studentId?.toString() || '0',
-                  name:
-                    `${student.studentDetails.firstName} ${student.studentDetails.lastName}` ||
-                    'Unnamed student',
-                })) || []
-              }
-              value={
-                selectedStudentId
-                  ? {
-                      id: selectedStudentId,
-                      name:
-                        students?.data?.find(
-                          (s) =>
-                            s.studentDetails.studentId?.toString() ===
-                            selectedStudentId
-                        )?.studentDetails.firstName || '',
-                    }
-                  : null
-              }
-              onChange={(value) =>
-                setSelectedStudentId(value ? String(value.id) : '')
-              }
-              placeholder="Select student"
-            />
-          </div>
-        </div>
       </div>
 
       {/* Report Content */}
-      <div id="payment-report-content" className="space-y-6">
+      <div id="income-report-content" className="space-y-6">
         {!fromDate || !toDate ? (
           <Card className="shadow-md">
             <CardContent className="p-8 text-center text-gray-500">
@@ -292,10 +234,10 @@ const PaymentReport = () => {
               </p>
             </CardContent>
           </Card>
-        ) : filteredPayments.length === 0 ? (
+        ) : !incomeReports?.data || incomeReports.data.length === 0 ? (
           <Card className="shadow-md">
             <CardContent className="p-8 text-center text-gray-500">
-              No payment records found for the selected criteria
+              No income records found for the selected date range
             </CardContent>
           </Card>
         ) : (
@@ -305,24 +247,28 @@ const PaymentReport = () => {
                 <Table>
                   <TableHeader className="bg-amber-100 pdf-table-header">
                     <TableRow>
-                      <TableHead className="font-bold">Payment Date</TableHead>
-                      <TableHead className="font-bold">Student Name</TableHead>
-                      <TableHead className="font-bold">Class</TableHead>
-                      <TableHead className="font-bold">Section</TableHead>
-                      <TableHead className="font-bold">Paid Amount</TableHead>
+                      <TableHead className="font-bold">Date</TableHead>
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Income Head</TableHead>
+                      <TableHead className="font-bold">
+                        Invoice Number
+                      </TableHead>
+                      <TableHead className="font-bold">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayments.map((report, index) => (
-                      <TableRow key={report.studentPaymentId || index}>
+                    {incomeReports.data.map((report, index) => (
+                      <TableRow key={report.incomeId || index}>
                         <TableCell>
-                          {formatDate(new Date(report.paymentDate))}
+                          {report.date
+                            ? formatDate(new Date(report.date))
+                            : 'N/A'}
                         </TableCell>
-                        <TableCell>{report.studentName}</TableCell>
-                        <TableCell>{report.studentClass}</TableCell>
-                        <TableCell>{report.studentSection}</TableCell>
+                        <TableCell>{report.name || 'N/A'}</TableCell>
+                        <TableCell>{report.incomeHead || 'N/A'}</TableCell>
+                        <TableCell>{report.invoiceNumber || 'N/A'}</TableCell>
                         <TableCell className="text-green-600">
-                          {formatNumber(Number(report.paidAmount))}
+                          {formatNumber(Number(report.amount || 0))}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -337,4 +283,4 @@ const PaymentReport = () => {
   )
 }
 
-export default PaymentReport
+export default IncomeReport

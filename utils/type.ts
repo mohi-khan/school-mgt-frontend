@@ -391,3 +391,25 @@ export const paymentReportSchema = z.object({
   paidAmount: z.number(),
 })
 export type GetPaymentReportType = z.infer<typeof paymentReportSchema>
+
+export const incomeReportSchema = z.object({
+  incomeId: z.number().optional(),
+  name: z.string().optional(),
+  incomeHeadId: z.number().optional(),
+  incomeHead: z.string().optional(),
+  invoiceNumber: z.number().optional(),
+  date: z.string().optional(),
+  amount: z.number().optional(),
+})
+export type GetIncomeReportType = z.infer<typeof incomeReportSchema>
+
+export const expenseReportSchema = z.object({
+  expenseId: z.number().optional(),
+  name: z.string().optional(),
+  expenseHeadId: z.number().optional(),
+  expenseHead: z.string().optional(),
+  invoiceNumber: z.number().optional(),
+  date: z.string().optional(),
+  amount: z.number().optional(),
+})
+export type GetExpenseReportType = z.infer<typeof expenseReportSchema>

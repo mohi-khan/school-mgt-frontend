@@ -164,6 +164,14 @@ export function DashboardSidebar() {
           title: 'Payment Report',
           href: '/dashboard/reports/payment-report',
         },
+        {
+          title: 'Income Report',
+          href: '/dashboard/reports/income-report',
+        },
+        {
+          title: 'Expense Report',
+          href: '/dashboard/reports/expense-report',
+        },
       ],
     },
   ]

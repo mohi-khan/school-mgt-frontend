@@ -22,11 +22,13 @@ import {
   GetExamsType,
   GetExamSubjectsType,
   GetExpenseHeadsType,
+  GetExpenseReportType,
   GetExpensesType,
   GetFeesGroupType,
   GetFeesMasterType,
   GetFeesTypeType,
   GetIncomeHeadsType,
+  GetIncomeReportType,
   GetIncomesType,
   GetPaymentReportType,
   GetSectionsType,
@@ -61,7 +63,7 @@ export async function getAllSections(token: string) {
   })
 }
 
-export async function getAllSectionsByClassId(token: string, classId:number) {
+export async function getAllSectionsByClassId(token: string, classId: number) {
   return fetchApi<GetSectionsType[]>({
     url: `api/sections/getall?classId=${classId}`,
     method: 'GET',
@@ -579,10 +581,7 @@ export async function getAllExams(token: string) {
   })
 }
 
-export async function createExam(
-  data: CreateExamsType,
-  token: string
-) {
+export async function createExam(data: CreateExamsType, token: string) {
   return fetchApi<CreateExamsType>({
     url: 'api/exams/create',
     method: 'POST',
@@ -741,10 +740,7 @@ export async function getAllIncomes(token: string) {
   })
 }
 
-export async function createIncome(
-  data: CreateIncomesType,
-  token: string
-) {
+export async function createIncome(data: CreateIncomesType, token: string) {
   return fetchApi<CreateIncomesType>({
     url: 'api/incomes/create',
     method: 'POST',
@@ -849,10 +845,7 @@ export async function getAllExpenses(token: string) {
   })
 }
 
-export async function createExpense(
-  data: CreateExpensesType,
-  token: string
-) {
+export async function createExpense(data: CreateExpensesType, token: string) {
   return fetchApi<CreateExpensesType>({
     url: 'api/expenses/create',
     method: 'POST',
@@ -892,9 +885,43 @@ export async function deleteExpense(id: number, token: string) {
 }
 
 //reports APIs
-export async function getPaymentReport(token: string, fromDate: string, toDate: string) {
+export async function getPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
   return fetchApi<GetPaymentReportType[]>({
     url: `api/reports/payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getIncomeReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetIncomeReportType[]>({
+    url: `api/reports/income-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getExpenseReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetExpenseReportType[]>({
+    url: `api/reports/expense-report?fromDate=${fromDate}&toDate=${toDate}`,
     method: 'GET',
     headers: {
       Authorization: token,

@@ -64,6 +64,8 @@ import {
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
+  getExpenseReport,
+  getIncomeReport,
   getPaymentReport,
   getStudentById,
   getStudentFeesById,
@@ -1992,6 +1994,36 @@ export const useGetPaymentReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetIncomeReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['incomeReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getIncomeReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetExpenseReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['expenseReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getExpenseReport(token, fromDate, toDate)
     },
     enabled: !!token,
     select: (data) => data,
