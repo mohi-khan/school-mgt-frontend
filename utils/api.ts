@@ -60,6 +60,17 @@ export async function getAllSections(token: string) {
   })
 }
 
+export async function getAllSectionsByClassId(token: string, classId:number) {
+  return fetchApi<GetSectionsType[]>({
+    url: `api/sections/getall?classId=${classId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //classes APIs
 export async function getAllClasses(token: string) {
   return fetchApi<GetClassType[]>({

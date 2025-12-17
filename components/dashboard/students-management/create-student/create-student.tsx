@@ -20,8 +20,8 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useAddStudent,
   useGetClasses,
+  useGetClassesByClassId,
   useGetFeesMasters,
-  useGetSections,
   useGetSessions,
 } from '@/hooks/use-api'
 import type { CreateStudentWithFeesType, GetFeesMasterType } from '@/utils/type'
@@ -48,7 +48,6 @@ const CreateStudent = () => {
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
   const { data: classes } = useGetClasses()
-  const { data: sections } = useGetSections()
   const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
   const router = useRouter()
@@ -94,6 +93,8 @@ const CreateStudent = () => {
     },
     studentFees: [],
   })
+
+  const { data: sections } = useGetClassesByClassId(formData.studentDetails.classId || 0)
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

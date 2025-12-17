@@ -28,6 +28,7 @@ import {
   useGetClasses,
   useGetSections,
   useGetSessions,
+  useGetClassesByClassId,
 } from '@/hooks/use-api'
 
 const PromoteStudents = () => {
@@ -62,7 +63,16 @@ const PromoteStudents = () => {
   )
 
   const { data: classesData } = useGetClasses()
-  const { data: sectionsData } = useGetSections()
+  // For students filter
+  const { data: sectionsData } = useGetClassesByClassId(selectedClassId ?? 0)
+
+  // For promotion popup
+  const { data: promoteSectionsData } = useGetClassesByClassId(
+    promoteClassId ?? 0
+  )
+
+  console.log('🚀 ~ PromoteStudents ~ sectionsData:', sectionsData)
+
   const { data: sessionsData } = useGetSessions()
 
   const { data: studentsData } = useGetStudentFeesByClassSection(
@@ -417,7 +427,7 @@ const PromoteStudents = () => {
                 <Label htmlFor="promoteSectionId">Section</Label>
                 <CustomCombobox
                   items={
-                    sectionsData?.data?.map((section) => ({
+                    promoteSectionsData?.data?.map((section) => ({
                       id: section?.sectionId?.toString() || '0',
                       name: section.sectionName || 'Unnamed section',
                     })) || []
@@ -427,15 +437,16 @@ const PromoteStudents = () => {
                       ? {
                           id: promoteSectionId.toString(),
                           name:
-                            sectionsData?.data?.find(
+                            promoteSectionsData?.data?.find(
                               (s) => s.sectionId === promoteSectionId
                             )?.sectionName || '',
                         }
                       : null
                   }
-                  onChange={(value) =>
-                    setPromoteSectionId(value ? Number(value.id) : null)
-                  }
+                  onChange={(value) => {
+                    setPromoteClassId(value ? Number(value.id) : null)
+                    setPromoteSectionId(null) // 👈 REQUIRED
+                  }}
                   placeholder="Select section"
                 />
               </div>
@@ -541,10 +552,7 @@ const PromoteStudents = () => {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={promoteMutation.isPending}
-            >
+            <Button type="submit" disabled={promoteMutation.isPending}>
               {promoteMutation.isPending ? 'Promoting...' : 'Confirm Promotion'}
             </Button>
           </div>

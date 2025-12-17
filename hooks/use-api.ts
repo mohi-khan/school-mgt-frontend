@@ -60,6 +60,7 @@ import {
   getAllIncomeHeads,
   getAllIncomes,
   getAllSections,
+  getAllSectionsByClassId,
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
@@ -112,6 +113,21 @@ export const useGetSections = () => {
       return getAllSections(token)
     },
     enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetClassesByClassId = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['sections', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllSectionsByClassId(token, id)
+    },
+    enabled: !!token && id > 0,
     select: (data) => data,
   })
 }
