@@ -155,6 +155,17 @@ export function DashboardSidebar() {
         },
       ],
     },
+    {
+      title: 'Reports',
+      icon: FileChartColumn,
+      href: '/dashboard/reports',
+      subItems: [
+        {
+          title: 'Payment Report',
+          href: '/dashboard/reports/payment-report',
+        },
+      ],
+    },
   ]
 
   // Check if the current path is in the submenu items

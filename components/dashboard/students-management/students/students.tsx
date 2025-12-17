@@ -43,7 +43,7 @@ import Link from 'next/link'
 const Students = () => {
   const router = useRouter()
   const { data: studentsData, isLoading } = useGetAllStudents()
-  const [error, setError] = useState<string | null>(null)
+  console.log("🚀 ~ Students ~ studentsData:", studentsData)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =

@@ -381,3 +381,13 @@ export type CreateExpensesType = z.infer<typeof expenseSchema>
 export type GetExpensesType = z.infer<typeof expenseSchema> & {
   expenseHead: string
 }
+
+export const paymentReportSchema = z.object({
+  studentPaymentId: z.number().optional(),
+  paymentDate: z.string(),
+  studentName: z.string(),
+  studentClass: z.string(),
+  studentSection: z.string(),
+  paidAmount: z.number(),
+})
+export type GetPaymentReportType = z.infer<typeof paymentReportSchema>

@@ -64,6 +64,7 @@ import {
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
+  getPaymentReport,
   getStudentById,
   getStudentFeesById,
   promoteStudents,
@@ -1979,4 +1980,20 @@ export const useDeleteExpense = ({
   })
 
   return mutation
+}
+
+//reports
+export const useGetPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['paymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
 }

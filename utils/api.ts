@@ -28,6 +28,7 @@ import {
   GetFeesTypeType,
   GetIncomeHeadsType,
   GetIncomesType,
+  GetPaymentReportType,
   GetSectionsType,
   GetSessionsType,
   GetStudentFeesType,
@@ -883,6 +884,18 @@ export async function deleteExpense(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/expenses/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//reports APIs
+export async function getPaymentReport(token: string, fromDate: string, toDate: string) {
+  return fetchApi<GetPaymentReportType[]>({
+    url: `api/reports/payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
