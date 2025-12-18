@@ -29,6 +29,7 @@ const PaymentReport = () => {
 
   const { data: students } = useGetAllStudents()
   const { data: paymentReports } = useGetPaymentReport(fromDate, toDate)
+  console.log('🚀 ~ PaymentReport ~ paymentReports:', paymentReports)
 
   // Filter payment data based on selected student
   const filteredPayments = useMemo(() => {
@@ -58,7 +59,17 @@ const PaymentReport = () => {
       'Student Name': report.studentName,
       Class: report.studentClass,
       Section: report.studentSection,
-      'Paid Amount': report.paidAmount,
+      Session: report.studentSession,
+      Method: report.method,
+
+      'Bank Info':
+        report.bankName && report.accountNumber && report.branch
+          ? `${report.bankName} - ${report.accountNumber} - ${report.branch}`
+          : 'N/A',
+
+      'Phone Number': report.phoneNumber || 'N/A',
+
+      'Paid Amount': formatNumber(Number(report.paidAmount)),
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
@@ -309,6 +320,10 @@ const PaymentReport = () => {
                       <TableHead className="font-bold">Student Name</TableHead>
                       <TableHead className="font-bold">Class</TableHead>
                       <TableHead className="font-bold">Section</TableHead>
+                      <TableHead className="font-bold">Session</TableHead>
+                      <TableHead className="font-bold">Method</TableHead>
+                      <TableHead className="font-bold">Bank Details</TableHead>
+                      <TableHead className="font-bold">UPI Number</TableHead>
                       <TableHead className="font-bold">Paid Amount</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -321,6 +336,18 @@ const PaymentReport = () => {
                         <TableCell>{report.studentName}</TableCell>
                         <TableCell>{report.studentClass}</TableCell>
                         <TableCell>{report.studentSection}</TableCell>
+                        <TableCell>{report.studentSession}</TableCell>
+                        <TableCell>{report.method}</TableCell>
+                        <TableCell>
+                          {report.bankName &&
+                          report.accountNumber &&
+                          report.branch
+                            ? `${report.bankName} - ${report.accountNumber} - ${report.branch}`
+                            : 'N/A'}
+                        </TableCell>
+
+                        <TableCell>{report.phoneNumber || 'N/A'}</TableCell>
+
                         <TableCell className="text-green-600">
                           {formatNumber(Number(report.paidAmount))}
                         </TableCell>

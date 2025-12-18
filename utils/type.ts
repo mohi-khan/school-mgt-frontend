@@ -242,6 +242,7 @@ export type PromotionResponseType = z.infer<typeof promotionResponseSchema>
 
 export const collectFeesSchema = z.object({
   studentFeesId: z.number(),
+  studentId: z.number(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
   bankAccountId: z.number().nullable().optional(),
   phoneNumber: z.string().nullable().optional(),
@@ -388,6 +389,12 @@ export const paymentReportSchema = z.object({
   studentName: z.string(),
   studentClass: z.string(),
   studentSection: z.string(),
+  studentSession: z.string(),
+  method: z.string(),
+  bankName: z.string().nullable().optional(),
+  accountNumber: z.string().nullable().optional(),
+  branch: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
   paidAmount: z.number(),
 })
 export type GetPaymentReportType = z.infer<typeof paymentReportSchema>
