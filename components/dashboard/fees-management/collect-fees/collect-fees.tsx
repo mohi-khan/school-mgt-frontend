@@ -51,6 +51,7 @@ const CollectFees = () => {
 
   const [formData, setFormData] = useState<CollectFeesType>({
     studentFeesId: 0,
+    studentId: 0,
     method: 'cash',
     bankAccountId: null,
     phoneNumber: '',
@@ -68,6 +69,7 @@ const CollectFees = () => {
   const resetForm = () => {
     setFormData({
       studentFeesId: 0,
+      studentId: 0,
       method: 'cash',
       bankAccountId: null,
       phoneNumber: '',
@@ -129,6 +131,7 @@ const CollectFees = () => {
     setSelectedFee(fee)
     setFormData({
       studentFeesId: fee.studentFeesId || 0,
+      studentId: Number(studentId),
       method: 'cash',
       bankAccountId: fee.bankAccountId,
       phoneNumber: '',

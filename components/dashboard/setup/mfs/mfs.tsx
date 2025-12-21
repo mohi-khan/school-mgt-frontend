@@ -21,16 +21,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, Building2, Edit2, Trash2 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ArrowUpDown, Search, Smartphone, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
 import {
-  useGetBankAccounts,
-  useAddBankAccount,
-  useUpdateBankAccount,
-  useDeleteBankAccount,
+  useGetMfss,
+  useAddMfs,
+  useUpdateMfs,
+  useDeleteMfs,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -42,57 +49,40 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { formatDate, formatNumber } from '@/utils/conversions'
-import type { CreateBankAccountsType, GetBankAccountsType } from '@/utils/type'
+import type { CreateMfssType, GetMfssType } from '@/utils/type'
 
-const BankAccounts = () => {
+const Mfs = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
 
-  const { data: bankAccounts } = useGetBankAccounts()
+  const { data: mfss } = useGetMfss()
+  console.log('🚀 ~ Mfs ~ mfss:', mfss)
 
   const router = useRouter()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] =
-    useState<keyof GetBankAccountsType>('bankName')
+  const [sortColumn, setSortColumn] = useState<keyof GetMfssType>('accountName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
-  const [deletingFeesGroupId, setDeletingFeesGroupId] = useState<number | null>(
-    null
-  )
+  const [deletingMfsId, setDeletingMfsId] = useState<number | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
-  useEffect(() => {
-    const checkUserData = () => {
-      const storedUserData = localStorage.getItem('currentUser')
-      const storedToken = localStorage.getItem('authToken')
-      if (!storedUserData || !storedToken) {
-        console.log('No user data or token found in localStorage')
-        router.push('/')
-        return
-      }
-    }
-    checkUserData()
-  }, [userData, token, router])
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingBankAccount, setEditingBankAccount] =
-    useState<GetBankAccountsType | null>(null)
+  const [editingMfs, setEditingMfs] = useState<GetMfssType | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [formData, setFormData] = useState<CreateBankAccountsType>({
-    bankName: '',
-    accountNumber: '',
-    branch: '',
+  const [formData, setFormData] = useState<CreateMfssType>({
     accountName: '',
+    mfsNumber: '',
+    mfsType: 'bkash',
     balance: 0,
     createdBy: userData?.userId || 0,
   })
 
-  const handleSort = (column: keyof GetBankAccountsType) => {
+  const handleSort = (column: keyof GetMfssType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -101,22 +91,21 @@ const BankAccounts = () => {
     }
   }
 
-  const filteredBankAccounts = useMemo(() => {
-    if (!bankAccounts?.data) return []
-    return bankAccounts.data.filter((account: any) => {
+  const filteredMfss = useMemo(() => {
+    if (!mfss?.data) return []
+    return mfss.data.filter((account: any) => {
       const searchLower = searchTerm.toLowerCase()
       return (
-        account.bankName?.toLowerCase().includes(searchLower) ||
-        account.accountNumber?.toLowerCase().includes(searchLower) ||
         account.accountName?.toLowerCase().includes(searchLower) ||
-        account.balance?.toString().toLowerCase().includes(searchLower) ||
-        account.branch?.toLowerCase().includes(searchLower)
+        account.mfsNumber?.toLowerCase().includes(searchLower) ||
+        account.mfsType?.toLowerCase().includes(searchLower) ||
+        account.balance?.toString().toLowerCase().includes(searchLower)
       )
     })
-  }, [bankAccounts?.data, searchTerm])
+  }, [mfss?.data, searchTerm])
 
-  const sortedBankAccounts = useMemo(() => {
-    return [...filteredBankAccounts].sort((a, b) => {
+  const sortedMfss = useMemo(() => {
+    return [...filteredMfss].sort((a, b) => {
       const aValue = a[sortColumn] ?? ''
       const bValue = b[sortColumn] ?? ''
 
@@ -134,14 +123,14 @@ const BankAccounts = () => {
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
       return 0
     })
-  }, [filteredBankAccounts, sortColumn, sortDirection])
+  }, [filteredMfss, sortColumn, sortDirection])
 
-  const paginatedBankAccounts = useMemo(() => {
+  const paginatedMfss = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedBankAccounts.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedBankAccounts, currentPage, itemsPerPage])
+    return sortedMfss.slice(startIndex, startIndex + itemsPerPage)
+  }, [sortedMfss, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(sortedBankAccounts.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedMfss.length / itemsPerPage)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -151,14 +140,20 @@ const BankAccounts = () => {
     }))
   }
 
-  const handleEdit = (account: GetBankAccountsType) => {
+  const handleSelectChange = (value: 'bkash' | 'nagad' | 'rocket') => {
+    setFormData((prev) => ({
+      ...prev,
+      mfsType: value,
+    }))
+  }
+
+  const handleEdit = (account: GetMfssType) => {
     setIsEditMode(true)
-    setEditingBankAccount(account)
+    setEditingMfs(account)
     setFormData({
-      bankName: account.bankName,
-      accountNumber: account.accountNumber,
-      branch: account.branch || '',
-      accountName: account.accountName || '',
+      accountName: account.accountName,
+      mfsNumber: account.mfsNumber,
+      mfsType: account.mfsType,
       balance: account.balance || 0,
       createdBy: userData?.userId || 0,
       updatedBy: userData?.userId || 0,
@@ -168,41 +163,40 @@ const BankAccounts = () => {
 
   const handleAdd = () => {
     setIsEditMode(false)
-    setEditingBankAccount(null)
+    setEditingMfs(null)
     resetForm()
     setIsPopupOpen(true)
   }
 
   const resetForm = useCallback(() => {
     setFormData({
-      bankName: '',
-      accountNumber: '',
-      branch: '',
       accountName: '',
+      mfsNumber: '',
+      mfsType: 'bkash',
       balance: 0,
       createdBy: userData?.userId || 0,
     })
     setIsPopupOpen(false)
     setIsEditMode(false)
-    setEditingBankAccount(null)
-  }, [userData?.userId, setIsPopupOpen, setIsEditMode, setEditingBankAccount])
+    setEditingMfs(null)
+  }, [userData?.userId, setIsPopupOpen, setIsEditMode, setEditingMfs])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
     setError(null)
   }, [])
 
-  const addMutation = useAddBankAccount({
+  const addMutation = useAddMfs({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const editMutation = useUpdateBankAccount({
+  const editMutation = useUpdateMfs({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const deleteMutation = useDeleteBankAccount({
+  const deleteMutation = useDeleteMfs({
     onClose: closePopup,
     reset: resetForm,
   })
@@ -213,24 +207,22 @@ const BankAccounts = () => {
       setError(null)
 
       try {
-        if (isEditMode && editingBankAccount) {
+        if (isEditMode && editingMfs) {
           if (
-            editingBankAccount?.bankAccountId === undefined ||
-            editingBankAccount?.createdBy === undefined
+            editingMfs?.mfsId === undefined ||
+            editingMfs?.createdBy === undefined
           )
             return
 
           editMutation.mutate({
-            id: editingBankAccount.bankAccountId,
+            id: editingMfs.mfsId,
             data: {
               ...formData,
-              //   bankAccountId: editingBankAccount.bankAccountId,
               updatedBy: userData?.userId || 0,
-              createdBy: editingBankAccount.createdBy || 0,
-              bankName: formData.bankName,
-              accountNumber: formData.accountNumber,
-              branch: formData.branch || null,
+              createdBy: editingMfs.createdBy || 0,
               accountName: formData.accountName,
+              mfsNumber: formData.mfsNumber,
+              mfsType: formData.mfsType,
               balance: Number(formData.balance),
             },
           })
@@ -243,9 +235,9 @@ const BankAccounts = () => {
         }
         resetForm()
       } catch (error) {
-        setError(`Failed to ${isEditMode ? 'update' : 'create'} bank account`)
+        setError(`Failed to ${isEditMode ? 'update' : 'create'} MFS account`)
         console.error(
-          `Error ${isEditMode ? 'updating' : 'creating'} bank account:`,
+          `Error ${isEditMode ? 'updating' : 'creating'} MFS account:`,
           error
         )
       }
@@ -254,7 +246,7 @@ const BankAccounts = () => {
       formData,
       userData,
       isEditMode,
-      editingBankAccount,
+      editingMfs,
       addMutation,
       editMutation,
       resetForm,
@@ -263,12 +255,11 @@ const BankAccounts = () => {
 
   const handleEditClick = (account: any) => {
     setIsEditMode(true)
-    setEditingBankAccount(account)
+    setEditingMfs(account)
     setFormData({
-      bankName: account.bankName,
-      accountNumber: account.accountNumber,
-      branch: account.branch || '',
-      accountName: account.accountName || '',
+      accountName: account.accountName,
+      mfsNumber: account.mfsNumber,
+      mfsType: account.mfsType,
       balance: account.balance || 0,
       createdBy: userData?.userId || 0,
       updatedBy: userData?.userId || 0,
@@ -281,15 +272,15 @@ const BankAccounts = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-amber-100 p-2 rounded-md">
-            <Building2 className="text-amber-600" />
+            <Smartphone className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Bank Accounts</h2>
+          <h2 className="text-lg font-semibold">MFS Accounts</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search bank accounts..."
+              placeholder="Search MFS accounts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -309,31 +300,25 @@ const BankAccounts = () => {
           <TableHeader className="bg-amber-100">
             <TableRow>
               <TableHead
-                onClick={() => handleSort('bankName')}
-                className="cursor-pointer"
-              >
-                Bank Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('accountNumber')}
-                className="cursor-pointer"
-              >
-                Account Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('accountNumber')}
+                onClick={() => handleSort('accountName')}
                 className="cursor-pointer"
               >
                 Account Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('branch')}
+                onClick={() => handleSort('mfsNumber')}
                 className="cursor-pointer"
               >
-                Branch <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                MFS Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('branch')}
+                onClick={() => handleSort('mfsType')}
+                className="cursor-pointer"
+              >
+                MFS Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('balance')}
                 className="cursor-pointer"
               >
                 Balance <ArrowUpDown className="ml-2 h-4 w-4 inline" />
@@ -348,33 +333,44 @@ const BankAccounts = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!bankAccounts || bankAccounts.data === undefined ? (
+            {!mfss || mfss.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  Loading bank accounts...
+                <TableCell colSpan={6} className="text-center py-4">
+                  Loading MFS accounts...
                 </TableCell>
               </TableRow>
-            ) : !bankAccounts.data || bankAccounts.data.length === 0 ? (
+            ) : !mfss.data || mfss.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  No bank accounts found
+                <TableCell colSpan={6} className="text-center py-4">
+                  No MFS accounts found
                 </TableCell>
               </TableRow>
-            ) : paginatedBankAccounts.length === 0 ? (
+            ) : paginatedMfss.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  No bank accounts match your search
+                <TableCell colSpan={6} className="text-center py-4">
+                  No MFS accounts match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedBankAccounts.map((account) => (
-                <TableRow key={account.bankAccountId}>
+              paginatedMfss.map((account) => (
+                <TableRow key={account.mfsId}>
                   <TableCell className="font-medium">
-                    {account.bankName}
+                    {account.accountName}
                   </TableCell>
-                  <TableCell>{account.accountNumber}</TableCell>
-                  <TableCell>{account.accountName}</TableCell>
-                  <TableCell>{account.branch}</TableCell>
+                  <TableCell>{account.mfsNumber}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        account.mfsType === 'bkash'
+                          ? 'bg-pink-100 text-pink-800'
+                          : account.mfsType === 'nagad'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-purple-100 text-purple-800'
+                      }`}
+                    >
+                      {account.mfsType}
+                    </span>
+                  </TableCell>
                   <TableCell>{formatNumber(account.balance)}</TableCell>
                   <TableCell>{formatDate(account.createdAt)}</TableCell>
                   <TableCell className="text-right">
@@ -392,7 +388,7 @@ const BankAccounts = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingFeesGroupId(account.bankAccountId ?? 0)
+                          setDeletingMfsId(account.mfsId ?? 0)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -407,7 +403,7 @@ const BankAccounts = () => {
         </Table>
       </div>
 
-      {sortedBankAccounts.length > 0 && (
+      {sortedMfss.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -472,37 +468,11 @@ const BankAccounts = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={resetForm}
-        title={isEditMode ? 'Edit Bank Account' : 'Add Bank Account'}
+        title={isEditMode ? 'Edit MFS Account' : 'Add MFS Account'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="bankName">Bank Name*</Label>
-              <Input
-                id="bankName"
-                name="bankName"
-                value={formData.bankName}
-                onChange={handleInputChange}
-                placeholder="Enter bank name"
-                required
-                maxLength={100}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="accountNumber">Account Number*</Label>
-              <Input
-                id="accountNumber"
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleInputChange}
-                placeholder="Enter account number"
-                required
-                maxLength={50}
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="accountName">Account Name*</Label>
               <Input
@@ -517,15 +487,36 @@ const BankAccounts = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="branch">Branch</Label>
+              <Label htmlFor="mfsNumber">MFS Number*</Label>
               <Input
-                id="branch"
-                name="branch"
-                value={formData.branch || ''}
+                id="mfsNumber"
+                name="mfsNumber"
+                value={formData.mfsNumber}
                 onChange={handleInputChange}
-                placeholder="Enter branch name"
-                maxLength={100}
+                placeholder="Enter MFS number"
+                required
+                maxLength={15}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mfsType">MFS Type*</Label>
+              <Select
+                value={
+                  (formData.mfsType as 'bkash' | 'nagad' | 'rocket')
+                }
+                onValueChange={handleSelectChange}
+                required
+              >
+                <SelectTrigger id="mfsType">
+                  <SelectValue placeholder="Select MFS type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bkash">Bkash</SelectItem>
+                  <SelectItem value="nagad">Nagad</SelectItem>
+                  <SelectItem value="rocket">Rocket</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -538,7 +529,6 @@ const BankAccounts = () => {
                 onChange={handleInputChange}
                 placeholder="Enter balance"
                 required
-                maxLength={50}
               />
             </div>
           </div>
@@ -560,9 +550,9 @@ const BankAccounts = () => {
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Fees Group</AlertDialogTitle>
+            <AlertDialogTitle>Delete MFS Account</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this fees group? This action
+              Are you sure you want to delete this MFS account? This action
               cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -572,8 +562,8 @@ const BankAccounts = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingFeesGroupId) {
-                  deleteMutation.mutate({ id: deletingFeesGroupId })
+                if (deletingMfsId) {
+                  deleteMutation.mutate({ id: deletingMfsId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -588,4 +578,4 @@ const BankAccounts = () => {
   )
 }
 
-export default BankAccounts
+export default Mfs

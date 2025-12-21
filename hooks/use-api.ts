@@ -17,6 +17,7 @@ import {
   createFeesType,
   createIncome,
   createIncomeHead,
+  createMfs,
   createStudentWithFees,
   deleteBankAccount,
   deleteClass,
@@ -31,6 +32,7 @@ import {
   deleteFeesType,
   deleteIncome,
   deleteIncomeHead,
+  deleteMfs,
   deleteStudent,
   editBankAccount,
   editClass,
@@ -45,6 +47,7 @@ import {
   editFeesType,
   editIncome,
   editIncomeHead,
+  editMfs,
   editStudentWithFees,
   getAllBankAccounts,
   getAllClasses,
@@ -59,10 +62,15 @@ import {
   getAllFeesTypes,
   getAllIncomeHeads,
   getAllIncomes,
+  getAllMfss,
   getAllSections,
+  getAllSectionsByClassId,
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
+  getExpenseReport,
+  getIncomeReport,
+  getPaymentReport,
   getStudentById,
   getStudentFeesById,
   promoteStudents,
@@ -82,6 +90,7 @@ import {
   CreateFeesTypeType,
   CreateIncomeHeadsType,
   CreateIncomesType,
+  CreateMfssType,
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
@@ -112,6 +121,21 @@ export const useGetSections = () => {
       return getAllSections(token)
     },
     enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetClassesByClassId = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['sections', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllSectionsByClassId(token, id)
+    },
+    enabled: !!token && id > 0,
     select: (data) => data,
   })
 }
@@ -255,6 +279,7 @@ export const useGetSessions = () => {
   })
 }
 
+//bank accounts
 export const useGetBankAccounts = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -363,6 +388,127 @@ export const useDeleteBankAccount = ({
         description: 'bank account is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['bankAccounts'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//mfs
+export const useGetMfss = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['mfs'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllMfss(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddMfs = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateMfssType) => {
+      return createMfs(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('mfs added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['mfs'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding mfs:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateMfs = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateMfssType }) => {
+      return editMfs(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'mfs edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['mfs'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing mfs:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteMfs = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteMfs(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'mfs is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['mfs'] })
 
       reset()
       onClose()
@@ -1963,4 +2109,50 @@ export const useDeleteExpense = ({
   })
 
   return mutation
+}
+
+//reports
+export const useGetPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['paymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetIncomeReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['incomeReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getIncomeReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetExpenseReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['expenseReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getExpenseReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
 }

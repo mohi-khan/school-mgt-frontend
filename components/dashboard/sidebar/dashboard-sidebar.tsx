@@ -62,6 +62,10 @@ export function DashboardSidebar() {
           title: 'Bank Accounts',
           href: '/dashboard/setup/bank-accounts',
         },
+        {
+          title: 'MFS',
+          href: '/dashboard/setup/mfs',
+        },
       ],
     },
     {
@@ -152,6 +156,25 @@ export function DashboardSidebar() {
         {
           title: 'Expenses',
           href: '/dashboard/expense-management/expenses',
+        },
+      ],
+    },
+    {
+      title: 'Reports',
+      icon: FileChartColumn,
+      href: '/dashboard/reports',
+      subItems: [
+        {
+          title: 'Payment Report',
+          href: '/dashboard/reports/payment-report',
+        },
+        {
+          title: 'Income Report',
+          href: '/dashboard/reports/income-report',
+        },
+        {
+          title: 'Expense Report',
+          href: '/dashboard/reports/expense-report',
         },
       ],
     },
