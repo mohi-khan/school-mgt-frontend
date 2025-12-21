@@ -443,10 +443,9 @@ const PromoteStudents = () => {
                         }
                       : null
                   }
-                  onChange={(value) => {
-                    setPromoteClassId(value ? Number(value.id) : null)
-                    setPromoteSectionId(null) // 👈 REQUIRED
-                  }}
+                  onChange={(value) =>
+                    setPromoteSectionId(value ? Number(value.id) : null)
+                  }
                   placeholder="Select section"
                 />
               </div>
