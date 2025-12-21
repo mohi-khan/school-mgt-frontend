@@ -258,7 +258,7 @@ export const collectFeesSchema = z.object({
   studentId: z.number(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
   bankAccountId: z.number().nullable().optional(),
-  phoneNumber: z.string().nullable().optional(),
+  mfsId: z.number().nullable().optional(),
   paidAmount: z.number(),
   paymentDate: z.string(),
   remarks: z.string(),

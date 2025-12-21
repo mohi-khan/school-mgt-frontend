@@ -60,6 +60,7 @@ import {
   useGetStudentFeesById,
   useCollectFees,
   useGetBankAccounts,
+  useGetMfss,
 } from '@/hooks/use-api'
 import type { GetStudentWithFeesType } from '@/utils/type'
 import Link from 'next/link'
@@ -74,6 +75,7 @@ const Students = () => {
   const router = useRouter()
   const { data: studentsData, isLoading } = useGetAllStudents()
   const { data: bankAccounts } = useGetBankAccounts()
+  const { data: mfsData } = useGetMfss()
   console.log('🚀 ~ Students ~ studentsData:', studentsData)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
@@ -97,7 +99,10 @@ const Students = () => {
     id: string
     name: string
   } | null>(null)
-  const [phoneNumber, setPhoneNumber] = useState<string>('')
+  const [mfsId, setMfsId] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const [paymentDate, setPaymentDate] = useState<string>('')
   const [remarks, setRemarks] = useState<string>('')
   const [selectedFees, setSelectedFees] = useState<number[]>([])
@@ -106,10 +111,25 @@ const Students = () => {
     selectedStudentIdForFees ? Number(selectedStudentIdForFees) : 0
   )
 
+  const filteredMfsAccounts = useMemo(() => {
+    if (
+      !mfsData?.data ||
+      !['bkash', 'nagad', 'rocket'].includes(paymentMethod)
+    ) {
+      return []
+    }
+    return mfsData.data
+      .filter((mfs: any) => mfs.mfsType === paymentMethod)
+      .map((mfs: any) => ({
+        id: mfs.mfsId?.toString() || '0',
+        name: `${mfs.accountName} - ${mfs.mfsNumber}`,
+      }))
+  }, [mfsData, paymentMethod])
+
   const resetForm = useCallback(() => {
     setPaymentMethod('')
     setBankAccountId(null)
-    setPhoneNumber('')
+    setMfsId(null)
     setPaymentDate('')
     setRemarks('')
     setSelectedFees([])
@@ -248,9 +268,10 @@ const Students = () => {
           paymentMethod === 'bank' && bankAccountId
             ? Number(bankAccountId.id)
             : null,
-        phoneNumber: ['bkash', 'nagad', 'rocket'].includes(paymentMethod)
-          ? phoneNumber
-          : null,
+        mfsId:
+          ['bkash', 'nagad', 'rocket'].includes(paymentMethod) && mfsId
+            ? Number(mfsId.id)
+            : null,
         paymentDate,
         remarks,
       }
@@ -267,7 +288,7 @@ const Students = () => {
         'Student Id': '',
         Method: '',
         'Bank Account Id': '',
-        'Phone Number': '',
+        'MFS Id': '',
         'Payment Date': '',
         Remarks: '',
       },
@@ -307,7 +328,7 @@ const Students = () => {
         bankAccountId: row['Bank Account Id']
           ? Number(row['Bank Account Id'])
           : null,
-        phoneNumber: row['Phone Number'] || null,
+        mfsId: row['MFS Id'] ? Number(row['MFS Id']) : null,
         paymentDate:
           row['Payment Date'] || new Date().toISOString().split('T')[0],
         remarks: row['Remarks'] || 'Bulk collection',
@@ -344,7 +365,7 @@ const Students = () => {
           </div>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 bg-transparent"
             onClick={downloadTemplate}
           >
             <Download className="h-4 w-4" />
@@ -352,7 +373,7 @@ const Students = () => {
           </Button>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 bg-transparent"
             onClick={() => setIsImportPopupOpen(true)}
           >
             <Upload className="h-4 w-4" />
@@ -651,12 +672,12 @@ const Students = () => {
 
               {['bkash', 'nagad', 'rocket'].includes(paymentMethod) && (
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+880..."
+                  <Label htmlFor="mfsAccount">MFS Account</Label>
+                  <CustomCombobox
+                    items={filteredMfsAccounts}
+                    value={mfsId}
+                    onChange={(v) => setMfsId(v)}
+                    placeholder={`Select ${paymentMethod} account`}
                   />
                 </div>
               )}
@@ -810,7 +831,7 @@ const Students = () => {
                   selectedFees.length === 0 ||
                   (paymentMethod === 'bank' && !bankAccountId) ||
                   (['bkash', 'nagad', 'rocket'].includes(paymentMethod) &&
-                    !phoneNumber)
+                    !mfsId)
                 }
                 className="bg-amber-600 hover:bg-amber-700"
               >
@@ -846,10 +867,11 @@ const Students = () => {
                 rocket, bank)
               </li>
               <li>
-                <strong>Bank Account Id</strong> - Required if method is &apos;bank&apos;
+                <strong>Bank Account Id</strong> - Required if method is
+                &apos;bank&apos;
               </li>
               <li>
-                <strong>Phone Number</strong> - Required if method is
+                <strong>MFS Id</strong> - Required if method is
                 bkash/nagad/rocket
               </li>
               <li>
