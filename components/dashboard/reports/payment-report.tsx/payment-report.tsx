@@ -67,8 +67,9 @@ const PaymentReport = () => {
           ? `${report.bankName} - ${report.accountNumber} - ${report.branch}`
           : 'N/A',
 
-      'Phone Number': report.phoneNumber || 'N/A',
-
+      'MFS Info': report.mfsNumber
+        ? `${report.mfsName} - ${report.mfsNumber} - ${report.mfsType}`
+        : 'N/A',
       'Paid Amount': formatNumber(Number(report.paidAmount)),
     }))
 
@@ -322,8 +323,8 @@ const PaymentReport = () => {
                       <TableHead className="font-bold">Section</TableHead>
                       <TableHead className="font-bold">Session</TableHead>
                       <TableHead className="font-bold">Method</TableHead>
-                      <TableHead className="font-bold">Bank Details</TableHead>
-                      <TableHead className="font-bold">UPI Number</TableHead>
+                      <TableHead className="font-bold">Bank Info</TableHead>
+                      <TableHead className="font-bold">MFS Info</TableHead>
                       <TableHead className="font-bold">Paid Amount</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -346,7 +347,11 @@ const PaymentReport = () => {
                             : 'N/A'}
                         </TableCell>
 
-                        <TableCell>{report.phoneNumber || 'N/A'}</TableCell>
+                        <TableCell>
+                          {report.mfsName && report.mfsNumber && report.mfsType
+                            ? `${report.mfsName} - ${report.mfsNumber} - ${report.mfsType}`
+                            : 'N/A'}
+                        </TableCell>
 
                         <TableCell className="text-green-600">
                           {formatNumber(Number(report.paidAmount))}

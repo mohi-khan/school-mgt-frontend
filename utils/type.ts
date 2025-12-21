@@ -407,7 +407,9 @@ export const paymentReportSchema = z.object({
   bankName: z.string().nullable().optional(),
   accountNumber: z.string().nullable().optional(),
   branch: z.string().nullable().optional(),
-  phoneNumber: z.string().nullable().optional(),
+  mfsName: z.string().nullable().optional(),
+  mfsNumber: z.string().nullable().optional(),
+  mfsType: z.string().nullable().optional(),
   paidAmount: z.number(),
 })
 export type GetPaymentReportType = z.infer<typeof paymentReportSchema>
