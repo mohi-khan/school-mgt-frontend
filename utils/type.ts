@@ -64,11 +64,24 @@ export const bankAccountSchema = z.object({
   updatedBy: z.number().int().optional().nullable(),
   updatedAt: z.date().optional().nullable(),
 })
-
 export type CreateBankAccountsType = z.infer<typeof bankAccountSchema>
 export type GetBankAccountsType = z.infer<typeof bankAccountSchema> & {
   bankName: string
 }
+
+export const mfsSchema = z.object({
+  mfsId: z.number().int().optional(),
+  accountName: z.string().min(1).max(100),
+  mfsNumber: z.string().max(15),
+  mfsType: z.enum(['bkash', 'nagad', 'rocket']),
+  balance: z.number(),
+  createdBy: z.number().int(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().optional().nullable(),
+  updatedAt: z.date().optional().nullable(),
+});
+export type CreateMfssType = z.infer<typeof mfsSchema>
+export type GetMfssType = z.infer<typeof mfsSchema>
 
 export const classSchema = z.object({
   classData: z.object({

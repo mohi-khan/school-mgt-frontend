@@ -14,6 +14,7 @@ import {
   CreateFeesTypeType,
   CreateIncomeHeadsType,
   CreateIncomesType,
+  CreateMfssType,
   CreateStudentWithFeesType,
   GetBankAccountsType,
   GetClassType,
@@ -30,6 +31,7 @@ import {
   GetIncomeHeadsType,
   GetIncomeReportType,
   GetIncomesType,
+  GetMfssType,
   GetPaymentReportType,
   GetSectionsType,
   GetSessionsType,
@@ -338,6 +340,60 @@ export async function editBankAccount(
 export async function deleteBankAccount(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/bank-accounts/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//mfs APIs
+export async function getAllMfss(token: string) {
+  return fetchApi<GetMfssType[]>({
+    url: 'api/mfs/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createMfs(
+  data: CreateMfssType,
+  token: string
+) {
+  return fetchApi<CreateMfssType>({
+    url: 'api/mfs/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editMfs(
+  id: number,
+  data: CreateMfssType,
+  token: string
+) {
+  return fetchApi<CreateMfssType>({
+    url: `api/mfs/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteMfs(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/mfs/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

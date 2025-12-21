@@ -62,6 +62,10 @@ export function DashboardSidebar() {
           title: 'Bank Accounts',
           href: '/dashboard/setup/bank-accounts',
         },
+        {
+          title: 'MFS',
+          href: '/dashboard/setup/mfs',
+        },
       ],
     },
     {

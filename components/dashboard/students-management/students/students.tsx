@@ -64,7 +64,7 @@ import {
 import type { GetStudentWithFeesType } from '@/utils/type'
 import Link from 'next/link'
 import { CustomCombobox } from '@/utils/custom-combobox'
-import { formatDate } from '@/utils/conversions'
+import { formatDate, formatNumber } from '@/utils/conversions'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import ExcelFileInput from '@/utils/excel-file-input'
@@ -493,9 +493,9 @@ const Students = () => {
                       {student.studentDetails.sectionName || '-'}
                     </TableCell>
                     <TableCell>{student.studentDetails.phoneNumber}</TableCell>
-                    <TableCell>{totalAmount.toFixed(2)}</TableCell>
-                    <TableCell>{totalRemainingAmount.toFixed(2)}</TableCell>
-                    <TableCell>{totalPaidAmount.toFixed(2)}</TableCell>
+                    <TableCell>{formatNumber(totalAmount)}</TableCell>
+                    <TableCell>{formatNumber(totalRemainingAmount)}</TableCell>
+                    <TableCell>{formatNumber(totalPaidAmount)}</TableCell>
                     <TableCell>
                       <div className="flex justify-start gap-2">
                         <Button
@@ -744,7 +744,7 @@ const Students = () => {
                                     : 'text-green-600'
                                 }
                               >
-                                {fee.amount || 0}
+                                {formatNumber(fee.amount) || 0}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -755,7 +755,7 @@ const Students = () => {
                                     : 'text-green-600'
                                 }
                               >
-                                {fee.remainingAmount || 0}
+                                {formatNumber(fee.remainingAmount) || 0}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -766,7 +766,7 @@ const Students = () => {
                                     : 'text-green-600'
                                 }
                               >
-                                {fee.paidAmount || 0}
+                                {formatNumber(fee.paidAmount) || 0}
                               </span>
                             </TableCell>
                             <TableCell>
