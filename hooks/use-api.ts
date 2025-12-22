@@ -5,6 +5,7 @@ import { toast } from './use-toast'
 import {
   collectFees,
   createBankAccount,
+  createBankToBankConversion,
   createClass,
   createExam,
   createExamGroup,
@@ -20,6 +21,7 @@ import {
   createMfs,
   createStudentWithFees,
   deleteBankAccount,
+  deleteBankToBankConversion,
   deleteClass,
   deleteExam,
   deleteExamGroup,
@@ -35,6 +37,7 @@ import {
   deleteMfs,
   deleteStudent,
   editBankAccount,
+  editBankToBankConversion,
   editClass,
   editExam,
   editExamGroup,
@@ -50,6 +53,7 @@ import {
   editMfs,
   editStudentWithFees,
   getAllBankAccounts,
+  getAllBankToBankConversions,
   getAllClasses,
   getAllExamGroups,
   getAllExamResults,
@@ -68,8 +72,11 @@ import {
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
+  getBankPaymentReport,
+  getCashPaymentReport,
   getExpenseReport,
   getIncomeReport,
+  getMfsPaymentReport,
   getPaymentReport,
   getStudentById,
   getStudentFeesById,
@@ -78,6 +85,7 @@ import {
 import {
   CollectFeesType,
   CreateBankAccountsType,
+  CreateBankToBankConversionsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -1096,7 +1104,7 @@ export const useGetStudentFeesById = (id: number) => {
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['studentFees', id],
+    queryKey: ['students', id],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getStudentFeesById(token, id)
@@ -1127,7 +1135,7 @@ export const useCollectFees = ({
         title: 'Success!',
         description: 'Student fees collected successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['studentFees'] })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
       reset()
       onClose()
     },
@@ -2111,6 +2119,127 @@ export const useDeleteExpense = ({
   return mutation
 }
 
+//bank to bank conversion
+export const useGetBankToBankConversions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['bankToBankConversions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllBankToBankConversions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateBankToBankConversionsType) => {
+      return createBankToBankConversion(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('bank to bank conversion added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding bank to bank conversion:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateBankToBankConversionsType }) => {
+      return editBankToBankConversion(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank to bank conversion edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing bank to bank conversion:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteBankToBankConversion(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank to bank conversion is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
 //reports
 export const useGetPaymentReport = (fromDate: string, toDate: string) => {
   const [token] = useAtom(tokenAtom)
@@ -2121,6 +2250,51 @@ export const useGetPaymentReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetBankPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['bankPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getBankPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetMfsPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['mfsPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getMfsPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetCashPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['cashPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getCashPaymentReport(token, fromDate, toDate)
     },
     enabled: !!token,
     select: (data) => data,

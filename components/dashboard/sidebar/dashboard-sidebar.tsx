@@ -17,6 +17,7 @@ import {
   UserCog,
   BadgePlus,
   BadgeMinus,
+  ArrowLeftRight,
 } from 'lucide-react'
 
 import {
@@ -160,6 +161,17 @@ export function DashboardSidebar() {
       ],
     },
     {
+      title: 'Transaction Conversion',
+      icon: ArrowLeftRight,
+      href: '/dashboard/transaction-conversion',
+      subItems: [
+        {
+          title: 'Bank to Bank',
+          href: '/dashboard/transaction-conversion/bank-to-bank-conversions',
+        },
+      ],
+    },
+    {
       title: 'Reports',
       icon: FileChartColumn,
       href: '/dashboard/reports',
@@ -167,6 +179,18 @@ export function DashboardSidebar() {
         {
           title: 'Payment Report',
           href: '/dashboard/reports/payment-report',
+        },
+        {
+          title: 'Bank Payment Report',
+          href: '/dashboard/reports/bank-payment-report',
+        },
+        {
+          title: 'MFS Payment Report',
+          href: '/dashboard/reports/mfs-payment-report',
+        },
+        {
+          title: 'Cash Payment Report',
+          href: '/dashboard/reports/cash-payment-report',
         },
         {
           title: 'Income Report',

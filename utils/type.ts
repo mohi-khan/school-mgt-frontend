@@ -79,7 +79,7 @@ export const mfsSchema = z.object({
   createdAt: z.date().optional(),
   updatedBy: z.number().int().optional().nullable(),
   updatedAt: z.date().optional().nullable(),
-});
+})
 export type CreateMfssType = z.infer<typeof mfsSchema>
 export type GetMfssType = z.infer<typeof mfsSchema>
 
@@ -414,6 +414,47 @@ export const paymentReportSchema = z.object({
 })
 export type GetPaymentReportType = z.infer<typeof paymentReportSchema>
 
+export const bankPaymentReportSchema = z.object({
+  studentPaymentId: z.number().optional(),
+  paymentDate: z.string(),
+  studentName: z.string(),
+  studentClass: z.string(),
+  studentSection: z.string(),
+  studentSession: z.string(),
+  bankName: z.string().nullable().optional(),
+  accountNumber: z.string().nullable().optional(),
+  branch: z.string().nullable().optional(),
+  paidAmount: z.number(),
+})
+export type GetBankPaymentReportType = z.infer<typeof bankPaymentReportSchema>
+
+export const mfsPaymentReportSchema = z.object({
+  studentPaymentId: z.number().optional(),
+  paymentDate: z.string(),
+  studentName: z.string(),
+  studentClass: z.string(),
+  studentSection: z.string(),
+  studentSession: z.string(),
+  method: z.string(),
+  mfsName: z.string().nullable().optional(),
+  mfsNumber: z.string().nullable().optional(),
+  mfsType: z.string().nullable().optional(),
+  paidAmount: z.number(),
+})
+export type GetMfsPaymentReportType = z.infer<typeof mfsPaymentReportSchema>
+
+export const cashPaymentReportSchema = z.object({
+  studentPaymentId: z.number().optional(),
+  paymentDate: z.string(),
+  studentName: z.string(),
+  studentClass: z.string(),
+  studentSection: z.string(),
+  studentSession: z.string(),
+  method: z.string(),
+  paidAmount: z.number(),
+})
+export type GetCashPaymentReportType = z.infer<typeof cashPaymentReportSchema>
+
 export const incomeReportSchema = z.object({
   incomeId: z.number().optional(),
   name: z.string().optional(),
@@ -435,3 +476,31 @@ export const expenseReportSchema = z.object({
   amount: z.number().optional(),
 })
 export type GetExpenseReportType = z.infer<typeof expenseReportSchema>
+
+export const bankToBankConversionSchema = z.object({
+  conversionId: z.number().optional(),
+  fromBankAccountId: z.number(),
+  toBankAccountId: z.number(),
+  amount: z.number(),
+  date: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateBankToBankConversionsType = z.infer<
+  typeof bankToBankConversionSchema
+>
+export type GetBankToBankConversionsType = z.infer<
+  typeof bankToBankConversionSchema
+> & {
+  fromBankName: string
+  fromAccountNumber: string
+  fromBranch: string | null
+  fromAccountName: string
+  toBankName: string
+  toAccountNumber: string
+  toBranch: string | null
+  toAccountName: string
+}

@@ -2,6 +2,7 @@ import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CollectFeesType,
   CreateBankAccountsType,
+  CreateBankToBankConversionsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -17,6 +18,9 @@ import {
   CreateMfssType,
   CreateStudentWithFeesType,
   GetBankAccountsType,
+  GetBankPaymentReportType,
+  GetBankToBankConversionsType,
+  GetCashPaymentReportType,
   GetClassType,
   GetExamGroupType,
   GetExamResultsType,
@@ -31,6 +35,7 @@ import {
   GetIncomeHeadsType,
   GetIncomeReportType,
   GetIncomesType,
+  GetMfsPaymentReportType,
   GetMfssType,
   GetPaymentReportType,
   GetSectionsType,
@@ -940,6 +945,57 @@ export async function deleteExpense(id: number, token: string) {
   })
 }
 
+//bank to bank conversion APIs
+export async function getAllBankToBankConversions(token: string) {
+  return fetchApi<GetBankToBankConversionsType[]>({
+    url: 'api/bank-to-bank-conversions/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createBankToBankConversion(data: CreateBankToBankConversionsType, token: string) {
+  return fetchApi<CreateBankToBankConversionsType>({
+    url: 'api/bank-to-bank-conversions/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editBankToBankConversion(
+  id: number,
+  data: CreateBankToBankConversionsType,
+  token: string
+) {
+  return fetchApi<CreateBankToBankConversionsType>({
+    url: `api/bank-to-bank-conversions/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteBankToBankConversion(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/bank-to-bank-conversions/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //reports APIs
 export async function getPaymentReport(
   token: string,
@@ -948,6 +1004,51 @@ export async function getPaymentReport(
 ) {
   return fetchApi<GetPaymentReportType[]>({
     url: `api/reports/payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getBankPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetBankPaymentReportType[]>({
+    url: `api/reports/bank-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getMfsPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetMfsPaymentReportType[]>({
+    url: `api/reports/mfs-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getCashPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetCashPaymentReportType[]>({
+    url: `api/reports/cash-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
     method: 'GET',
     headers: {
       Authorization: token,
