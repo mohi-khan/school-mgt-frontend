@@ -17,6 +17,7 @@ import {
   UserCog,
   BadgePlus,
   BadgeMinus,
+  ArrowLeftRight,
 } from 'lucide-react'
 
 import {
@@ -156,6 +157,17 @@ export function DashboardSidebar() {
         {
           title: 'Expenses',
           href: '/dashboard/expense-management/expenses',
+        },
+      ],
+    },
+    {
+      title: 'Transaction Conversion',
+      icon: ArrowLeftRight,
+      href: '/dashboard/transaction-conversion',
+      subItems: [
+        {
+          title: 'Bank to Bank',
+          href: '/dashboard/transaction-conversion/bank-to-bank-conversions',
         },
       ],
     },

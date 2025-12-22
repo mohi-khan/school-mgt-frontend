@@ -79,7 +79,7 @@ export const mfsSchema = z.object({
   createdAt: z.date().optional(),
   updatedBy: z.number().int().optional().nullable(),
   updatedAt: z.date().optional().nullable(),
-});
+})
 export type CreateMfssType = z.infer<typeof mfsSchema>
 export type GetMfssType = z.infer<typeof mfsSchema>
 
@@ -476,3 +476,31 @@ export const expenseReportSchema = z.object({
   amount: z.number().optional(),
 })
 export type GetExpenseReportType = z.infer<typeof expenseReportSchema>
+
+export const bankToBankConversionSchema = z.object({
+  conversionId: z.number().optional(),
+  fromBankAccountId: z.number(),
+  toBankAccountId: z.number(),
+  amount: z.number(),
+  date: z.string(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateBankToBankConversionsType = z.infer<
+  typeof bankToBankConversionSchema
+>
+export type GetBankToBankConversionsType = z.infer<
+  typeof bankToBankConversionSchema
+> & {
+  fromBankName: string
+  fromAccountNumber: string
+  fromBranch: string | null
+  fromAccountName: string
+  toBankName: string
+  toAccountNumber: string
+  toBranch: string | null
+  toAccountName: string
+}

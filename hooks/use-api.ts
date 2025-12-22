@@ -5,6 +5,7 @@ import { toast } from './use-toast'
 import {
   collectFees,
   createBankAccount,
+  createBankToBankConversion,
   createClass,
   createExam,
   createExamGroup,
@@ -20,6 +21,7 @@ import {
   createMfs,
   createStudentWithFees,
   deleteBankAccount,
+  deleteBankToBankConversion,
   deleteClass,
   deleteExam,
   deleteExamGroup,
@@ -35,6 +37,7 @@ import {
   deleteMfs,
   deleteStudent,
   editBankAccount,
+  editBankToBankConversion,
   editClass,
   editExam,
   editExamGroup,
@@ -50,6 +53,7 @@ import {
   editMfs,
   editStudentWithFees,
   getAllBankAccounts,
+  getAllBankToBankConversions,
   getAllClasses,
   getAllExamGroups,
   getAllExamResults,
@@ -81,6 +85,7 @@ import {
 import {
   CollectFeesType,
   CreateBankAccountsType,
+  CreateBankToBankConversionsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -2102,6 +2107,127 @@ export const useDeleteExpense = ({
         description: 'income is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//bank to bank conversion
+export const useGetBankToBankConversions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['bankToBankConversions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllBankToBankConversions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateBankToBankConversionsType) => {
+      return createBankToBankConversion(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('bank to bank conversion added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding bank to bank conversion:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateBankToBankConversionsType }) => {
+      return editBankToBankConversion(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank to bank conversion edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing bank to bank conversion:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteBankToBankConversion = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteBankToBankConversion(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'bank to bank conversion is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['bankToBankConversions'] })
 
       reset()
       onClose()

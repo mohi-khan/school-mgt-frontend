@@ -2,6 +2,7 @@ import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CollectFeesType,
   CreateBankAccountsType,
+  CreateBankToBankConversionsType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -18,6 +19,7 @@ import {
   CreateStudentWithFeesType,
   GetBankAccountsType,
   GetBankPaymentReportType,
+  GetBankToBankConversionsType,
   GetCashPaymentReportType,
   GetClassType,
   GetExamGroupType,
@@ -935,6 +937,57 @@ export async function editExpense(
 export async function deleteExpense(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/expenses/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//bank to bank conversion APIs
+export async function getAllBankToBankConversions(token: string) {
+  return fetchApi<GetBankToBankConversionsType[]>({
+    url: 'api/bank-to-bank-conversions/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createBankToBankConversion(data: CreateBankToBankConversionsType, token: string) {
+  return fetchApi<CreateBankToBankConversionsType>({
+    url: 'api/bank-to-bank-conversions/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editBankToBankConversion(
+  id: number,
+  data: CreateBankToBankConversionsType,
+  token: string
+) {
+  return fetchApi<CreateBankToBankConversionsType>({
+    url: `api/bank-to-bank-conversions/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteBankToBankConversion(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/bank-to-bank-conversions/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
