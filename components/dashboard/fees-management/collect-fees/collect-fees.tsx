@@ -25,6 +25,7 @@ import {
   useGetStudentFeesById,
   useCollectFees,
   useGetBankAccounts,
+  useGetMfss,
 } from '@/hooks/use-api'
 import type { GetStudentFeesType, CollectFeesType } from '@/utils/type'
 import { Popup } from '@/utils/popup'
@@ -34,6 +35,7 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 const CollectFees = () => {
   const { studentId } = useParams()
   const { data: bankAccounts } = useGetBankAccounts()
+  const { data: mfsData } = useGetMfss()
   const { data: studentFees, isLoading } = useGetStudentFeesById(
     Number(studentId)
   )
@@ -49,16 +51,41 @@ const CollectFees = () => {
   )
   const [error, setError] = useState<string | null>(null)
 
+  const [bankAccountId, setBankAccountId] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+
+  const [mfsId, setMfsId] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+
   const [formData, setFormData] = useState<CollectFeesType>({
     studentFeesId: 0,
     studentId: 0,
     method: 'cash',
     bankAccountId: null,
-    phoneNumber: '',
+    mfsId: null,
     paidAmount: 0,
     paymentDate: new Date().toISOString().split('T')[0],
     remarks: '',
   })
+
+  const filteredMfsAccounts = useMemo(() => {
+    if (
+      !mfsData?.data ||
+      !['bkash', 'nagad', 'rocket'].includes(formData.method)
+    ) {
+      return []
+    }
+    return mfsData.data
+      .filter((mfs: any) => mfs.mfsType === formData.method)
+      .map((mfs: any) => ({
+        id: mfs.mfsId?.toString() || '0',
+        name: `${mfs.accountName} - ${mfs.mfsNumber}`,
+      }))
+  }, [mfsData, formData.method])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
@@ -72,11 +99,13 @@ const CollectFees = () => {
       studentId: 0,
       method: 'cash',
       bankAccountId: null,
-      phoneNumber: '',
+      mfsId: null,
       paidAmount: 0,
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
     })
+    setBankAccountId(null)
+    setMfsId(null)
     setSelectedFee(null)
     setIsPopupOpen(false)
     setError(null)
@@ -98,7 +127,7 @@ const CollectFees = () => {
 
   const filteredFees = useMemo(() => {
     if (!studentFees?.data) return []
-    return studentFees.data.filter((fee: GetStudentFeesType) => {
+    return studentFees.data?.filter((fee: GetStudentFeesType) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         fee.feesTypeName?.toLowerCase().includes(searchLower) ||
@@ -133,12 +162,14 @@ const CollectFees = () => {
       studentFeesId: fee.studentFeesId || 0,
       studentId: Number(studentId),
       method: 'cash',
-      bankAccountId: fee.bankAccountId,
-      phoneNumber: '',
+      bankAccountId: null,
+      mfsId: null,
       paidAmount: fee.remainingAmount || 0,
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
     })
+    setBankAccountId(null)
+    setMfsId(null)
     setIsPopupOpen(true)
   }
 
@@ -155,20 +186,15 @@ const CollectFees = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'method') {
-      // Clear bank account when switching away from bank method
-      // Clear phone number when switching away from mobile methods
       const paymentMethod = value as CollectFeesType['method']
       setFormData((prev) => ({
         ...prev,
         method: paymentMethod,
-        bankAccountId: value === 'bank' ? prev.bankAccountId : null,
-        phoneNumber: ['bkash', 'nagad', 'rocket'].includes(value) ? prev.phoneNumber : '',
+        bankAccountId: null,
+        mfsId: null,
       }))
-    } else if (name === 'bankAccountId') {
-      setFormData((prev) => ({
-        ...prev,
-        bankAccountId: value ? Number(value) : null,
-      }))
+      setBankAccountId(null)
+      setMfsId(null)
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -195,7 +221,18 @@ const CollectFees = () => {
     }
 
     try {
-      collectFeesMutation.mutate(formData)
+      const submitData = {
+        ...formData,
+        bankAccountId:
+          formData.method === 'bank' && bankAccountId
+            ? Number(bankAccountId.id)
+            : null,
+        mfsId:
+          ['bkash', 'nagad', 'rocket'].includes(formData.method) && mfsId
+            ? Number(mfsId.id)
+            : null,
+      }
+      collectFeesMutation.mutate(submitData)
     } catch (err) {
       setError('Failed to collect fees')
       console.error(err)
@@ -400,39 +437,21 @@ const CollectFees = () => {
                         name: `${b.bankName} - ${b.accountNumber} - ${b.branch}`,
                       })) || []
                     }
-                    value={
-                      formData.bankAccountId
-                        ? {
-                            id: formData.bankAccountId.toString(),
-                            name:
-                              bankAccounts?.data?.find(
-                                (b) =>
-                                  b.bankAccountId === formData.bankAccountId
-                              )?.bankName || '',
-                          }
-                        : null
-                    }
-                    onChange={(v) =>
-                      handleSelectChange('bankAccountId', v ? v.id : '0')
-                    }
+                    value={bankAccountId}
+                    onChange={(v) => setBankAccountId(v)}
                     placeholder="Select bank account"
                   />
                 </div>
               )}
 
-              {(formData.method === 'bkash' ||
-                formData.method === 'rocket' ||
-                formData.method === 'nagad') && (
+              {['bkash', 'nagad', 'rocket'].includes(formData.method) && (
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    value={formData.phoneNumber ?? ''}
-                    onChange={handleInputChange}
-                    placeholder="Enter bank name"
-                    required
-                    maxLength={100}
+                  <Label htmlFor="mfsAccount">MFS Account</Label>
+                  <CustomCombobox
+                    items={filteredMfsAccounts}
+                    value={mfsId}
+                    onChange={(v) => setMfsId(v)}
+                    placeholder={`Select ${formData.method} account`}
                   />
                 </div>
               )}

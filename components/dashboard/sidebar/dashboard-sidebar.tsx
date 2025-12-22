@@ -169,6 +169,18 @@ export function DashboardSidebar() {
           href: '/dashboard/reports/payment-report',
         },
         {
+          title: 'Bank Payment Report',
+          href: '/dashboard/reports/bank-payment-report',
+        },
+        {
+          title: 'MFS Payment Report',
+          href: '/dashboard/reports/mfs-payment-report',
+        },
+        {
+          title: 'Cash Payment Report',
+          href: '/dashboard/reports/cash-payment-report',
+        },
+        {
           title: 'Income Report',
           href: '/dashboard/reports/income-report',
         },

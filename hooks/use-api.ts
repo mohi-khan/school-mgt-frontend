@@ -68,8 +68,11 @@ import {
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSection,
+  getBankPaymentReport,
+  getCashPaymentReport,
   getExpenseReport,
   getIncomeReport,
+  getMfsPaymentReport,
   getPaymentReport,
   getStudentById,
   getStudentFeesById,
@@ -1096,7 +1099,7 @@ export const useGetStudentFeesById = (id: number) => {
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['studentFees', id],
+    queryKey: ['students', id],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getStudentFeesById(token, id)
@@ -1127,7 +1130,7 @@ export const useCollectFees = ({
         title: 'Success!',
         description: 'Student fees collected successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['studentFees'] })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
       reset()
       onClose()
     },
@@ -2121,6 +2124,51 @@ export const useGetPaymentReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetBankPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['bankPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getBankPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetMfsPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['mfsPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getMfsPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetCashPaymentReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['cashPaymentReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getCashPaymentReport(token, fromDate, toDate)
     },
     enabled: !!token,
     select: (data) => data,

@@ -17,6 +17,8 @@ import {
   CreateMfssType,
   CreateStudentWithFeesType,
   GetBankAccountsType,
+  GetBankPaymentReportType,
+  GetCashPaymentReportType,
   GetClassType,
   GetExamGroupType,
   GetExamResultsType,
@@ -31,6 +33,7 @@ import {
   GetIncomeHeadsType,
   GetIncomeReportType,
   GetIncomesType,
+  GetMfsPaymentReportType,
   GetMfssType,
   GetPaymentReportType,
   GetSectionsType,
@@ -948,6 +951,51 @@ export async function getPaymentReport(
 ) {
   return fetchApi<GetPaymentReportType[]>({
     url: `api/reports/payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getBankPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetBankPaymentReportType[]>({
+    url: `api/reports/bank-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getMfsPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetMfsPaymentReportType[]>({
+    url: `api/reports/mfs-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getCashPaymentReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetCashPaymentReportType[]>({
+    url: `api/reports/cash-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
     method: 'GET',
     headers: {
       Authorization: token,
