@@ -161,15 +161,9 @@ export function DashboardSidebar() {
       ],
     },
     {
-      title: 'Transaction Conversion',
+      title: 'Bank MFS Cash',
       icon: ArrowLeftRight,
-      href: '/dashboard/transaction-conversion',
-      subItems: [
-        {
-          title: 'Bank to Bank',
-          href: '/dashboard/transaction-conversion/bank-to-bank-conversions',
-        },
-      ],
+      href: '/dashboard/bank-mfs-cash',
     },
     {
       title: 'Reports',

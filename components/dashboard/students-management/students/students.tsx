@@ -531,7 +531,7 @@ const Students = () => {
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           className="text-amber-600 hover:text-amber-700"
@@ -542,7 +542,7 @@ const Students = () => {
                           }
                         >
                           <Edit2 className="h-4 w-4" />
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="ghost"
                           size="sm"

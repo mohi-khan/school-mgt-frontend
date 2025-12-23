@@ -5,7 +5,7 @@ import { toast } from './use-toast'
 import {
   collectFees,
   createBankAccount,
-  createBankToBankConversion,
+  createBankMfsCash,
   createClass,
   createExam,
   createExamGroup,
@@ -21,7 +21,7 @@ import {
   createMfs,
   createStudentWithFees,
   deleteBankAccount,
-  deleteBankToBankConversion,
+  deleteBankMfsCash,
   deleteClass,
   deleteExam,
   deleteExamGroup,
@@ -37,7 +37,7 @@ import {
   deleteMfs,
   deleteStudent,
   editBankAccount,
-  editBankToBankConversion,
+  editBankMfsCash,
   editClass,
   editExam,
   editExamGroup,
@@ -53,7 +53,7 @@ import {
   editMfs,
   editStudentWithFees,
   getAllBankAccounts,
-  getAllBankToBankConversions,
+  getAllBankMfsCash,
   getAllClasses,
   getAllExamGroups,
   getAllExamResults,
@@ -85,7 +85,7 @@ import {
 import {
   CollectFeesType,
   CreateBankAccountsType,
-  CreateBankToBankConversionsType,
+  CreateBankMfsCashType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -2120,7 +2120,7 @@ export const useDeleteExpense = ({
 }
 
 //bank to bank conversion
-export const useGetBankToBankConversions = () => {
+export const useGetBankMfsCash = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
@@ -2130,14 +2130,14 @@ export const useGetBankToBankConversions = () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllBankToBankConversions(token)
+      return getAllBankMfsCash(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddBankToBankConversion = ({
+export const useAddBankMfsCash = ({
   onClose,
   reset,
 }: {
@@ -2149,8 +2149,8 @@ export const useAddBankToBankConversion = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: CreateBankToBankConversionsType) => {
-      return createBankToBankConversion(data, token)
+    mutationFn: (data: CreateBankMfsCashType) => {
+      return createBankMfsCash(data, token)
     },
     onSuccess: (data) => {
       console.log('bank to bank conversion added successfully:', data)
@@ -2172,7 +2172,7 @@ export const useAddBankToBankConversion = ({
   return mutation
 }
 
-export const useUpdateBankToBankConversion = ({
+export const useUpdateBankMfsCash = ({
   onClose,
   reset,
 }: {
@@ -2185,8 +2185,8 @@ export const useUpdateBankToBankConversion = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateBankToBankConversionsType }) => {
-      return editBankToBankConversion(id, data, token)
+    mutationFn: ({ id, data }: { id: number; data: CreateBankMfsCashType }) => {
+      return editBankMfsCash(id, data, token)
     },
     onSuccess: () => {
       toast({
@@ -2206,7 +2206,7 @@ export const useUpdateBankToBankConversion = ({
   return mutation
 }
 
-export const useDeleteBankToBankConversion = ({
+export const useDeleteBankMfsCash = ({
   onClose,
   reset,
 }: {
@@ -2220,7 +2220,7 @@ export const useDeleteBankToBankConversion = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteBankToBankConversion(id, token)
+      return deleteBankMfsCash(id, token)
     },
     onSuccess: () => {
       toast({

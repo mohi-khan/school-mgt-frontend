@@ -2,7 +2,7 @@ import { fetchApi, fetchApiWithFile } from '@/utils/http'
 import {
   CollectFeesType,
   CreateBankAccountsType,
-  CreateBankToBankConversionsType,
+  CreateBankMfsCashType,
   CreateClassType,
   CreateExamGroupType,
   CreateExamResultsType,
@@ -19,7 +19,7 @@ import {
   CreateStudentWithFeesType,
   GetBankAccountsType,
   GetBankPaymentReportType,
-  GetBankToBankConversionsType,
+  GetBankMfsCashType,
   GetCashPaymentReportType,
   GetClassType,
   GetExamGroupType,
@@ -946,9 +946,9 @@ export async function deleteExpense(id: number, token: string) {
 }
 
 //bank to bank conversion APIs
-export async function getAllBankToBankConversions(token: string) {
-  return fetchApi<GetBankToBankConversionsType[]>({
-    url: 'api/bank-to-bank-conversions/getall',
+export async function getAllBankMfsCash(token: string) {
+  return fetchApi<GetBankMfsCashType[]>({
+    url: 'api/bank-mfs-cash/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -957,9 +957,9 @@ export async function getAllBankToBankConversions(token: string) {
   })
 }
 
-export async function createBankToBankConversion(data: CreateBankToBankConversionsType, token: string) {
-  return fetchApi<CreateBankToBankConversionsType>({
-    url: 'api/bank-to-bank-conversions/create',
+export async function createBankMfsCash(data: CreateBankMfsCashType, token: string) {
+  return fetchApi<CreateBankMfsCashType>({
+    url: 'api/bank-mfs-cash/create',
     method: 'POST',
     body: data,
     headers: {
@@ -969,13 +969,13 @@ export async function createBankToBankConversion(data: CreateBankToBankConversio
   })
 }
 
-export async function editBankToBankConversion(
+export async function editBankMfsCash(
   id: number,
-  data: CreateBankToBankConversionsType,
+  data: CreateBankMfsCashType,
   token: string
 ) {
-  return fetchApi<CreateBankToBankConversionsType>({
-    url: `api/bank-to-bank-conversions/edit/${id}`,
+  return fetchApi<CreateBankMfsCashType>({
+    url: `api/bank-mfs-cash/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: {
@@ -985,9 +985,9 @@ export async function editBankToBankConversion(
   })
 }
 
-export async function deleteBankToBankConversion(id: number, token: string) {
+export async function deleteBankMfsCash(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/bank-to-bank-conversions/delete/${id}`,
+    url: `api/bank-mfs-cash/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
