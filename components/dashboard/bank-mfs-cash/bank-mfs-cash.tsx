@@ -61,8 +61,7 @@ const BankMfsCash = () => {
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
 
-  const { data: bankMfsCash } = useGetBankMfsCash()
-  console.log("🚀 ~ BankMfsCash ~ bankMfsCash:", bankMfsCash)
+  const { data: bankToBankConversions } = useGetBankMfsCash()
   const { data: bankAccounts } = useGetBankAccounts()
   const { data: mfss } = useGetMfss()
 
@@ -126,8 +125,8 @@ const BankMfsCash = () => {
   }
 
   const filteredConversions = useMemo(() => {
-    if (!bankMfsCash?.data) return []
-    return bankMfsCash.data.filter((conversion: any) => {
+    if (!bankToBankConversions?.data) return []
+    return bankToBankConversions.data.filter((conversion: any) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         conversion.fromBankName?.toLowerCase().includes(searchLower) ||
@@ -142,7 +141,7 @@ const BankMfsCash = () => {
         conversion.description?.toLowerCase().includes(searchLower)
       )
     })
-  }, [bankMfsCash?.data, searchTerm])
+  }, [bankToBankConversions?.data, searchTerm])
 
   const sortedConversions = useMemo(() => {
     return [...filteredConversions].sort((a, b) => {
@@ -276,11 +275,10 @@ const BankMfsCash = () => {
       try {
         const payload: any = {
           fromBankAccountId:
-            fromType === 'bank' ? Number(fromBankAccountId) : undefined,
-          toBankAccountId:
-            toType === 'bank' ? Number(toBankAccountId) : undefined,
-          fromMfsId: fromType === 'mfs' ? Number(fromMfsId) : undefined,
-          toMfsId: toType === 'mfs' ? Number(toMfsId) : undefined,
+            fromType === 'bank' ? Number(fromBankAccountId) : null,
+          toBankAccountId: toType === 'bank' ? Number(toBankAccountId) : null,
+          fromMfsId: fromType === 'mfs' ? Number(fromMfsId) : null,
+          toMfsId: toType === 'mfs' ? Number(toMfsId) : null,
           amount: Number(formData.amount),
           date: formData.date,
           description: formData.description,
@@ -339,21 +337,29 @@ const BankMfsCash = () => {
     if (conversion.fromBankAccountId) {
       setFromType('bank')
       setFromBankAccountId(conversion.fromBankAccountId.toString())
+      setFromMfsId('') // null out MFS when bank is set
     } else if (conversion.fromMfsId) {
       setFromType('mfs')
       setFromMfsId(conversion.fromMfsId?.toString() || '')
+      setFromBankAccountId('') // null out bank when MFS is set
     } else {
       setFromType('cash')
+      setFromBankAccountId('') // null out both when cash
+      setFromMfsId('')
     }
 
     if (conversion.toBankAccountId) {
       setToType('bank')
       setToBankAccountId(conversion.toBankAccountId.toString())
+      setToMfsId('') // null out MFS when bank is set
     } else if (conversion.toMfsId) {
       setToType('mfs')
       setToMfsId(conversion.toMfsId?.toString() || '')
+      setToBankAccountId('') // null out bank when MFS is set
     } else {
       setToType('cash')
+      setToBankAccountId('') // null out both when cash
+      setToMfsId('')
     }
 
     const dateValue = conversion.date
@@ -453,15 +459,15 @@ const BankMfsCash = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!bankMfsCash ||
-            bankMfsCash.data === undefined ? (
+            {!bankToBankConversions ||
+            bankToBankConversions.data === undefined ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-4">
                   Loading conversions...
                 </TableCell>
               </TableRow>
-            ) : !bankMfsCash.data ||
-              bankMfsCash.data.length === 0 ? (
+            ) : !bankToBankConversions.data ||
+              bankToBankConversions.data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-4">
                   No conversions found
@@ -504,7 +510,7 @@ const BankMfsCash = () => {
                     ) : conversion.fromBankName ? (
                       <div className="text-muted-foreground">-</div>
                     ) : (
-                      <div className="font-semibold text-amber-600">Cash</div>
+                      <div className="font-semibold">-</div>
                     )}
                   </TableCell>
                   <TableCell className="font-medium">
@@ -514,7 +520,8 @@ const BankMfsCash = () => {
                           {conversion.toBankName}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {conversion.toBankAccountNumber} - {conversion.toBankBranch}
+                          {conversion.toBankAccountNumber} -{' '}
+                          {conversion.toBankBranch}
                         </div>
                       </div>
                     ) : (
@@ -534,7 +541,7 @@ const BankMfsCash = () => {
                     ) : conversion.toBankName ? (
                       <div className="text-muted-foreground">-</div>
                     ) : (
-                      <div className="font-semibold text-amber-600">Cash</div>
+                      <div className="font-semibold">-</div>
                     )}
                   </TableCell>
                   <TableCell>{formatNumber(conversion.amount)}</TableCell>
@@ -644,7 +651,7 @@ const BankMfsCash = () => {
             ? 'Edit Bank MFS Cash Transfer'
             : 'Add Bank MFS Cash Transfer'
         }
-        size="max-w-xl"
+        size="sm:max-w-xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
