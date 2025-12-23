@@ -477,10 +477,12 @@ export const expenseReportSchema = z.object({
 })
 export type GetExpenseReportType = z.infer<typeof expenseReportSchema>
 
-export const bankToBankConversionSchema = z.object({
-  conversionId: z.number().optional(),
-  fromBankAccountId: z.number(),
-  toBankAccountId: z.number(),
+export const bankMfsCashSchema = z.object({
+  id: z.number().optional(),
+  fromBankAccountId: z.number().optional(),
+  toBankAccountId: z.number().optional(),
+  fromMfsId: z.number().nullable().optional(),
+  toMfsId: z.number().nullable().optional(),
   amount: z.number(),
   date: z.string(),
   description: z.string().nullable().optional(),
@@ -489,18 +491,27 @@ export const bankToBankConversionSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateBankToBankConversionsType = z.infer<
-  typeof bankToBankConversionSchema
->
-export type GetBankToBankConversionsType = z.infer<
-  typeof bankToBankConversionSchema
-> & {
-  fromBankName: string
-  fromAccountNumber: string
-  fromBranch: string | null
-  fromAccountName: string
-  toBankName: string
-  toAccountNumber: string
-  toBranch: string | null
-  toAccountName: string
+export type CreateBankMfsCashType = z.infer<typeof bankMfsCashSchema>
+export type GetBankMfsCashType = z.infer<typeof bankMfsCashSchema> & {
+  // ===== From Bank (nullable) =====
+  fromBankName: string | null
+  fromBankAccountNumber: string | null
+  fromBankBranch: string | null
+  fromAccountName: string | null
+
+  // ===== To Bank (nullable) =====
+  toBankName: string | null
+  toBankAccountNumber: string | null
+  toBankBranch: string | null
+  toAccountName: string | null
+
+  // ===== From MFS (nullable) =====
+  fromMfsAccountName: string | null
+  fromMfsNumber: string | null
+  fromMfsType: 'bkash' | 'nagad' | 'rocket' | null
+
+  // ===== To MFS (nullable) =====
+  toMfsAccountName: string | null
+  toMfsNumber: string | null
+  toMfsType: 'bkash' | 'nagad' | 'rocket' | null
 }
