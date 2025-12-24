@@ -80,6 +80,7 @@ import {
   getPaymentReport,
   getStudentById,
   getStudentFeesById,
+  getTransactionReport,
   promoteStudents,
 } from '@/utils/api'
 import {
@@ -2295,6 +2296,21 @@ export const useGetCashPaymentReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getCashPaymentReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetTransactionReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['transactionReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getTransactionReport(token, fromDate, toDate)
     },
     enabled: !!token,
     select: (data) => data,

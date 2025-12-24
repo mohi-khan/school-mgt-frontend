@@ -47,6 +47,7 @@ import {
   SignInResponse,
   SignInResponseSchema,
   StudentPromotionsType,
+  GetTransactionReportType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -365,10 +366,7 @@ export async function getAllMfss(token: string) {
   })
 }
 
-export async function createMfs(
-  data: CreateMfssType,
-  token: string
-) {
+export async function createMfs(data: CreateMfssType, token: string) {
   return fetchApi<CreateMfssType>({
     url: 'api/mfs/create',
     method: 'POST',
@@ -380,11 +378,7 @@ export async function createMfs(
   })
 }
 
-export async function editMfs(
-  id: number,
-  data: CreateMfssType,
-  token: string
-) {
+export async function editMfs(id: number, data: CreateMfssType, token: string) {
   return fetchApi<CreateMfssType>({
     url: `api/mfs/edit/${id}`,
     method: 'PATCH',
@@ -957,7 +951,10 @@ export async function getAllBankMfsCash(token: string) {
   })
 }
 
-export async function createBankMfsCash(data: CreateBankMfsCashType, token: string) {
+export async function createBankMfsCash(
+  data: CreateBankMfsCashType,
+  token: string
+) {
   return fetchApi<CreateBankMfsCashType>({
     url: 'api/bank-mfs-cash/create',
     method: 'POST',
@@ -1049,6 +1046,21 @@ export async function getCashPaymentReport(
 ) {
   return fetchApi<GetCashPaymentReportType[]>({
     url: `api/reports/cash-payment-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getTransactionReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetTransactionReportType[]>({
+    url: `api/reports/transaction-report?fromDate=${fromDate}&toDate=${toDate}`,
     method: 'GET',
     headers: {
       Authorization: token,
