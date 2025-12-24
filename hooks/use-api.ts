@@ -78,6 +78,7 @@ import {
   getIncomeReport,
   getMfsPaymentReport,
   getPaymentReport,
+  getPaymentSummary,
   getStudentById,
   getStudentFeesById,
   getTransactionReport,
@@ -2341,6 +2342,24 @@ export const useGetExpenseReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getExpenseReport(token, fromDate, toDate)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+//dashbaord
+export const useGetPaymentSummary = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['paymentSummary'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getPaymentSummary(token)
     },
     enabled: !!token,
     select: (data) => data,

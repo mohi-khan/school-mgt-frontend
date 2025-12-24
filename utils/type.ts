@@ -526,3 +526,10 @@ export const expenseReportSchema = z.object({
   amount: z.number().optional(),
 })
 export type GetExpenseReportType = z.infer<typeof expenseReportSchema>
+
+export const paymentSummarySchema = z.object({
+  totalCash: z.number(),
+  totalBank: z.number(),
+  totalMfs: z.number(),
+})
+export type GetPaymentSummaryType = z.infer<typeof paymentSummarySchema>
