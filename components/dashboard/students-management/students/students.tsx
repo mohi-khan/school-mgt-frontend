@@ -218,7 +218,7 @@ const Students = () => {
   const totalPages = Math.ceil(sortedStudents.length / itemsPerPage)
 
   const handleEditClick = (studentId: number) => {
-    router.push(`/students/${studentId}/edit`)
+    router.push(`/dashboard/students-management/edit-student/${studentId}`)
   }
 
   const handleDeleteClick = (studentId: number) => {
@@ -464,25 +464,25 @@ const Students = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedStudents.map((student) => {
+              paginatedStudents.map((student: any) => {
                 // Calculate total amount
                 const totalAmount =
                   student.studentFees?.reduce(
-                    (sum, fee: any) => sum + (fee.amount || 0),
+                    (sum: any, fee: any) => sum + (fee.amount || 0),
                     0
                   ) || 0
 
                 // Calculate total paid amount
                 const totalPaidAmount =
                   student.studentFees?.reduce(
-                    (sum, fee: any) => sum + (fee.paidAmount || 0),
+                    (sum: any, fee: any) => sum + (fee.paidAmount || 0),
                     0
                   ) || 0
 
                 // Calculate total remaining amount
                 const totalRemainingAmount =
                   student.studentFees?.reduce(
-                    (sum, fee: any) => sum + (fee.remainingAmount || 0),
+                    (sum: any, fee: any) => sum + (fee.remainingAmount || 0),
                     0
                   ) || 0
 
@@ -531,7 +531,7 @@ const Students = () => {
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
-                        {/* <Button
+                        <Button
                           variant="ghost"
                           size="sm"
                           className="text-amber-600 hover:text-amber-700"
@@ -542,7 +542,7 @@ const Students = () => {
                           }
                         >
                           <Edit2 className="h-4 w-4" />
-                        </Button> */}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
