@@ -1,5 +1,4 @@
 'use client'
-
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DollarSign } from 'lucide-react'
+import { DollarSign, Upload, Download } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
@@ -31,7 +30,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-
 import {
   Table,
   TableBody,
@@ -42,6 +40,10 @@ import {
 } from '@/components/ui/table'
 import { formatDate, formatNumber } from '@/utils/conversions'
 import { toast } from '@/hooks/use-toast'
+import ExcelFileInput from '@/utils/excel-file-input'
+import { Popup } from '@/utils/popup'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
 
 const CreateStudent = () => {
   useInitializeUser()
@@ -53,6 +55,7 @@ const CreateStudent = () => {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
   const [selectedFeesMasters, setSelectedFeesMasters] = useState<number[]>([])
 
   const [studentPhotoFile, setStudentPhotoFile] = useState<File | null>(null)
@@ -94,7 +97,9 @@ const CreateStudent = () => {
     studentFees: [],
   })
 
-  const { data: sections } = useGetClassesByClassId(formData.studentDetails.classId || 0)
+  const { data: sections } = useGetClassesByClassId(
+    formData.studentDetails.classId || 0
+  )
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -308,11 +313,149 @@ const CreateStudent = () => {
       console.log('✅ Student created successfully!')
       toast({
         title: 'Success!',
-        description: 'student is added successfully.',
+        description: 'Student is added successfully.',
       })
     } catch (err) {
       setError('Failed to create student')
       console.error('❌ Error creating student:', err)
+    }
+  }
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        AdmissionNo: '',
+        RollNo: '',
+        ClassId: '',
+        SectionId: '',
+        SessionId: '',
+        FirstName: '',
+        LastName: '',
+        Gender: 'male',
+        DateOfBirth: '',
+        PhoneNumber: '',
+        Email: '',
+        AdmissionDate: '',
+        Religion: '',
+        BloodGroup: '',
+        Height: '',
+        Weight: '',
+        Address: '',
+        FatherName: '',
+        FatherPhone: '',
+        FatherEmail: '',
+        FatherOccupation: '',
+        MotherName: '',
+        MotherPhone: '',
+        MotherEmail: '',
+        MotherOccupation: '',
+        FeesMasterIds: '',
+      },
+    ]
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Student Template')
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    })
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    })
+
+    saveAs(blob, 'create-students-template.xlsx')
+  }
+
+  const handleExcelDataParsed = (data: any[]) => {
+    console.log('Excel data parsed:', data)
+  }
+
+  const handleExcelSubmit = async (data: any[]) => {
+    try {
+      // Process each row and create student records
+      const studentsToCreate = data.map((row) => {
+        // Parse FeesMasterIds from comma-separated string
+        const feesMasterIds = row['FeesMasterIds']
+          ? String(row['FeesMasterIds'])
+              .split(',')
+              .map((id: string) => Number(id.trim()))
+              .filter((id: number) => !isNaN(id))
+          : []
+
+        return {
+          studentDetails: {
+            admissionNo: Number(row['AdmissionNo']) || 0,
+            rollNo: Number(row['RollNo']) || 0,
+            classId: row['ClassId'] ? Number(row['ClassId']) : null,
+            sectionId: row['SectionId'] ? Number(row['SectionId']) : null,
+            sessionId: row['SessionId'] ? Number(row['SessionId']) : null,
+            firstName: row['FirstName'] || '',
+            lastName: row['LastName'] || '',
+            gender: row['Gender'] || 'male',
+            dateOfBirth: row['DateOfBirth'] || '',
+            religion: row['Religion'] || '',
+            bloodGroup: row['BloodGroup'] || null,
+            height: row['Height'] ? Number(row['Height']) : null,
+            weight: row['Weight'] ? Number(row['Weight']) : null,
+            address: row['Address'] || '',
+            phoneNumber: row['PhoneNumber'] || '',
+            email: row['Email'] || '',
+            admissionDate:
+              row['AdmissionDate'] || new Date().toISOString().split('T')[0],
+            photoUrl: null,
+            isActive: true,
+            fatherName: row['FatherName'] || '',
+            fatherPhone: row['FatherPhone'] || '',
+            fatherEmail: row['FatherEmail'] || '',
+            fatherOccupation: row['FatherOccupation'] || '',
+            fatherPhotoUrl: null,
+            motherName: row['MotherName'] || '',
+            motherPhone: row['MotherPhone'] || '',
+            motherEmail: row['MotherEmail'] || '',
+            motherOccupation: row['MotherOccupation'] || '',
+            motherPhotoUrl: null,
+          },
+          studentFees: feesMasterIds.map((feesMasterId: number) => ({
+            feesMasterId,
+            studentId: null,
+          })),
+        }
+      })
+
+      console.log('Students to create:', studentsToCreate)
+
+      // Submit all students
+      for (const student of studentsToCreate) {
+        const form = new FormData()
+        const studentDetailsPayload = {
+          ...student.studentDetails,
+          photoUrl: null,
+          fatherPhotoUrl: null,
+          motherPhotoUrl: null,
+        }
+        form.append('studentDetails', JSON.stringify(studentDetailsPayload))
+        form.append('studentFees', JSON.stringify(student.studentFees))
+
+        await addMutation.mutateAsync(form as any)
+      }
+
+      setIsImportPopupOpen(false)
+      toast({
+        title: 'Success!',
+        description: `${studentsToCreate.length} students added successfully.`,
+      })
+      resetForm()
+    } catch (error) {
+      console.error('Error importing students:', error)
+      toast({
+        title: 'Error',
+        description:
+          'Failed to import students. Please check the data and try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -341,13 +484,30 @@ const CreateStudent = () => {
           </div>
           <h2 className="text-lg font-semibold">Create Student</h2>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 bg-transparent"
+            onClick={handleDownloadTemplate}
+          >
+            <Download className="h-4 w-4" />
+            Download Template
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 bg-transparent"
+            onClick={() => setIsImportPopupOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </Button>
+        </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
         {/* Student Information Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Student Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {/* First Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.firstName">
                 First Name <span className="text-red-500">*</span>
@@ -361,7 +521,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Last Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.lastName">
                 Last Name <span className="text-red-500">*</span>
@@ -375,7 +534,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Admission Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.admissionNo">
                 Admission Number <span className="text-red-500">*</span>
@@ -389,7 +547,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Roll Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.rollNo">
                 Roll Number <span className="text-red-500">*</span>
@@ -403,7 +560,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Class */}
             <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
               <CustomCombobox
@@ -432,7 +588,6 @@ const CreateStudent = () => {
                 placeholder="Select class"
               />
             </div>
-            {/* Section */}
             <div className="space-y-2">
               <Label htmlFor="sectionId">Section</Label>
               <CustomCombobox
@@ -463,8 +618,6 @@ const CreateStudent = () => {
                 placeholder="Select section"
               />
             </div>
-
-            {/* session */}
             <div className="space-y-2">
               <Label htmlFor="sessionId">Session</Label>
               <CustomCombobox
@@ -495,7 +648,6 @@ const CreateStudent = () => {
                 placeholder="Select session"
               />
             </div>
-            {/* Gender */}
             <div className="space-y-2">
               <Label htmlFor="gender">
                 Gender <span className="text-red-500">*</span>
@@ -513,7 +665,6 @@ const CreateStudent = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Date of Birth */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.dateOfBirth">Date of Birth</Label>
               <Input
@@ -524,7 +675,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.email">
                 Email <span className="text-red-500">*</span>
@@ -538,7 +688,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.phoneNumber">
                 Phone Number <span className="text-red-500">*</span>
@@ -552,7 +701,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Religion */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.religion">Religion</Label>
               <Input
@@ -563,7 +711,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Blood Group */}
             <div className="space-y-2">
               <Label htmlFor="bloodGroup">Blood Group</Label>
               <Select
@@ -587,7 +734,6 @@ const CreateStudent = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* Height */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.height">Height (cm)</Label>
               <Input
@@ -599,7 +745,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Weight */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.weight">Weight (kg)</Label>
               <Input
@@ -611,7 +756,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Admission Date */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.admissionDate">
                 Admission Date
@@ -624,7 +768,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Address */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.address">Address</Label>
               <Input
@@ -635,7 +778,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Student Photo */}
             <div className="space-y-2">
               <Label htmlFor="studentPhoto" className="text-sm">
                 Student Photo
@@ -660,7 +802,6 @@ const CreateStudent = () => {
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Father Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Father Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherName">Father Name</Label>
               <Input
@@ -671,7 +812,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Father Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherEmail">
                 Father Email <span className="text-red-500">*</span>
@@ -685,7 +825,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Father Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherPhone">
                 Father Phone <span className="text-red-500">*</span>
@@ -699,7 +838,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Father Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherOccupation">
                 Father Occupation
@@ -712,7 +850,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Father Photo */}
             <div className="space-y-2">
               <Label htmlFor="fatherPhoto" className="text-sm">
                 Father Photo
@@ -737,7 +874,6 @@ const CreateStudent = () => {
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Mother Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Mother Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherName">Mother Name</Label>
               <Input
@@ -748,7 +884,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Mother Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherEmail">
                 Mother Email <span className="text-red-500">*</span>
@@ -762,7 +897,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Mother Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherPhone">
                 Mother Phone <span className="text-red-500">*</span>
@@ -776,7 +910,6 @@ const CreateStudent = () => {
                 required
               />
             </div>
-            {/* Mother Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherOccupation">
                 Mother Occupation
@@ -789,7 +922,6 @@ const CreateStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Mother Photo */}
             <div className="space-y-2">
               <Label htmlFor="motherPhoto" className="text-sm">
                 Mother Photo
@@ -816,10 +948,7 @@ const CreateStudent = () => {
 
           <Accordion type="multiple" className="w-full">
             {Object.entries(grouped ?? {}).map(([groupName, groupFees]) => {
-              // All fee IDs under this group
               const groupFeeIds = groupFees.map((f) => f.feesMasterId || 0)
-
-              // Check if the entire group is selected
               const isGroupSelected = groupFeeIds.every((id) =>
                 selectedFeesMasters.includes(id)
               )
@@ -827,17 +956,14 @@ const CreateStudent = () => {
               return (
                 <AccordionItem key={groupName} value={groupName}>
                   <div className="flex items-center gap-2 px-2">
-                    {/* GROUP CHECKBOX */}
                     <Input
                       type="checkbox"
                       className="w-4 h-4"
                       checked={isGroupSelected}
                       onChange={() => {
                         if (isGroupSelected) {
-                          // Unselect all
                           groupFeeIds.forEach((id) => toggleFeesMaster(id))
                         } else {
-                          // Select all
                           groupFeeIds.forEach((id) => {
                             if (!selectedFeesMasters.includes(id))
                               toggleFeesMaster(id)
@@ -902,6 +1028,113 @@ const CreateStudent = () => {
           </Button>
         </div>
       </form>
+
+      <Popup
+        isOpen={isImportPopupOpen}
+        onClose={() => setIsImportPopupOpen(false)}
+        title="Import Students from Excel"
+        size="sm:max-w-3xl"
+      >
+        <div className="py-4">
+          <div className="mb-4 p-4 bg-amber-50 rounded-md">
+            <h3 className="font-semibold mb-2">Excel Format Requirements:</h3>
+            <p className="text-sm text-gray-700 mb-2">
+              Your Excel file should have the following columns:
+            </p>
+            <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
+              <li>
+                <strong>AdmissionNo</strong> - Numeric admission number
+                (required)
+              </li>
+              <li>
+                <strong>RollNo</strong> - Numeric roll number (required)
+              </li>
+              <li>
+                <strong>FirstName</strong> - Student first name (required)
+              </li>
+              <li>
+                <strong>LastName</strong> - Student last name (required)
+              </li>
+              <li>
+                <strong>Gender</strong> - male or female (required)
+              </li>
+              <li>
+                <strong>DateOfBirth</strong> - Date in YYYY-MM-DD format
+              </li>
+              <li>
+                <strong>Email</strong> - Email address (required)
+              </li>
+              <li>
+                <strong>PhoneNumber</strong> - Phone number (required)
+              </li>
+              <li>
+                <strong>ClassId</strong> - Class ID (optional)
+              </li>
+              <li>
+                <strong>SectionId</strong> - Section ID (optional)
+              </li>
+              <li>
+                <strong>SessionId</strong> - Session ID (optional)
+              </li>
+              <li>
+                <strong>Religion</strong> - Religion (optional)
+              </li>
+              <li>
+                <strong>BloodGroup</strong> - Blood group (optional)
+              </li>
+              <li>
+                <strong>Height</strong> - Height in cm (optional)
+              </li>
+              <li>
+                <strong>Weight</strong> - Weight in kg (optional)
+              </li>
+              <li>
+                <strong>Address</strong> - Address (optional)
+              </li>
+              <li>
+                <strong>FatherName</strong> - Father&apos;s name (optional)
+              </li>
+              <li>
+                <strong>FatherPhone</strong> - Father&apos;s phone (required)
+              </li>
+              <li>
+                <strong>FatherEmail</strong> - Father&apos;s email (required)
+              </li>
+              <li>
+                <strong>FatherOccupation</strong> - Father&apos;s occupation
+                (optional)
+              </li>
+              <li>
+                <strong>MotherName</strong> - Mother&apos;s name (optional)
+              </li>
+              <li>
+                <strong>MotherPhone</strong> - Mother&apos;s phone (required)
+              </li>
+              <li>
+                <strong>MotherEmail</strong> - Mother&apos;s email (required)
+              </li>
+              <li>
+                <strong>MotherOccupation</strong> - Mother&apos;s occupation
+                (optional)
+              </li>
+              <li>
+                <strong>FeesMasterIds</strong> - Comma-separated fee IDs (e.g.,
+                &quot;1,2,3&quot;)
+              </li>
+            </ul>
+            <p className="text-sm text-gray-700 mt-3">
+              <strong>Tip:</strong> Download the template first to see the
+              correct format!
+            </p>
+          </div>
+          <ExcelFileInput
+            onDataParsed={handleExcelDataParsed}
+            onSubmit={handleExcelSubmit}
+            submitButtonText="Import Students"
+            dateColumns={['DateOfBirth', 'AdmissionDate']}
+          />
+        </div>
+      </Popup>
     </div>
   )
 }
