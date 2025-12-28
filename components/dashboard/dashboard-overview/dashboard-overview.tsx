@@ -58,8 +58,8 @@ const DashboardOverview = () => {
   console.log('🚀 ~ DashboardOverview ~ paymentSummary:', paymentSummary)
 
   const { data: students } = useGetAllStudents()
-  const { data: profitSummary } = [] 
-  const { data: bankBalanceSummary } = []
+  const { data: profitSummary } = [] as any
+  const { data: bankBalanceSummary } = [] as any
 
   // Static inventory data for modal
   const InventoryItems = {

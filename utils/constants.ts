@@ -1,6 +1,4 @@
-import { MenuItem } from './type'
-
-export const MENU_ITEMS: MenuItem[] = [
+export const MENU_ITEMS = [
   {
     name: 'Accounting',
     subItemGroups: [

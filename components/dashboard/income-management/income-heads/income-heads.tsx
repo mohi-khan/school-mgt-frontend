@@ -1,11 +1,18 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useCallback, useEffect, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type React from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Pagination,
   PaginationContent,
@@ -13,14 +20,19 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from "lucide-react"
-import { Popup } from "@/utils/popup"
-import type { CreateIncomeHeadsType, GetIncomeHeadsType } from "@/utils/type"
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
-import { useAtom } from "jotai"
-import { useRouter } from "next/navigation"
-import { useAddIncomeHead, useDeleteIncomeHead, useGetIncomeHeads, useUpdateIncomeHead } from "@/hooks/use-api"
+} from '@/components/ui/pagination'
+import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
+import { Popup } from '@/utils/popup'
+import type { CreateIncomeHeadsType, GetIncomeHeadsType } from '@/utils/type'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/navigation'
+import {
+  useAddIncomeHead,
+  useDeleteIncomeHead,
+  useGetIncomeHeads,
+  useUpdateIncomeHead,
+} from '@/hooks/use-api'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +41,7 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 
 const IncomeHeads = () => {
   useInitializeUser()
@@ -37,31 +49,38 @@ const IncomeHeads = () => {
   const [token] = useAtom(tokenAtom)
 
   const { data: incomeHeads } = useGetIncomeHeads()
-  console.log("🚀 ~ IncomeHeads ~ incomeHeads:", incomeHeads)
+  console.log('🚀 ~ IncomeHeads ~ incomeHeads:', incomeHeads)
 
   const router = useRouter()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [incomeHeadsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetIncomeHeadsType>("incomeHead")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [sortColumn, setSortColumn] =
+    useState<keyof GetIncomeHeadsType>('incomeHead')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingIncomeHeadId, setEditingIncomeHeadId] = useState<number | null>(null)
+  const [editingIncomeHeadId, setEditingIncomeHeadId] = useState<number | null>(
+    null
+  )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingIncomeHeadId, setDeletingIncomeHeadId] = useState<number | null>(null)
+  const [deletingIncomeHeadId, setDeletingIncomeHeadId] = useState<
+    number | null
+  >(null)
 
   const [formData, setFormData] = useState<CreateIncomeHeadsType>({
-    incomeHead: "",
+    incomeHead: '',
     description: null,
     createdBy: userData?.userId || 0,
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
@@ -69,9 +88,9 @@ const IncomeHeads = () => {
     }))
   }
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
-      incomeHead: "",
+      incomeHead: '',
       description: null,
       createdBy: userData?.userId || 0,
     })
@@ -79,13 +98,13 @@ const IncomeHeads = () => {
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }
+  }, [userData?.userId])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
     setError(null)
     resetForm()
-  }, [])
+  }, [resetForm])
 
   const addMutation = useAddIncomeHead({
     onClose: closePopup,
@@ -103,30 +122,34 @@ const IncomeHeads = () => {
   })
 
   const handleDeleteClick = (incomeHeadId: number) => {
-    if (confirm("Are you sure you want to delete this income head?")) {
+    if (confirm('Are you sure you want to delete this income head?')) {
       deleteMutation.mutate({ id: incomeHeadId })
     }
   }
 
   const handleSort = (column: keyof GetIncomeHeadsType) => {
     if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortColumn(column)
-      setSortDirection("asc")
+      setSortDirection('asc')
     }
   }
 
   const filteredIncomeHeads = useMemo(() => {
     if (!incomeHeads?.data) return []
-    return incomeHeads.data.filter((head: any) => head.incomeHead?.toLowerCase().includes(searchTerm.toLowerCase()))
+    return incomeHeads.data.filter((head: any) =>
+      head.incomeHead?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   }, [incomeHeads?.data, searchTerm])
 
   const sortedIncomeHeads = useMemo(() => {
     return [...filteredIncomeHeads].sort((a, b) => {
-      const aValue = a.incomeHead ?? ""
-      const bValue = b.incomeHead ?? ""
-      return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      const aValue = a.incomeHead ?? ''
+      const bValue = b.incomeHead ?? ''
+      return sortDirection === 'asc'
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     })
   }, [filteredIncomeHeads, sortDirection])
 
@@ -140,7 +163,12 @@ const IncomeHeads = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Submit - isEditMode:", isEditMode, "editingIncomeHeadId:", editingIncomeHeadId)
+      console.log(
+        'Submit - isEditMode:',
+        isEditMode,
+        'editingIncomeHeadId:',
+        editingIncomeHeadId
+      )
       setError(null)
 
       try {
@@ -155,22 +183,29 @@ const IncomeHeads = () => {
             id: editingIncomeHeadId,
             data: submitData,
           })
-          console.log("update", isEditMode, editingIncomeHeadId)
+          console.log('update', isEditMode, editingIncomeHeadId)
         } else {
           addMutation.mutate(submitData)
-          console.log("create")
+          console.log('create')
         }
       } catch (err) {
-        setError("Failed to save income head")
+        setError('Failed to save income head')
         console.error(err)
       }
     },
-    [formData, isEditMode, editingIncomeHeadId, addMutation, updateMutation, userData?.userId],
+    [
+      formData,
+      isEditMode,
+      editingIncomeHeadId,
+      addMutation,
+      updateMutation,
+      userData?.userId,
+    ]
   )
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError("Error saving income head")
+      setError('Error saving income head')
     }
   }, [addMutation.error, updateMutation.error])
 
@@ -204,7 +239,10 @@ const IncomeHeads = () => {
               className="pl-10 w-64"
             />
           </div>
-          <Button className="bg-amber-400 hover:bg-amber-500 text-black" onClick={() => setIsPopupOpen(true)}>
+          <Button
+            className="bg-amber-400 hover:bg-amber-500 text-black"
+            onClick={() => setIsPopupOpen(true)}
+          >
             Add
           </Button>
         </div>
@@ -214,10 +252,16 @@ const IncomeHeads = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("incomeHead")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('incomeHead')}
+                className="cursor-pointer"
+              >
                 Income Head <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("description")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('description')}
+                className="cursor-pointer"
+              >
                 Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -245,8 +289,10 @@ const IncomeHeads = () => {
             ) : (
               paginatedIncomeHeads.map((head: any, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{head.incomeHead}</TableCell>
-                  <TableCell>{head.description || "-"}</TableCell>
+                  <TableCell className="font-medium">
+                    {head.incomeHead}
+                  </TableCell>
+                  <TableCell>{head.description || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -283,21 +329,35 @@ const IncomeHeads = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
 
               {[...Array(totalPages)].map((_, index) => {
-                if (index === 0 || index === totalPages - 1 || (index >= currentPage - 2 && index <= currentPage + 2)) {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= currentPage - 2 && index <= currentPage + 2)
+                ) {
                   return (
                     <PaginationItem key={`page-${index}`}>
-                      <PaginationLink onClick={() => setCurrentPage(index + 1)} isActive={currentPage === index + 1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(index + 1)}
+                        isActive={currentPage === index + 1}
+                      >
                         {index + 1}
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -310,8 +370,14 @@ const IncomeHeads = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -322,7 +388,7 @@ const IncomeHeads = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? "Edit Income Head" : "Add Income Head"}
+        title={isEditMode ? 'Edit Income Head' : 'Add Income Head'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -345,35 +411,50 @@ const IncomeHeads = () => {
               <Input
                 id="description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleInputChange}
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={closePopup}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
-              {addMutation.isPending || updateMutation.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              disabled={addMutation.isPending || updateMutation.isPending}
+            >
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Income Head</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this income head? This action cannot be undone.
+              Are you sure you want to delete this income head? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingIncomeHeadId) {
