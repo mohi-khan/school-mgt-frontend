@@ -355,7 +355,13 @@ export const useUpdateBankAccount = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateBankAccountsType }) => {
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: CreateBankAccountsType
+    }) => {
       return editBankAccount(id, data, token)
     },
     onSuccess: () => {
@@ -988,22 +994,16 @@ export const useUpdateStudentWithFees = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateFeesMasterType }) => {
-      const formData = new FormData()
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value as any)
-        }
-      })
-      return editStudentWithFees(id, formData, token)
+    mutationFn: ({ id, data }: { id: number; data: FormData }) => {
+      // 🔥 data is already FormData — use it directly
+      return editStudentWithFees(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'student edited successfully.',
+        description: 'Student edited successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['students'] })
-
       reset()
       onClose()
     },

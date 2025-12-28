@@ -53,6 +53,7 @@ const EditStudent = () => {
   const { data: student, isLoading: studentLoading } = useGetStudentById(
     Number(studentId)
   )
+  console.log("🚀 ~ EditStudent ~ student:", student)
   const { data: classes } = useGetClasses()
   const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
@@ -60,6 +61,8 @@ const EditStudent = () => {
   const [error, setError] = useState<string | null>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [selectedFeesMasters, setSelectedFeesMasters] = useState<number[]>([])
+  const [initialFormData, setInitialFormData] =
+    useState<CreateStudentWithFeesType | null>(null)
 
   const [studentPhotoFile, setStudentPhotoFile] = useState<File | null>(null)
   const [fatherPhotoFile, setFatherPhotoFile] = useState<File | null>(null)
@@ -108,7 +111,7 @@ const EditStudent = () => {
   useEffect(() => {
     if (student?.data) {
       const studentData = student.data
-      setFormData({
+      const populatedData = {
         studentDetails: {
           ...studentData.studentDetails,
           dateOfBirth: studentData.studentDetails.dateOfBirth
@@ -123,7 +126,11 @@ const EditStudent = () => {
             : new Date().toISOString().split('T')[0],
         },
         studentFees: studentData.studentFees || [],
-      })
+      }
+
+      setFormData(populatedData)
+      console.log("🚀 ~ EditStudent ~ populatedData:", populatedData)
+      setInitialFormData(populatedData)
 
       // Set selected fees masters
       const feesMasterIds =
@@ -216,12 +223,25 @@ const EditStudent = () => {
   }, [])
 
   const resetForm = () => {
-    router.push('/students')
+    if (initialFormData) {
+      setFormData(initialFormData)
+      setStudentPhotoFile(null)
+      setFatherPhotoFile(null)
+      setMotherPhotoFile(null)
+      setError(null)
+
+      // Reset selected fees masters to initial state
+      const feesMasterIds =
+        initialFormData.studentFees
+          ?.map((fee) => fee.feesMasterId)
+          .filter((id): id is number => id !== null) || []
+      setSelectedFeesMasters(feesMasterIds)
+    }
   }
 
   const updateMutation = useUpdateStudentWithFees({
     onClose: closePopup,
-    reset: resetForm,
+    reset: () => router.push('/dashboard/students-management/students'),
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -262,14 +282,22 @@ const EditStudent = () => {
 
     const form = new FormData()
 
-    // Add student details as JSON (excluding photo URLs if no new files)
+    // Add student details - preserve existing photo URLs if no new files
     const studentDetailsPayload = {
       ...studentDetails,
+      // Only set photoUrl to null if a new file is being uploaded
       photoUrl: studentPhotoFile ? null : studentDetails.photoUrl,
       fatherPhotoUrl: fatherPhotoFile ? null : studentDetails.fatherPhotoUrl,
       motherPhotoUrl: motherPhotoFile ? null : studentDetails.motherPhotoUrl,
     }
     console.log('📦 Student Details Payload:', studentDetailsPayload)
+
+    const payloadData: CreateStudentWithFeesType = {
+      studentDetails: studentDetailsPayload,
+      studentFees: studentFees,
+    }
+    console.log("🚀 ~ handleSubmit ~ payloadData2222222:", payloadData)
+
     form.append('studentDetails', JSON.stringify(studentDetailsPayload))
     form.append('studentFees', JSON.stringify(studentFees))
 
@@ -302,8 +330,10 @@ const EditStudent = () => {
     try {
       await updateMutation.mutateAsync({
         id: Number(studentId),
-        data: form as any,
+        data: form,
       })
+      console.log("🚀 ~ handleSubmit ~ form:", form)
+      console.log("🚀 ~ handleSubmit ~ payloadData:", payloadData)
       console.log('✅ Student updated successfully!')
       toast({
         title: 'Success!',
@@ -333,16 +363,24 @@ const EditStudent = () => {
 
   if (studentLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <p>Loading student data...</p>
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading student data...</p>
+        </div>
       </div>
     )
   }
 
   if (!student?.data) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <p>Student not found</p>
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-gray-600 text-lg mb-4">Student not found</p>
+          <Button onClick={() => router.push('/students')}>
+            Back to Students
+          </Button>
+        </div>
       </div>
     )
   }
@@ -928,7 +966,7 @@ const EditStudent = () => {
             Reset Fields
           </Button>
           <Button type="submit" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? 'Creating...' : 'Create Student'}
+            {updateMutation.isPending ? 'Updating...' : 'Update Student'}
           </Button>
         </div>
       </form>
