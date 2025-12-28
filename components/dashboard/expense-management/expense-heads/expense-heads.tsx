@@ -88,7 +88,7 @@ const ExpenseHeads = () => {
     }))
   }
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       expenseHead: '',
       description: null,
@@ -98,13 +98,13 @@ const ExpenseHeads = () => {
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }
+  }, [userData?.userId])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
     setError(null)
     resetForm()
-  }, [])
+  }, [resetForm])
 
   const addMutation = useAddExpenseHead({
     onClose: closePopup,

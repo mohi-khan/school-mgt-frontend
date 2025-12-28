@@ -33,6 +33,7 @@ export const UserSchema = z.object({
   updatedAt: z.string(),
   role: RoleSchema,
 })
+export type User = z.infer<typeof UserSchema>
 
 export const SignInResponseSchema = z.object({
   token: z.string(),

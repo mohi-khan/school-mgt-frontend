@@ -1,11 +1,18 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useCallback, useEffect, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type React from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Pagination,
   PaginationContent,
@@ -13,14 +20,19 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { ArrowUpDown, Search, BookOpen, Edit2, Trash2 } from "lucide-react"
-import { Popup } from "@/utils/popup"
-import type { CreateExamGroupType, GetExamGroupType } from "@/utils/type"
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
-import { useAtom } from "jotai"
-import { useRouter } from "next/navigation"
-import { useAddExamGroup, useDeleteExamGroup, useGetExamGroups, useUpdateExamGroup } from "@/hooks/use-api"
+} from '@/components/ui/pagination'
+import { ArrowUpDown, Search, BookOpen, Edit2, Trash2 } from 'lucide-react'
+import { Popup } from '@/utils/popup'
+import type { CreateExamGroupType, GetExamGroupType } from '@/utils/type'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/navigation'
+import {
+  useAddExamGroup,
+  useDeleteExamGroup,
+  useGetExamGroups,
+  useUpdateExamGroup,
+} from '@/hooks/use-api'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +41,7 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 
 const ExamGroups = () => {
   useInitializeUser()
@@ -37,31 +49,38 @@ const ExamGroups = () => {
   const [token] = useAtom(tokenAtom)
 
   const { data: examGroupss } = useGetExamGroups()
-  console.log("🚀 ~ ExamGroups ~ examGroupss:", examGroupss)
+  console.log('🚀 ~ ExamGroups ~ examGroupss:', examGroupss)
 
   const router = useRouter()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [examGroupssPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetExamGroupType>("examGroupName")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [sortColumn, setSortColumn] =
+    useState<keyof GetExamGroupType>('examGroupName')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingExamGroupId, setEditingExamGroupId] = useState<number | null>(null)
+  const [editingExamGroupId, setEditingExamGroupId] = useState<number | null>(
+    null
+  )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamGroupId, setDeletingExamGroupId] = useState<number | null>(null)
+  const [deletingExamGroupId, setDeletingExamGroupId] = useState<number | null>(
+    null
+  )
 
   const [formData, setFormData] = useState<CreateExamGroupType>({
-    examGroupName: "",
+    examGroupName: '',
     description: null,
     createdBy: userData?.userId || 0,
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
@@ -69,9 +88,9 @@ const ExamGroups = () => {
     }))
   }
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
-      examGroupName: "",
+      examGroupName: '',
       description: null,
       createdBy: userData?.userId || 0,
     })
@@ -79,13 +98,13 @@ const ExamGroups = () => {
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }
+  }, [userData?.userId])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
     setError(null)
     resetForm()
-  }, [])
+  }, [resetForm])
 
   const addMutation = useAddExamGroup({
     onClose: closePopup,
@@ -103,32 +122,34 @@ const ExamGroups = () => {
   })
 
   const handleDeleteClick = (examGroupsId: number) => {
-    if (confirm("Are you sure you want to delete this exams group?")) {
+    if (confirm('Are you sure you want to delete this exams group?')) {
       deleteMutation.mutate({ id: examGroupsId })
     }
   }
 
   const handleSort = (column: keyof GetExamGroupType) => {
     if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortColumn(column)
-      setSortDirection("asc")
+      setSortDirection('asc')
     }
   }
 
   const filteredExamGroups = useMemo(() => {
     if (!examGroupss?.data) return []
     return examGroupss.data.filter((group: any) =>
-      group.examGroupName?.toLowerCase().includes(searchTerm.toLowerCase()),
+      group.examGroupName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [examGroupss?.data, searchTerm])
 
   const sortedExamGroups = useMemo(() => {
     return [...filteredExamGroups].sort((a, b) => {
-      const aValue = a.examGroupName ?? ""
-      const bValue = b.examGroupName ?? ""
-      return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      const aValue = a.examGroupName ?? ''
+      const bValue = b.examGroupName ?? ''
+      return sortDirection === 'asc'
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     })
   }, [filteredExamGroups, sortDirection])
 
@@ -142,7 +163,12 @@ const ExamGroups = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      console.log("Submit - isEditMode:", isEditMode, "editingExamGroupId:", editingExamGroupId)
+      console.log(
+        'Submit - isEditMode:',
+        isEditMode,
+        'editingExamGroupId:',
+        editingExamGroupId
+      )
       setError(null)
 
       try {
@@ -157,22 +183,29 @@ const ExamGroups = () => {
             id: editingExamGroupId,
             data: submitData,
           })
-          console.log("update", isEditMode, editingExamGroupId)
+          console.log('update', isEditMode, editingExamGroupId)
         } else {
           addMutation.mutate(submitData)
-          console.log("create")
+          console.log('create')
         }
       } catch (err) {
-        setError("Failed to save exams group")
+        setError('Failed to save exams group')
         console.error(err)
       }
     },
-    [formData, isEditMode, editingExamGroupId, addMutation, updateMutation, userData],
+    [
+      formData,
+      isEditMode,
+      editingExamGroupId,
+      addMutation,
+      updateMutation,
+      userData,
+    ]
   )
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError("Error saving exams group")
+      setError('Error saving exams group')
     }
   }, [addMutation.error, updateMutation.error])
 
@@ -206,7 +239,10 @@ const ExamGroups = () => {
               className="pl-10 w-64"
             />
           </div>
-          <Button className="bg-amber-400 hover:bg-amber-500 text-black" onClick={() => setIsPopupOpen(true)}>
+          <Button
+            className="bg-amber-400 hover:bg-amber-500 text-black"
+            onClick={() => setIsPopupOpen(true)}
+          >
             Add
           </Button>
         </div>
@@ -216,10 +252,16 @@ const ExamGroups = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("examGroupName")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('examGroupName')}
+                className="cursor-pointer"
+              >
                 Group Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("description")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('description')}
+                className="cursor-pointer"
+              >
                 Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -247,8 +289,10 @@ const ExamGroups = () => {
             ) : (
               paginatedExamGroups.map((group: any, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{group.examGroupName}</TableCell>
-                  <TableCell>{group.description || "-"}</TableCell>
+                  <TableCell className="font-medium">
+                    {group.examGroupName}
+                  </TableCell>
+                  <TableCell>{group.description || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -285,21 +329,35 @@ const ExamGroups = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
 
               {[...Array(totalPages)].map((_, index) => {
-                if (index === 0 || index === totalPages - 1 || (index >= currentPage - 2 && index <= currentPage + 2)) {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= currentPage - 2 && index <= currentPage + 2)
+                ) {
                   return (
                     <PaginationItem key={`page-${index}`}>
-                      <PaginationLink onClick={() => setCurrentPage(index + 1)} isActive={currentPage === index + 1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(index + 1)}
+                        isActive={currentPage === index + 1}
+                      >
                         {index + 1}
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -312,8 +370,14 @@ const ExamGroups = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -324,7 +388,7 @@ const ExamGroups = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? "Edit Exams Group" : "Add Exams Group"}
+        title={isEditMode ? 'Edit Exams Group' : 'Add Exams Group'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -347,35 +411,50 @@ const ExamGroups = () => {
               <Input
                 id="description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleInputChange}
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={closePopup}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
-              {addMutation.isPending || updateMutation.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              disabled={addMutation.isPending || updateMutation.isPending}
+            >
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Exams Group</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this exams group? This action cannot be undone.
+              Are you sure you want to delete this exams group? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingExamGroupId) {
