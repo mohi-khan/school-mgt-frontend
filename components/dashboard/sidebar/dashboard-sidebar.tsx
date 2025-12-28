@@ -187,6 +187,10 @@ export function DashboardSidebar() {
           href: '/dashboard/reports/cash-payment-report',
         },
         {
+          title: 'Transaction Report',
+          href: '/dashboard/reports/transaction-report',
+        },
+        {
           title: 'Income Report',
           href: '/dashboard/reports/income-report',
         },

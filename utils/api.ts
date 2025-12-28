@@ -47,6 +47,8 @@ import {
   SignInResponse,
   SignInResponseSchema,
   StudentPromotionsType,
+  GetTransactionReportType,
+  GetPaymentSummaryType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -365,10 +367,7 @@ export async function getAllMfss(token: string) {
   })
 }
 
-export async function createMfs(
-  data: CreateMfssType,
-  token: string
-) {
+export async function createMfs(data: CreateMfssType, token: string) {
   return fetchApi<CreateMfssType>({
     url: 'api/mfs/create',
     method: 'POST',
@@ -380,11 +379,7 @@ export async function createMfs(
   })
 }
 
-export async function editMfs(
-  id: number,
-  data: CreateMfssType,
-  token: string
-) {
+export async function editMfs(id: number, data: CreateMfssType, token: string) {
   return fetchApi<CreateMfssType>({
     url: `api/mfs/edit/${id}`,
     method: 'PATCH',
@@ -420,7 +415,7 @@ export async function getAllStudents(token: string) {
 }
 
 export async function getStudentById(token: string, id: number) {
-  return fetchApi<GetStudentWithFeesType[]>({
+  return fetchApi<GetStudentWithFeesType>({
     url: `api/students/getById/${id}`,
     method: 'GET',
     headers: {
@@ -957,7 +952,10 @@ export async function getAllBankMfsCash(token: string) {
   })
 }
 
-export async function createBankMfsCash(data: CreateBankMfsCashType, token: string) {
+export async function createBankMfsCash(
+  data: CreateBankMfsCashType,
+  token: string
+) {
   return fetchApi<CreateBankMfsCashType>({
     url: 'api/bank-mfs-cash/create',
     method: 'POST',
@@ -1057,6 +1055,21 @@ export async function getCashPaymentReport(
   })
 }
 
+export async function getTransactionReport(
+  token: string,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<GetTransactionReportType[]>({
+    url: `api/reports/transaction-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getIncomeReport(
   token: string,
   fromDate: string,
@@ -1079,6 +1092,18 @@ export async function getExpenseReport(
 ) {
   return fetchApi<GetExpenseReportType[]>({
     url: `api/reports/expense-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//dashbaord APIs
+export async function getPaymentSummary(token: string) {
+  return fetchApi<GetPaymentSummaryType>({
+    url: 'api/dashboard/payment-summary',
     method: 'GET',
     headers: {
       Authorization: token,

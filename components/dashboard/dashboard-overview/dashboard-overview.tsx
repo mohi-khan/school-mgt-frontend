@@ -5,9 +5,10 @@ import {
   BarChart3,
   Wallet,
   ShoppingCart,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
+  CreditCard,
+  Smartphone,
+  DollarSign,
+  User,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useGetAllStudents, useGetPaymentSummary } from '@/hooks/use-api'
 
 const DashboardOverview = () => {
   useInitializeUser()
@@ -52,45 +54,26 @@ const DashboardOverview = () => {
     title: '',
   })
 
-  const { data: InventoryItems } = []
-  console.log('🚀 ~ DashboardOverview ~ InventoryItems:', InventoryItems)
-  const { data: customerPaymentDetails } = []
-  console.log(
-    '🚀 ~ DashboardOverview ~ customerPaymentDetails:',
-    customerPaymentDetails
-  )
-  const { data: cashInHand } = []
-  console.log('🚀 ~ DashboardOverview ~ cashInHand:', cashInHand)
-  const { data: profitSummary } = []
-  console.log('🚀 ~ DashboardOverview ~ profitSummary:', profitSummary)
-  const { data: purchaseSummary } = []
-  console.log('🚀 ~ DashboardOverview ~ purchaseSummary:', purchaseSummary)
+  const { data: paymentSummary } = useGetPaymentSummary()
+  console.log('🚀 ~ DashboardOverview ~ paymentSummary:', paymentSummary)
+
+  const { data: students } = useGetAllStudents()
+  const { data: profitSummary } = [] 
   const { data: bankBalanceSummary } = []
+
+  // Static inventory data for modal
+  const InventoryItems = {
+    data: [
+      { item_name: 'Product A', totQty: 100, price: 500 },
+      { item_name: 'Product B', totQty: 75, price: 800 },
+      { item_name: 'Product C', totQty: 50, price: 1200 },
+    ],
+  }
 
   const totalAmount = InventoryItems?.data?.reduce((sum: number, item: any) => {
     const qty = Math.max(item.totQty, 0)
     return sum + qty * item.price
   }, 0)
-
-  const totalPurchaseAmount = purchaseSummary?.data?.reduce(
-    (sum: number, purchase: any) => {
-      return sum + (purchase.totalAmount || 0)
-    },
-    0
-  )
-
-  const totalUnpaidAmount = customerPaymentDetails?.data?.reduce(
-    (sum: number, item: any) => {
-      return sum + (item.unpaid_amount || 0)
-    },
-    0
-  )
-  console.log('🚀 ~ DashboardOverview ~ totalUnpaidAmount:', totalUnpaidAmount)
-
-  const totalCashInHand = cashInHand?.data?.reduce((sum: number, item: any) => {
-    return sum + (item.amount || 0)
-  }, 0)
-  console.log('🚀 ~ DashboardOverview ~ totalCashInHand:', totalCashInHand)
 
   useEffect(() => {
     const checkUserData = () => {
@@ -108,9 +91,7 @@ const DashboardOverview = () => {
     checkUserData()
   }, [userData, token, router])
 
-  const openModal = (
-    type: 'inventory' | 'customer-payment' | 'purchases'
-  ) => {
+  const openModal = (type: 'inventory' | 'customer-payment' | 'purchases') => {
     const titles = {
       inventory: 'Total Inventory Items',
       'customer-payment': 'Customer Payment Details',
@@ -129,35 +110,33 @@ const DashboardOverview = () => {
 
   const metrics = [
     {
-      title: 'Total Inventory amount',
-      value: totalAmount || 0,
-      icon: Settings,
-      color: 'bg-yellow-500',
-      onClick: () => openModal('inventory'),
-    },
-    {
-      title: 'Total Outstanding Balance',
-      value: totalUnpaidAmount || 0,
-      icon: BarChart3,
-      color: 'bg-emerald-500',
-      onClick: () => openModal('customer-payment'),
-    },
-    {
-      title: 'Cash In Hand',
-      value: totalCashInHand || 0,
-      icon: Wallet,
-      color: 'bg-red-500',
+      title: 'Total Cash',
+      value: paymentSummary?.data?.totalCash || 0,
+      icon: DollarSign,
+      color: 'bg-green-500',
       onClick: undefined,
     },
     {
-      title: 'Purchase Summary',
-      value: totalPurchaseAmount,
-      icon: ShoppingCart,
-      color: 'bg-purple-500',
-      onClick: () => openModal('purchases'),
+      title: 'Total Bank',
+      value: paymentSummary?.data?.totalBank || 0,
+      icon: CreditCard,
+      color: 'bg-blue-500',
+      onClick: undefined,
     },
-    ,
-    ,
+    {
+      title: 'Total MFS',
+      value: paymentSummary?.data?.totalMfs || 0,
+      icon: Smartphone,
+      color: 'bg-purple-500',
+      onClick: undefined,
+    },
+    {
+      title: 'Total Students',
+      value: students?.data?.length || 0,
+      icon: User,
+      color: 'bg-amber-500',
+      onClick: undefined,
+    },
   ]
 
   const renderModalContent = () => {
@@ -171,7 +150,7 @@ const DashboardOverview = () => {
                   <TableRow>
                     <TableHead>Item Name</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Price </TableHead>
+                    <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Total Value</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -188,13 +167,13 @@ const DashboardOverview = () => {
                             {item.totQty}
                           </TableCell>
                           <TableCell className="text-right">
-                            {item.price.toLocaleString('th-TH', {
+                            {item.price.toLocaleString('en-US', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
-                            {itemTotal.toLocaleString('th-TH', {
+                            {itemTotal.toLocaleString('en-US', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -221,7 +200,7 @@ const DashboardOverview = () => {
                         Total Inventory Value:
                       </span>
                       <span className="text-2xl font-bold text-yellow-600">
-                        {totalAmount?.toLocaleString('th-TH', {
+                        {totalAmount?.toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -234,124 +213,6 @@ const DashboardOverview = () => {
           </div>
         )
 
-      case 'customer-payment':
-        return (
-          <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer Name</TableHead>
-                    <TableHead className="text-right">
-                      Opening Balance
-                    </TableHead>
-                    <TableHead className="text-right">Total Sales</TableHead>
-                    <TableHead className="text-right">Total Discount</TableHead>
-                    <TableHead className="text-right">Total Received</TableHead>
-                    <TableHead className="text-right">Unpaid Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customerPaymentDetails?.data &&
-                  customerPaymentDetails.data.length > 0 ? (
-                    customerPaymentDetails.data.map(
-                      (item: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {item.customer_name}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {item.opening_balance}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.total_sales.toLocaleString('th-TH', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.total_discount.toLocaleString('th-TH', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.total_received.toLocaleString('th-TH', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold text-red-600">
-                            {item.unpaid_amount.toLocaleString('th-TH', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6">
-                        No customer payment details found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            {customerPaymentDetails?.data &&
-              customerPaymentDetails.data.length > 0 && (
-                <div className="pt-4 border-t">
-                  <div className="flex justify-end pr-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold">
-                          Total Unpaid Amount:
-                        </span>
-                        <span className="text-2xl font-bold text-red-600">
-                          {totalUnpaidAmount?.toLocaleString('th-TH', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-          </div>
-        )
-
-      case 'purchases':
-        return (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead className="text-right">Total Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {purchaseSummary?.data?.map(
-                  (item: any, index: number) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.month}</TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {item.totalAmount.toLocaleString('th-TH', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </TableCell>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )
-
       default:
         return null
     }
@@ -361,8 +222,8 @@ const DashboardOverview = () => {
     return (
       <div className="p-6 space-y-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
             <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
           ))}
         </div>
@@ -386,30 +247,8 @@ const DashboardOverview = () => {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {metrics.map((metric, index) => {
-          let displayValue = metric?.value
-          let valueColor = 'text-gray-900'
-
-          // Only modify Total Outstanding Balance and Cash In Hand
-          if (
-            metric?.title === 'Total Outstanding Balance' ||
-            metric?.title === 'Cash In Hand'
-          ) {
-            if (typeof metric?.value === 'number') {
-              displayValue = Math.abs(metric?.value) // remove minus sign
-
-              if (metric?.title === 'Total Outstanding Balance') {
-                // negative => green, positive => red
-                valueColor =
-                  metric?.value < 0 ? 'text-emerald-600' : 'text-red-600'
-              }
-
-              if (metric?.title === 'Cash In Hand') {
-                // negative => red, positive => green
-                valueColor =
-                  metric?.value < 0 ? 'text-red-600' : 'text-emerald-600'
-              }
-            }
-          }
+          const displayValue = metric?.value
+          const valueColor = 'text-gray-900'
 
           return (
             <Card
@@ -427,7 +266,7 @@ const DashboardOverview = () => {
                     </p>
                     <p className={`text-2xl font-bold mb-1 ${valueColor}`}>
                       {typeof displayValue === 'number'
-                        ? displayValue.toLocaleString('th-TH', {
+                        ? displayValue.toLocaleString('en-US', {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 0,
                           })
@@ -504,18 +343,6 @@ const DashboardOverview = () => {
                       iconType="line"
                     />
 
-                    {/* Total Sales */}
-                    {/* <Line
-                      type="monotone"
-                      dataKey="total_sales_amount"
-                      stroke="#1e40af"
-                      name="Total Sales"
-                      strokeWidth={2.5}
-                      dot={{ fill: '#1e40af', r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 6 }}
-                    /> */}
-
-                    {/* Total Expenses */}
                     <Line
                       type="monotone"
                       dataKey="total_expense"
@@ -526,7 +353,6 @@ const DashboardOverview = () => {
                       activeDot={{ r: 6 }}
                     />
 
-                    {/* Gross Profit */}
                     <Line
                       type="monotone"
                       dataKey="gross_profit"
@@ -537,7 +363,6 @@ const DashboardOverview = () => {
                       activeDot={{ r: 6 }}
                     />
 
-                    {/* Net Profit */}
                     <Line
                       type="monotone"
                       dataKey="net_profit"
@@ -558,7 +383,6 @@ const DashboardOverview = () => {
           </CardContent>
         </Card>
 
-        {/* Bank Account Balance Summary Line Graph */}
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -594,7 +418,7 @@ const DashboardOverview = () => {
                     />
                     <Tooltip
                       formatter={(value: number) =>
-                        value.toLocaleString('th-TH', {
+                        value.toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })
