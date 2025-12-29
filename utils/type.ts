@@ -323,6 +323,8 @@ export const examResultsSchema = z.object({
   examId: z.number().nullable(),
   studentId: z.number().nullable(),
   examSubjectId: z.number().nullable(),
+  classId: z.number().nullable(),
+  sectionId: z.number().nullable(),
   gainedMarks: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -335,6 +337,10 @@ export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
   examName: string
   studentName: string
   examSubjectName: string
+  classId: number
+  className: string
+  sectionId: number
+  sectionName: string
 }
 
 export const incomeHeadSchema = z.object({
