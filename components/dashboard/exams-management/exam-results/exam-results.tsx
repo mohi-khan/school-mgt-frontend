@@ -1,7 +1,9 @@
 'use client'
 
-import type React from 'react'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import React from 'react'
+
+import type { ReactElement } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +23,17 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, FileText, Edit2, Trash2, Download, Upload } from 'lucide-react'
+import {
+  Search,
+  FileText,
+  Edit2,
+  Trash2,
+  Download,
+  Upload,
+  ChevronDown,
+  ChevronUp,
+  Printer,
+} from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type { CreateExamResultsType, GetExamResultsType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
@@ -36,6 +48,8 @@ import {
   useGetExams,
   useGetAllStudents,
   useGetExamSubjects,
+  useGetClasses,
+  useGetSections,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
@@ -50,8 +64,151 @@ import {
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import ExcelFileInput from '@/utils/excel-file-input'
+import { useReactToPrint } from 'react-to-print'
 
-const ExamResults = () => {
+const ReportCard = React.forwardRef<
+  HTMLDivElement,
+  {
+    studentName: string
+    className: string
+    sectionName: string
+    examName: string
+    sessionName: string
+    results: GetExamResultsType[]
+  }
+>(({ studentName, className, sectionName, examName, results, sessionName }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className="w-full max-w-4xl mx-auto bg-white shadow-lg print:shadow-none"
+    >
+      {/* Header */}
+      <div className="border-b-4 border-amber-300 p-8">
+        <h1 className="text-3xl font-bold text-gray-800 tracking-wide text-center">
+          STUDENT REPORT CARD
+        </h1>
+        <h1 className="text-xl font-bold text-gray-800 tracking-wide text-center">
+          {examName}
+        </h1>
+
+        {/* Student Info */}
+        <div className="mt-6 space-y-3 text-sm">
+          <div className="flex justify-between gap-6">
+            <div className="flex gap-2 flex-1">
+              <span className="text-gray-600">Name:</span>
+              <p className="font-semibold border-b border-gray-400 flex-1">
+                {studentName}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-gray-600">Date:</span>
+              <p className="font-semibold border-b border-gray-400 min-w-[100px]">
+                {new Date().toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-between gap-6">
+            <div className="flex gap-2 flex-1">
+              <span className="text-gray-600">Class:</span>
+              <p className="font-semibold border-b border-gray-400 flex-1">
+                {className}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-1">
+              <span className="text-gray-600">Section:</span>
+              <p className="font-semibold border-b border-gray-400 flex-1">
+                {sectionName}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-1">
+              <span className="text-gray-600">Session:</span>
+              <p className="font-semibold border-b border-gray-400 flex-1">
+                {sessionName}
+              </p>
+            </div>
+          </div>
+
+          {/* <div className="flex gap-2">
+            <span className="text-gray-600">Exam Session:</span>
+            <p className="font-semibold border-b border-gray-400 flex-1">
+              {sessionName}
+            </p>
+          </div> */}
+        </div>
+      </div>
+
+      {/* Grades Table */}
+      <div className="p-8">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-amber-300">
+              <th className="border border-gray-300 px-4 py-3 text-left text-black">
+                Subject
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
+                Marks
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((result, idx) => (
+              <tr key={result.examResultId}>
+                <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
+                  {result.examSubjectName || '-'}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
+                  {result.gainedMarks}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Notes & Comments */}
+      <div className="px-8 pb-8">
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Notes</p>
+            <div className="border border-gray-300 h-20"></div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">
+              Teacher Comments
+            </p>
+            <div className="border border-gray-300 h-20"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
+        <div className="grid grid-cols-3 gap-8 mt-6">
+          <div>
+            <p className="border-t border-gray-400 pt-2 text-center">
+              Class Teacher
+            </p>
+          </div>
+          <div></div>
+          <div>
+            <p className="border-t border-gray-400 pt-2 text-center">
+              Principal
+            </p>
+          </div>
+        </div>
+
+        <p className="text-center mt-6">
+          Generated on {new Date().toLocaleDateString()}
+        </p>
+      </div>
+    </div>
+  )
+})
+
+ReportCard.displayName = 'ReportCard'
+
+const ExamResults = (): ReactElement => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
@@ -60,7 +217,8 @@ const ExamResults = () => {
   const { data: sessions } = useGetSessions()
   const { data: exams } = useGetExams()
   const { data: students } = useGetAllStudents()
-  console.log("🚀 ~ ExamResults ~ students:", students)
+  const { data: classes } = useGetClasses()
+  const { data: sections } = useGetSections()
   const { data: subjects } = useGetExamSubjects()
 
   const router = useRouter()
@@ -68,20 +226,32 @@ const ExamResults = () => {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetExamResultsType>('studentName')
+  const [sortColumn, setSortColumn] =
+    useState<keyof GetExamResultsType>('studentName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingExamResultId, setEditingExamResultId] = useState<number | null>(null)
+  const [editingExamResultId, setEditingExamResultId] = useState<number | null>(
+    null
+  )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamResultId, setDeletingExamResultId] = useState<number | null>(null)
+  const [deletingExamResultId, setDeletingExamResultId] = useState<
+    number | null
+  >(null)
 
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
 
-  const [formData, setFormData] = useState<CreateExamResultsType>({
+  const [formData, setFormData] = useState<
+    CreateExamResultsType & {
+      classId?: number | null
+      sectionId?: number | null
+    }
+  >({
     sessionId: null,
     examId: null,
     studentId: null,
@@ -89,7 +259,19 @@ const ExamResults = () => {
     gainedMarks: 0,
     createdBy: userData?.userId || 0,
     updatedBy: null,
+    classId: null,
+    sectionId: null,
   })
+
+  const contentRef = useRef<HTMLDivElement>(null)
+  const reactToPrintFn = useReactToPrint({ contentRef })
+  const [selectedGroupForPrint, setSelectedGroupForPrint] = useState<{
+    studentName: string
+    examId: number
+    examName: string
+    sessionName: string
+    results: GetExamResultsType[]
+  } | null>(null)
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -102,10 +284,24 @@ const ExamResults = () => {
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value ? Number(value) : null,
-    }))
+    if (name === 'studentId') {
+      const selectedStudent = students?.data?.find(
+        (s) => s.studentDetails.studentId === Number(value)
+      )
+      if (selectedStudent) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value ? Number(value) : null,
+          classId: selectedStudent.studentDetails.classId || null,
+          sectionId: selectedStudent.studentDetails.sectionId || null,
+        }))
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value ? Number(value) : null,
+      }))
+    }
   }
 
   const resetForm = () => {
@@ -117,6 +313,8 @@ const ExamResults = () => {
       gainedMarks: 0,
       createdBy: userData?.userId || 0,
       updatedBy: null,
+      classId: null,
+      sectionId: null,
     })
     setEditingExamResultId(null)
     setIsEditMode(false)
@@ -164,31 +362,43 @@ const ExamResults = () => {
     })
   }, [examResults?.data, searchTerm])
 
-  const sortedExamResults = useMemo(() => {
-    return [...filteredExamResults].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ''
-      const bValue = b[sortColumn] ?? ''
+  const groupedExamResults = useMemo(() => {
+    const groups = new Map<
+      string,
+      {
+        studentName: string
+        examId: number
+        examName: string
+        className: string
+        sectionName: string
+        results: GetExamResultsType[]
+      }
+    >()
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+    filteredExamResults.forEach((result) => {
+      const groupKey = `${result.studentName}-${result.examId}`
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          studentName: result.studentName || '',
+          examId: result.examId || 0,
+          examName: result.examName || '',
+          className: result.className || '',
+          sectionName: result.sectionName || '',
+          results: [],
+        })
       }
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-      return 0
+      groups.get(groupKey)!.results.push(result)
     })
-  }, [filteredExamResults, sortColumn, sortDirection])
 
-  const paginatedExamResults = useMemo(() => {
+    return Array.from(groups.values())
+  }, [filteredExamResults])
+
+  const paginatedGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedExamResults.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedExamResults, currentPage, itemsPerPage])
+    return groupedExamResults.slice(startIndex, startIndex + itemsPerPage)
+  }, [groupedExamResults, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(sortedExamResults.length / itemsPerPage)
+  const totalPages = Math.ceil(groupedExamResults.length / itemsPerPage)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -232,6 +442,8 @@ const ExamResults = () => {
       gainedMarks: result.gainedMarks,
       createdBy: result.createdBy,
       updatedBy: userData?.userId || 0,
+      classId: (result as any)?.classId ?? null,
+      sectionId: (result as any)?.sectionId ?? null,
     })
     setEditingExamResultId(result.examResultId || null)
     setIsEditMode(true)
@@ -243,38 +455,51 @@ const ExamResults = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  // Export to Excel function with IDs
+  const handlePrintGroup = (group: any) => {
+    setSelectedGroupForPrint(group)
+    setTimeout(() => {
+      reactToPrintFn && reactToPrintFn()
+    }, 100)
+  }
+
+  const toggleGroupExpanded = (groupKey: string) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey)
+      } else {
+        newSet.add(groupKey)
+      }
+      return newSet
+    })
+  }
+
   const exportToExcel = () => {
-    if (!sortedExamResults || sortedExamResults.length === 0) {
+    if (!groupedExamResults || groupedExamResults.length === 0) {
       alert('No data to export')
       return
     }
 
-    // Prepare data for export with IDs
-    const flatData = sortedExamResults.map((result) => ({
-      'Session Id': result.sessionId || '',
-      'Exam Id': result.examId || '',
-      'Student Id': result.studentId || '',
-      'Exam Subject Id': result.examSubjectId || '',
-      'Gained Marks': result.gainedMarks || 0,
-      // Optional: Include names for reference
-      'Session Name': result.sessionName || '',
-      'Exam Name': result.examName || '',
-      'Student Name': result.studentName || '',
-      'Subject Name': result.examSubjectName || '',
-    }))
+    const flatData = groupedExamResults.flatMap((group) =>
+      group.results.map((result) => ({
+        'Student Name': group.studentName || '',
+        Class: group.className || '',
+        Section: group.sectionName || '',
+        'Session Name': result.sessionName || '',
+        'Exam Name': group.examName || '',
+        'Subject Name': result.examSubjectName || '',
+        'Gained Marks': result.gainedMarks || 0,
+      }))
+    )
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
     const workbook = XLSX.utils.book_new()
 
-    // Add worksheet to workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results')
 
-    // Generate filename with timestamp
     const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
     const fileName = `exam-results-export-${timestamp}.xlsx`
 
-    // Generate Excel file
     const excelBuffer = XLSX.write(workbook, {
       bookType: 'xlsx',
       type: 'array',
@@ -287,24 +512,28 @@ const ExamResults = () => {
     saveAs(blob, fileName)
   }
 
-  // Handle parsed Excel data
   const handleExcelDataParsed = (data: any[]) => {
     console.log('Excel data parsed:', data)
   }
 
-  // Handle Excel data submission - using IDs directly
   const handleExcelSubmit = async (data: any[]) => {
     try {
-      // Process each row and create exam results
       const promises = data.map(async (row) => {
-        const examResultData: CreateExamResultsType = {
+        const examResultData: CreateExamResultsType & {
+          classId?: number | null
+          sectionId?: number | null
+        } = {
           sessionId: row['Session Id'] ? Number(row['Session Id']) : null,
           examId: row['Exam Id'] ? Number(row['Exam Id']) : null,
           studentId: row['Student Id'] ? Number(row['Student Id']) : null,
-          examSubjectId: row['Exam Subject Id'] ? Number(row['Exam Subject Id']) : null,
+          examSubjectId: row['Exam Subject Id']
+            ? Number(row['Exam Subject Id'])
+            : null,
           gainedMarks: row['Gained Marks'] ? Number(row['Gained Marks']) : 0,
           createdBy: userData?.userId || 0,
           updatedBy: null,
+          classId: row['Class Id'] ? Number(row['Class Id']) : null,
+          sectionId: row['Section Id'] ? Number(row['Section Id']) : null,
         }
 
         return addMutation.mutateAsync(examResultData)
@@ -340,7 +569,7 @@ const ExamResults = () => {
           </div>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 bg-transparent"
             onClick={() => setIsImportPopupOpen(true)}
           >
             <Upload className="h-4 w-4" />
@@ -348,9 +577,9 @@ const ExamResults = () => {
           </Button>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 bg-transparent"
             onClick={exportToExcel}
-            disabled={!sortedExamResults || sortedExamResults.length === 0}
+            disabled={!groupedExamResults || groupedExamResults.length === 0}
           >
             <Download className="h-4 w-4" />
             Export
@@ -367,112 +596,150 @@ const ExamResults = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader className="bg-amber-100">
-            <TableRow>
-              <TableHead
-                onClick={() => handleSort('studentName')}
-                className="cursor-pointer"
-              >
-                Student Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('examName')}
-                className="cursor-pointer"
-              >
-                Exam Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('sessionName')}
-                className="cursor-pointer"
-              >
-                Session <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('examSubjectName')}
-                className="cursor-pointer"
-              >
-                Subject <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('gainedMarks')}
-                className="cursor-pointer"
-              >
-                Gained Marks <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!examResults?.data ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Loading exam results...
-                </TableCell>
-              </TableRow>
-            ) : examResults.data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No exam results found
-                </TableCell>
-              </TableRow>
-            ) : paginatedExamResults.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No exam results match your search
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedExamResults.map((result) => (
-                <TableRow key={result.examResultId}>
-                  <TableCell className="capitalize">
-                    {result.studentName || '-'}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {result.examName || '-'}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {result.sessionName || '-'}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {result.examSubjectName || '-'}
-                  </TableCell>
-                  <TableCell className="font-semibold">
-                    {result.gainedMarks}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-start gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(result)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() =>
-                          handleDeleteClick(result.examResultId || 0)
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+      {/* Grouped Table */}
+      <div className="space-y-4">
+        {!examResults?.data ? (
+          <div className="text-center py-8 text-gray-600">
+            Loading exam results...
+          </div>
+        ) : examResults.data.length === 0 ? (
+          <div className="text-center py-8 text-gray-600">
+            No exam results found
+          </div>
+        ) : paginatedGroups.length === 0 ? (
+          <div className="text-center py-8 text-gray-600">
+            No exam results match your search
+          </div>
+        ) : (
+          <>
+            {paginatedGroups.map((group) => {
+              const groupKey = `${group.studentName}-${group.examId}`
+              const isExpanded = expandedGroups.has(groupKey)
+
+              return (
+                <div
+                  key={groupKey}
+                  className="rounded-lg border border-gray-200 overflow-hidden"
+                >
+                  <div
+                    className="bg-gradient-to-r bg-slate-50 p-4 flex items-center justify-between cursor-pointer transition-colors"
+                    onClick={() => toggleGroupExpanded(groupKey)}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <button className="p-1 hover:bg-white rounded-md transition-colors">
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-amber-700" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-amber-700" />
+                        )}
+                      </button>
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-800 text-base">
+                          {group.studentName}
+                        </div>
+                        <div className="text-sm text-gray-700 space-x-6 mt-1">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-gray-600">Class:</span>
+                            <span className="font-medium">
+                              {group.className}
+                            </span>
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-gray-600">Section:</span>
+                            <span className="font-medium">
+                              {group.sectionName}
+                            </span>
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-gray-600">Exam:</span>
+                            <span className="font-medium text-amber-700">
+                              {group.examName}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2 border bg-amber-50 text-amber-600 whitespace-nowrap"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handlePrintGroup(group)
+                      }}
+                    >
+                      <Printer className="h-4 w-4" />
+                      Download Report
+                    </Button>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="bg-white border-t border-gray-200 p-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50 hover:bg-gray-50">
+                            <TableHead className="text-gray-700 font-semibold">
+                              Subject
+                            </TableHead>
+                            <TableHead className="text-gray-700 font-semibold text-right">
+                              Gained Marks
+                            </TableHead>
+                            <TableHead className="text-gray-700 font-semibold text-right">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.results.map((result) => (
+                            <TableRow
+                              key={result.examResultId}
+                              className="hover:bg-amber-50"
+                            >
+                              <TableCell className="capitalize font-medium text-gray-800">
+                                {result.examSubjectName || '-'}
+                              </TableCell>
+                              <TableCell className="font-semibold text-gray-800 text-right text-base">
+                                {result.gainedMarks}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                    onClick={() => handleEditClick(result)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() =>
+                                      handleDeleteClick(
+                                        result.examResultId || 0
+                                      )
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </>
+        )}
       </div>
 
       {/* Pagination */}
-      {sortedExamResults.length > 0 && (
+      {groupedExamResults.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -604,7 +871,9 @@ const ExamResults = () => {
                 items={
                   students?.data?.map((student) => ({
                     id: student?.studentDetails?.studentId?.toString() || '0',
-                    name: (`${student.studentDetails.firstName} ${student.studentDetails.lastName}`) || 'Unnamed student',
+                    name:
+                      `${student.studentDetails.firstName} ${student.studentDetails.lastName}` ||
+                      'Unnamed student',
                   })) || []
                 }
                 value={
@@ -613,7 +882,8 @@ const ExamResults = () => {
                         id: formData.studentId.toString(),
                         name:
                           students?.data?.find(
-                            (s) => s.studentDetails.studentId === formData.studentId
+                            (s) =>
+                              s.studentDetails.studentId === formData.studentId
                           )?.studentDetails.firstName || '',
                       }
                     : null
@@ -622,6 +892,62 @@ const ExamResults = () => {
                   handleSelectChange('studentId', value ? String(value.id) : '')
                 }
                 placeholder="Select student"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="classId">Class</Label>
+              <CustomCombobox
+                items={
+                  classes?.data?.map((cls) => ({
+                    id: cls?.classData.classId?.toString() || '0',
+                    name: cls.classData.className || 'Unnamed class',
+                  })) || []
+                }
+                value={
+                  formData.classId
+                    ? {
+                        id: formData.classId.toString(),
+                        name:
+                          classes?.data?.find(
+                            (c) => c.classData.classId === formData.classId
+                          )?.classData.className || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange('classId', value ? String(value.id) : '')
+                }
+                placeholder="Auto-selected from student"
+                disabled={!!formData.studentId}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sectionId">Section</Label>
+              <CustomCombobox
+                items={
+                  sections?.data?.map((section) => ({
+                    id: section?.sectionId?.toString() || '0',
+                    name: section.sectionName || 'Unnamed section',
+                  })) || []
+                }
+                value={
+                  formData.sectionId
+                    ? {
+                        id: formData.sectionId.toString(),
+                        name:
+                          sections?.data?.find(
+                            (s) => s.sectionId === formData.sectionId
+                          )?.sectionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange('sectionId', value ? String(value.id) : '')
+                }
+                placeholder="Auto-selected from student"
+                disabled={!!formData.studentId}
               />
             </div>
 
@@ -708,18 +1034,32 @@ const ExamResults = () => {
           <div className="mb-4 p-4 bg-amber-50 rounded-md">
             <h3 className="font-semibold mb-2">Excel Format Requirements:</h3>
             <p className="text-sm text-gray-700 mb-2">
-              Your Excel file should have the following columns with numeric IDs:
+              Your Excel file should have the following columns with numeric
+              IDs:
             </p>
             <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
-              <li><strong>Session Id</strong> (Optional) - Numeric ID</li>
-              <li><strong>Exam Id</strong> (Optional) - Numeric ID</li>
-              <li><strong>Student Id</strong> (Optional) - Numeric ID</li>
-              <li><strong>Exam Subject Id</strong> (Optional) - Numeric ID</li>
-              <li><strong>Gained Marks</strong> (Required) - Numeric value</li>
+              <li>
+                <strong>Session Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Exam Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Student Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Class Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Section Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Exam Subject Id</strong> - Numeric ID
+              </li>
+              <li>
+                <strong>Gained Marks</strong> - Numeric value
+              </li>
             </ul>
-            <p className="text-sm text-gray-700 mt-3">
-              <strong>Tip:</strong> Export your current data first to see the correct format and IDs!
-            </p>
           </div>
           <ExcelFileInput
             onDataParsed={handleExcelDataParsed}
@@ -760,6 +1100,24 @@ const ExamResults = () => {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Print Reference for Report Card */}
+      <div style={{ display: 'none' }}>
+        <div ref={contentRef}>
+          {selectedGroupForPrint && (
+            <ReportCard
+              studentName={selectedGroupForPrint.studentName}
+              className={selectedGroupForPrint.results[0]?.className || 'N/A'}
+              sectionName={
+                selectedGroupForPrint.results[0]?.sectionName || 'N/A'
+              }
+              examName={selectedGroupForPrint.examName}
+              results={selectedGroupForPrint.results}
+              sessionName={selectedGroupForPrint.results[0]?.sessionName || 'N/A'}
+            />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
