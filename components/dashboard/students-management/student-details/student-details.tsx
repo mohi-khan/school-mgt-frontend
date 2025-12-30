@@ -51,7 +51,7 @@ const StudentDetailsPage = () => {
           <CardContent className="p-6 flex gap-4">
             <div className="w-20 h-20 rounded-md bg-gray-200 overflow-hidden">
               <Image
-                src={studentDetails.photoUrl || '/user-placeholder.png'}
+                src={studentDetails?.photoUrl || '/user-placeholder.png'}
                 alt="Profile"
                 width={128}
                 height={128}
@@ -61,14 +61,14 @@ const StudentDetailsPage = () => {
 
             <div>
               <h2 className="text-xl font-semibold pb-2">
-                {studentDetails.firstName} {studentDetails.lastName}
+                {studentDetails?.firstName} {studentDetails?.lastName}
               </h2>
 
               <p className="text-sm text-gray-600">
-                Admission No: {studentDetails.admissionNo}
+                Admission No: {studentDetails?.admissionNo}
               </p>
               <p className="text-sm text-gray-600">
-                Roll No: {studentDetails.rollNo}
+                Roll No: {studentDetails?.rollNo}
               </p>
             </div>
           </CardContent>
@@ -77,28 +77,28 @@ const StudentDetailsPage = () => {
         <Card>
           <CardContent className="pt-4 space-y-2 text-sm">
             <p>
-              <strong>Class:</strong> {studentDetails.className}
+              <strong>Class:</strong> {studentDetails?.className}
             </p>
             <p>
-              <strong>Section:</strong> {studentDetails.sectionName}
+              <strong>Section:</strong> {studentDetails?.sectionName}
             </p>
             <p>
-              <strong>Session:</strong> {studentDetails.sessionName}
+              <strong>Session:</strong> {studentDetails?.sessionName}
             </p>
             <p>
-              <strong>Gender:</strong> {studentDetails.gender}
+              <strong>Gender:</strong> {studentDetails?.gender}
             </p>
             <p>
-              <strong>DOB:</strong> {formatDate(studentDetails.dateOfBirth)}
+              <strong>DOB:</strong> {formatDate(studentDetails?.dateOfBirth)}
             </p>
             <p>
-              <strong>Blood Group:</strong> {studentDetails.bloodGroup ?? 'N/A'}
+              <strong>Blood Group:</strong> {studentDetails?.bloodGroup ?? 'N/A'}
             </p>
             <p>
-              <strong>Phone:</strong> {studentDetails.phoneNumber}
+              <strong>Phone:</strong> {studentDetails?.phoneNumber}
             </p>
             <p>
-              <strong>Email:</strong> {studentDetails.email}
+              <strong>Email:</strong> {studentDetails?.email}
             </p>
           </CardContent>
         </Card>
@@ -124,19 +124,19 @@ const StudentDetailsPage = () => {
               <CardContent className="grid grid-cols-2 gap-4 text-sm">
                 <p>
                   <strong>Admission Date:</strong>{' '}
-                  {formatDate(studentDetails.admissionDate)}
+                  {formatDate(studentDetails?.admissionDate)}
                 </p>
                 <p>
-                  <strong>Religion:</strong> {studentDetails.religion ?? 'N/A'}
+                  <strong>Religion:</strong> {studentDetails?.religion ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Height:</strong> {studentDetails.height ?? 'N/A'}
+                  <strong>Height:</strong> {studentDetails?.height ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Weight:</strong> {studentDetails.weight ?? 'N/A'}
+                  <strong>Weight:</strong> {studentDetails?.weight ?? 'N/A'}
                 </p>
                 <p className="col-span-2">
-                  <strong>Address:</strong> {studentDetails.address}
+                  <strong>Address:</strong> {studentDetails?.address}
                 </p>
               </CardContent>
             </Card>
@@ -156,26 +156,26 @@ const StudentDetailsPage = () => {
                         <td className="w-36 font-semibold pb-4">
                           Father Name:
                         </td>
-                        <td className="pb-4">{studentDetails.fatherName}</td>
+                        <td className="pb-4">{studentDetails?.fatherName}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Father Phone:
                         </td>
-                        <td className="pb-4">{studentDetails.fatherPhone}</td>
+                        <td className="pb-4">{studentDetails?.fatherPhone}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Father Email:
                         </td>
-                        <td className="pb-4">{studentDetails.fatherEmail}</td>
+                        <td className="pb-4">{studentDetails?.fatherEmail}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Father Occupation:
                         </td>
                         <td className="pb-4">
-                          {studentDetails.fatherOccupation}
+                          {studentDetails?.fatherOccupation}
                         </td>
                       </tr>
                     </tbody>
@@ -184,7 +184,7 @@ const StudentDetailsPage = () => {
                   <div className="w-20 h-20 rounded-md bg-gray-200 overflow-hidden">
                     <Image
                       src={
-                        studentDetails.fatherPhotoUrl || '/user-placeholder.png'
+                        studentDetails?.fatherPhotoUrl || '/user-placeholder.png'
                       }
                       alt="Profile"
                       width={128}
@@ -203,26 +203,26 @@ const StudentDetailsPage = () => {
                         <td className="w-36 font-semibold pb-4">
                           Mother Name:
                         </td>
-                        <td className="pb-4">{studentDetails.motherName}</td>
+                        <td className="pb-4">{studentDetails?.motherName}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Mother Phone:
                         </td>
-                        <td className="pb-4">{studentDetails.motherPhone}</td>
+                        <td className="pb-4">{studentDetails?.motherPhone}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Mother Email:
                         </td>
-                        <td className="pb-4">{studentDetails.motherEmail}</td>
+                        <td className="pb-4">{studentDetails?.motherEmail}</td>
                       </tr>
                       <tr>
                         <td className="w-36 font-semibold pb-4">
                           Mother Occupation:
                         </td>
                         <td className="pb-4">
-                          {studentDetails.motherOccupation}
+                          {studentDetails?.motherOccupation}
                         </td>
                       </tr>
                     </tbody>
@@ -231,7 +231,7 @@ const StudentDetailsPage = () => {
                   <div className="w-20 h-20 rounded-md bg-gray-200 overflow-hidden">
                     <Image
                       src={
-                        studentDetails.motherPhotoUrl || '/user-placeholder.png'
+                        studentDetails?.motherPhotoUrl || '/user-placeholder.png'
                       }
                       alt="Profile"
                       width={128}
@@ -253,7 +253,7 @@ const StudentDetailsPage = () => {
                     Student Fees
                   </CardTitle>
                   <Link
-                    href={`/dashboard/fees-management/collect-fees/${studentDetails.studentId}`}
+                    href={`/dashboard/fees-management/collect-fees/${studentDetails?.studentId}`}
                   >
                     <Button
                       variant="ghost"
@@ -266,7 +266,7 @@ const StudentDetailsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {studentFees.length === 0 ? (
+                {studentFees?.length === 0 ? (
                   <p className="text-center text-gray-500">
                     No fees assigned yet.
                   </p>

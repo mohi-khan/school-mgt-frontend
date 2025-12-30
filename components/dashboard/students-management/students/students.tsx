@@ -101,7 +101,6 @@ const MoneyReceipt = React.forwardRef<
       phoneNumber,
       // paymentMethod,
       paymentDate,
-      remarks,
       fees,
     },
     ref
@@ -168,12 +167,6 @@ const MoneyReceipt = React.forwardRef<
                   {phoneNumber}
                 </p>
               </div>
-              {/* <div className="flex gap-2 flex-1">
-                <span className="text-gray-600">Payment Method:</span>
-                <p className="font-semibold border-b border-gray-400 flex-1 capitalize">
-                  {paymentMethod}
-                </p>
-              </div> */}
             </div>
           </div>
         </div>
