@@ -126,8 +126,8 @@ const CollectFees = () => {
   }
 
   const filteredFees = useMemo(() => {
-    if (!studentFees?.data) return []
-    return studentFees.data?.filter((fee: GetStudentFeesType) => {
+    if (!Array.isArray(studentFees?.data)) return []
+    return studentFees?.data?.filter((fee: GetStudentFeesType) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         fee.feesTypeName?.toLowerCase().includes(searchLower) ||
