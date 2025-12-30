@@ -217,6 +217,9 @@ export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
   bankAccountId?: number
   feesTypeId?: number
   feesTypeName?: string
+  paymentMethod?: string
+  paymentDate?: string
+  paymentRemarks?: string
 }
 
 export const promoteStudentsSchema = z.object({
