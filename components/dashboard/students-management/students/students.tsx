@@ -1,5 +1,6 @@
 'use client'
-import { useCallback, useState, useMemo } from 'react'
+import React from 'react'
+import { useCallback, useState, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -27,6 +28,7 @@ import {
   DollarSign,
   Download,
   Upload,
+  Printer,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
@@ -70,6 +72,183 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
+import { useReactToPrint } from 'react-to-print'
+
+const MoneyReceipt = React.forwardRef<
+  HTMLDivElement,
+  {
+    studentName: string
+    className: string
+    sectionName: string
+    admissionNo: string
+    phoneNumber: string
+    paymentDate: string
+    remarks: string
+    fees: Array<{
+      paymentMethod: string
+      feesTypeName: string
+      amount: number
+      paidAmount: number
+    }>
+  }
+>(
+  (
+    {
+      studentName,
+      className,
+      sectionName,
+      admissionNo,
+      phoneNumber,
+      // paymentMethod,
+      paymentDate,
+      remarks,
+      fees,
+    },
+    ref
+  ) => {
+    const totalAmount = fees.reduce((sum, fee) => sum + fee.paidAmount, 0)
+    console.log('🚀 ~ fees:', fees)
+    console.log('🚀 ~ totalAmount:', totalAmount)
+
+    return (
+      <div
+        ref={ref}
+        className="w-full max-w-4xl mx-auto bg-white shadow-lg print:shadow-none"
+      >
+        {/* Header */}
+        <div className="border-b-4 border-amber-300 p-8">
+          <h1 className="text-3xl font-bold text-gray-800 tracking-wide text-center">
+            MONEY RECEIPT
+          </h1>
+
+          {/* Student Info */}
+          <div className="mt-6 space-y-3 text-sm">
+            <div className="flex justify-between gap-6">
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Student Name:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {studentName}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-600">Date:</span>
+                <p className="font-semibold border-b border-gray-400 min-w-[100px]">
+                  {paymentDate
+                    ? formatDate(new Date(paymentDate))
+                    : new Date().toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-between gap-6">
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Admission No:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {admissionNo}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Class:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {className}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Section:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {sectionName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-between gap-6">
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Phone:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {phoneNumber}
+                </p>
+              </div>
+              {/* <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Payment Method:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1 capitalize">
+                  {paymentMethod}
+                </p>
+              </div> */}
+            </div>
+          </div>
+        </div>
+
+        {/* Fees Table */}
+        <div className="p-8">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-amber-300">
+                <th className="border border-gray-300 px-4 py-3 text-left text-black">
+                  Fee Type
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
+                  Payment Method
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
+                  Paid Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {fees.map((fee, idx) => (
+                <tr key={idx}>
+                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
+                    {fee.feesTypeName || 'N/A'}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800 text-center">
+                    {fee.paymentMethod || 'N/A'}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800 text-center">
+                    {formatNumber(fee.paidAmount)}
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-amber-50">
+                <td
+                  colSpan={2}
+                  className="border border-gray-300 px-4 py-3 text-right font-bold text-gray-800"
+                >
+                  Total Paid:
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-800 text-lg">
+                  {formatNumber(totalAmount)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
+          <div className="grid grid-cols-3 gap-8 mt-6">
+            <div>
+              <p className="border-t border-gray-400 pt-2 text-center">
+                Collected By
+              </p>
+            </div>
+            <div></div>
+            <div>
+              <p className="border-t border-gray-400 pt-2 text-center">
+                Authorized Signature
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center mt-6">
+            Generated on {new Date().toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+    )
+  }
+)
+
+MoneyReceipt.displayName = 'MoneyReceipt'
 
 const Students = () => {
   const router = useRouter()
@@ -106,6 +285,25 @@ const Students = () => {
   const [paymentDate, setPaymentDate] = useState<string>('')
   const [remarks, setRemarks] = useState<string>('')
   const [selectedFees, setSelectedFees] = useState<number[]>([])
+
+  const contentRef = useRef<HTMLDivElement>(null)
+  const reactToPrintFn = useReactToPrint({ contentRef })
+  const [selectedReceiptData, setSelectedReceiptData] = useState<{
+    studentName: string
+    className: string
+    sectionName: string
+    admissionNo: string
+    phoneNumber: string
+    paymentDate: string
+    remarks: string
+    fees: Array<{
+      feesTypeName: string
+      amount: number
+      paidAmount: number
+      paymentMethod: string
+    }>
+  } | null>(null)
+  console.log('🚀 ~ Students ~ selectedReceiptData:', selectedReceiptData)
 
   const { data: studentFees, isLoading: isLoadingFees } = useGetStudentFeesById(
     selectedStudentIdForFees ? Number(selectedStudentIdForFees) : 0
@@ -278,6 +476,53 @@ const Students = () => {
     })
 
     collectFeesMutation.mutate(feeData as any)
+  }
+
+  const handlePrintReceipt = () => {
+    if (!selectedStudentIdForFees) return
+
+    const student = studentsData?.data?.find(
+      (s: any) => s.studentDetails.studentId === selectedStudentIdForFees
+    )
+
+    if (!student) return
+
+    const paidFees =
+      studentFees?.data?.filter(
+        (fee: any) => fee.status === 'Paid' || fee.status === 'Partial'
+      ) || []
+
+    if (paidFees.length === 0) {
+      alert('No paid or partial fees found for this student')
+      return
+    }
+
+    const feesToPrint = paidFees.map((fee: any) => ({
+      feesTypeName: fee.feesTypeName || 'N/A',
+      amount: fee.amount || 0,
+      paidAmount: fee.paidAmount || 0,
+      paymentMethod: fee.paymentMethod || 'N/A',
+    }))
+
+    // Get the most recent payment details
+    const latestPayment = paidFees[0] // or find the most recent one
+
+    setSelectedReceiptData({
+      studentName: `${student.studentDetails.firstName} ${student.studentDetails.lastName}`,
+      className: student.studentDetails.className || 'N/A',
+      sectionName: student.studentDetails.sectionName || 'N/A',
+      admissionNo: student.studentDetails.admissionNo?.toString() || 'N/A',
+      phoneNumber: student.studentDetails.phoneNumber || 'N/A',
+      // paymentMethod: latestPayment.paymentMethod || 'N/A',
+      paymentDate:
+        latestPayment.paymentDate || new Date().toISOString().split('T')[0],
+      remarks: latestPayment.paymentRemarks || 'Fee payment receipt',
+      fees: feesToPrint,
+    })
+
+    setTimeout(() => {
+      reactToPrintFn && reactToPrintFn()
+    }, 100)
   }
 
   // Download Excel template
@@ -706,7 +951,23 @@ const Students = () => {
 
             {/* Student Fees Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Student Fees</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Student Fees</h3>
+                <button
+                  className="flex items-center gap-2 text-amber-600 hover:text-amber-700 border border-amber-600 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handlePrintReceipt}
+                  disabled={
+                    !studentFees?.data ||
+                    studentFees?.data.every(
+                      (fee: any) => fee.status === 'Unpaid'
+                    )
+                  }
+                  type="button"
+                >
+                  <Printer className="w-4" />
+                  <span className="text-sm">Print Money Receipt</span>
+                </button>
+              </div>
               {isLoadingFees ? (
                 <div className="text-center py-4">Loading fees...</div>
               ) : studentFees?.data?.length === 0 ? (
@@ -841,6 +1102,25 @@ const Students = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Print Reference for Money Receipt */}
+      <div style={{ display: 'none' }}>
+        <div ref={contentRef}>
+          {selectedReceiptData && (
+            <MoneyReceipt
+              studentName={selectedReceiptData.studentName}
+              className={selectedReceiptData.className}
+              sectionName={selectedReceiptData.sectionName}
+              admissionNo={selectedReceiptData.admissionNo}
+              phoneNumber={selectedReceiptData.phoneNumber}
+              // paymentMethod={selectedReceiptData.paymentMethod}
+              paymentDate={selectedReceiptData.paymentDate}
+              remarks={selectedReceiptData.remarks}
+              fees={selectedReceiptData.fees}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Import Popup */}
       <Popup
