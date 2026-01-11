@@ -275,7 +275,9 @@ const Students = () => {
     id: string
     name: string
   } | null>(null)
-  const [paymentDate, setPaymentDate] = useState<string>('')
+  const [paymentDate, setPaymentDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  )
   const [remarks, setRemarks] = useState<string>('')
   const [selectedFees, setSelectedFees] = useState<number[]>([])
 
@@ -321,7 +323,7 @@ const Students = () => {
     setPaymentMethod('')
     setBankAccountId(null)
     setMfsId(null)
-    setPaymentDate('')
+    setPaymentDate(new Date().toISOString().split('T')[0])
     setRemarks('')
     setSelectedFees([])
   }, [])
@@ -945,7 +947,18 @@ const Students = () => {
             {/* Student Fees Section */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Student Fees</h3>
+                <h3 className="text-lg font-semibold">
+                  Student Fees (
+                  {formatNumber(
+                    selectedFees.reduce((sum, feeId) => {
+                      const fee = studentFees?.data?.find(
+                        (f: any) => f.studentFeesId === feeId
+                      )
+                      return sum + (fee?.remainingAmount || 0)
+                    }, 0)
+                  )}
+                  )
+                </h3>
                 <button
                   className="flex items-center gap-2 text-amber-600 hover:text-amber-700 border border-amber-600 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handlePrintReceipt}

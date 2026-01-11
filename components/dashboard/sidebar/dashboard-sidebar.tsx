@@ -50,15 +50,14 @@ export function DashboardSidebar() {
       href: '/dashboard/dashboard-overview',
     },
     {
-      title: 'Classes',
-      icon: BookOpen,
-      href: '/dashboard/classes',
-    },
-    {
       title: 'Setup',
       icon: Settings,
       href: '/dashboard/setup',
       subItems: [
+        {
+          title: 'Classes',
+          href: '/dashboard/setup/classes',
+        },
         {
           title: 'Bank Accounts',
           href: '/dashboard/setup/bank-accounts',

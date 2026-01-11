@@ -1,4 +1,4 @@
-import Classes from '@/components/dashboard/classes/classes';
+import Classes from '@/components/dashboard/setup/classes/classes';
 import React from 'react';
 
 const ClassesPage = () => {
