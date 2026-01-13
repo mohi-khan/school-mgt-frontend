@@ -198,8 +198,8 @@ export function DashboardSidebar() {
           href: '/dashboard/reports/expense-report',
         },
         {
-          title: 'Exam Results',
-          href: '/dashboard/exams-management/exam-results',
+          title: 'Result Report',
+          href: '/dashboard/reports/result-report',
         },
       ],
     },
