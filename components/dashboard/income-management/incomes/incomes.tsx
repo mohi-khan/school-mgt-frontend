@@ -45,6 +45,8 @@ import {
   useUpdateIncome,
   useDeleteIncome,
   useGetIncomeHeads,
+  useGetBankAccounts,
+  useGetMfss,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
@@ -64,7 +66,10 @@ const Incomes = () => {
   const [token] = useAtom(tokenAtom)
 
   const { data: incomes } = useGetIncomes()
+  console.log('🚀 ~ Incomes ~ incomes:', incomes)
   const { data: incomeHeads } = useGetIncomeHeads()
+  const { data: bankAccounts } = useGetBankAccounts()
+  const { data: mfsData } = useGetMfss()
 
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +87,8 @@ const Incomes = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingIncomeId, setDeletingIncomeId] = useState<number | null>(null)
 
+  const [paymentMethod, setPaymentMethod] = useState<string>('')
+
   const [formData, setFormData] = useState<CreateIncomesType>({
     incomeHeadId: 0,
     name: '',
@@ -90,6 +97,8 @@ const Incomes = () => {
     amount: 0,
     description: null,
     method: 'cash',
+    bankAccountId: null,
+    mfsId: null,
     createdBy: userData?.userId || 0,
   })
 
@@ -115,6 +124,8 @@ const Incomes = () => {
       amount: 0,
       description: null,
       method: 'cash',
+      bankAccountId: null,
+      mfsId: null,
       createdBy: userData?.userId || 0,
     })
     setEditingIncomeId(null)
@@ -260,6 +271,8 @@ const Incomes = () => {
       amount: income.amount,
       description: income.description ?? null,
       method: income.method,
+      bankAccountId: income.bankAccountId,
+      mfsId: income.mfsId,
       createdBy: userData?.userId || 0,
     })
     setEditingIncomeId(income.incomeId || null)
@@ -271,6 +284,21 @@ const Incomes = () => {
     setDeletingIncomeId(incomeId)
     setIsDeleteDialogOpen(true)
   }
+
+  const filteredMfsAccounts = useMemo(() => {
+    if (
+      !mfsData?.data ||
+      !['bkash', 'nagad', 'rocket'].includes(paymentMethod)
+    ) {
+      return []
+    }
+    return mfsData.data
+      .filter((mfs: any) => mfs.mfsType === paymentMethod)
+      .map((mfs: any) => ({
+        id: mfs.mfsId?.toString() || '0',
+        name: `${mfs.accountName} - ${mfs.mfsNumber}`,
+      }))
+  }, [mfsData, paymentMethod])
 
   return (
     <div className="p-6 space-y-6">
@@ -340,6 +368,20 @@ const Incomes = () => {
                 Method <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
+                onClick={() => handleSort('bankAccountId')}
+                className="cursor-pointer"
+              >
+                Bank Account Details
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('bankAccountId')}
+                className="cursor-pointer"
+              >
+                MFS Details
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
                 onClick={() => handleSort('amount')}
                 className="cursor-pointer"
               >
@@ -377,6 +419,14 @@ const Incomes = () => {
                   <TableCell>{income.invoiceNumber}</TableCell>
                   <TableCell>{formatDate(new Date(income.date))}</TableCell>
                   <TableCell>{income.method}</TableCell>
+                  <TableCell>
+                    {income.bankName && income.branch && income.accountNumber
+                      ? `${income.bankName} - ${income.branch} - ${income.accountNumber}`
+                      : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {income.mfsNumber || '-'}
+                  </TableCell>
                   <TableCell>
                     {formatNumber(income.amount.toFixed(2))}
                   </TableCell>
@@ -562,7 +612,10 @@ const Incomes = () => {
               <Select
                 name="method"
                 value={formData.method}
-                onValueChange={(value) => handleSelectChange('method', value)}
+                onValueChange={(value) => {
+                  handleSelectChange('method', value)
+                  setPaymentMethod(value)
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -576,6 +629,67 @@ const Incomes = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {paymentMethod === 'bank' && (
+              <div className="space-y-2">
+                <Label htmlFor="bankAccount">Bank Account</Label>
+                <CustomCombobox
+                  items={
+                    bankAccounts?.data?.map((b) => ({
+                      id: b.bankAccountId?.toString() || '0',
+                      name: `${b.bankName} - ${b.accountNumber} - ${b.branch}`,
+                    })) || []
+                  }
+                  value={
+                    formData.bankAccountId
+                      ? {
+                          id: formData.bankAccountId.toString(),
+                          name: bankAccounts?.data?.find(
+                            (b) => b.bankAccountId === formData.bankAccountId
+                          )
+                            ? `${bankAccounts.data.find((b) => b.bankAccountId === formData.bankAccountId)?.bankName} - ${bankAccounts.data.find((b) => b.bankAccountId === formData.bankAccountId)?.accountNumber}`
+                            : '',
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      bankAccountId: value ? Number(value.id) : 0,
+                    }))
+                  }
+                  placeholder="Select bank account"
+                />
+              </div>
+            )}
+
+            {['bkash', 'nagad', 'rocket'].includes(paymentMethod) && (
+              <div className="space-y-2">
+                <Label htmlFor="mfsAccount">MFS Account</Label>
+                <CustomCombobox
+                  items={filteredMfsAccounts}
+                  value={
+                    formData.mfsId
+                      ? {
+                          id: formData.mfsId.toString(),
+                          name: mfsData?.data?.find(
+                            (h) => h.mfsId === formData.mfsId
+                          )
+                            ? `${mfsData.data.find((h) => h.mfsId === formData.mfsId)?.accountName} - ${mfsData.data.find((h) => h.mfsId === formData.mfsId)?.mfsNumber}`
+                            : '',
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      mfsId: value ? Number(value.id) : 0,
+                    }))
+                  }
+                  placeholder={`Select ${paymentMethod} account`}
+                />
+              </div>
+            )}
 
             {/* Amount */}
             <div className="space-y-2">
