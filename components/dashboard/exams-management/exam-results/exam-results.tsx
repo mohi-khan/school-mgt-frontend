@@ -497,7 +497,7 @@ const ExamResults = (): ReactElement => {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results')
 
-    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '') 
     const fileName = `result-report-${timestamp}.xlsx`
 
     const excelBuffer = XLSX.write(workbook, {

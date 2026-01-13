@@ -545,3 +545,17 @@ export const paymentSummarySchema = z.object({
   totalMfs: z.number(),
 })
 export type GetPaymentSummaryType = z.infer<typeof paymentSummarySchema>
+
+export const incomeSummarySchema = z.object({
+  id: z.number(),
+  month: z.string(),
+  amount: z.number(),
+})
+export type GetIncomeSummaryType = z.infer<typeof incomeSummarySchema>
+
+export const expenseSummarySchema = z.object({
+  id: z.number(),
+  month: z.string(),
+  amount: z.number(),
+})
+export type GetExpenseSummaryType = z.infer<typeof expenseSummarySchema>

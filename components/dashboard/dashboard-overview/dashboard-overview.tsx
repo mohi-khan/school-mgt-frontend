@@ -9,6 +9,8 @@ import {
   Smartphone,
   DollarSign,
   User,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,7 +37,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useGetAllStudents, useGetPaymentSummary } from '@/hooks/use-api'
+import {
+  useGetAllStudents,
+  useGetExpenseSummary,
+  useGetIncomeSummary,
+  useGetPaymentSummary,
+} from '@/hooks/use-api'
 
 const DashboardOverview = () => {
   useInitializeUser()
@@ -58,8 +65,8 @@ const DashboardOverview = () => {
   console.log('🚀 ~ DashboardOverview ~ paymentSummary:', paymentSummary)
 
   const { data: students } = useGetAllStudents()
-  const { data: profitSummary } = [] as any
-  const { data: bankBalanceSummary } = [] as any
+  const { data: incomeSummary } = useGetIncomeSummary()
+  const { data: expenseSummary } = useGetExpenseSummary()
 
   // Static inventory data for modal
   const InventoryItems = {
@@ -286,20 +293,97 @@ const DashboardOverview = () => {
       </div>
 
       {/* profit summary and bank balance summary */}
+      {/* Income and Expense Summary */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              Profit Summary
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              Income Summary
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="w-full h-80">
-              {profitSummary?.data && profitSummary.data.length > 0 ? (
+              {incomeSummary?.data && Array.isArray(incomeSummary.data) && incomeSummary.data.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={profitSummary.data}
+                    data={incomeSummary.data}
+                    margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="0"
+                      stroke="#e5e7eb"
+                      vertical={false}
+                    />
+
+                    <XAxis
+                      dataKey="month"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      />
+
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+
+                    <Tooltip
+                      formatter={(value: number) =>
+                        value.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      }
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      }}
+                      cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+                    />
+
+                    <Legend
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
+
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#059669"
+                      name="Income"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#059669', r: 4, strokeWidth: 0 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No income data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-red-600" />
+              Expense Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full h-80">
+              {expenseSummary?.data && Array.isArray(expenseSummary.data) && expenseSummary.data.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={expenseSummary.data}
                     margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
                   >
                     <CartesianGrid
@@ -345,111 +429,18 @@ const DashboardOverview = () => {
 
                     <Line
                       type="monotone"
-                      dataKey="total_expense"
+                      dataKey="amount"
                       stroke="#dc2626"
-                      name="Total Expense"
+                      name="Expense"
                       strokeWidth={2.5}
                       dot={{ fill: '#dc2626', r: 4, strokeWidth: 0 }}
                       activeDot={{ r: 6 }}
                     />
-
-                    <Line
-                      type="monotone"
-                      dataKey="gross_profit"
-                      stroke="#d97706"
-                      name="Gross Profit"
-                      strokeWidth={2.5}
-                      dot={{ fill: '#d97706', r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 6 }}
-                    />
-
-                    <Line
-                      type="monotone"
-                      dataKey="net_profit"
-                      stroke="#059669"
-                      name="Net Profit"
-                      strokeWidth={2.5}
-                      dot={{ fill: '#059669', r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 6 }}
-                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  No profit data available
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-emerald-600" />
-              Bank Account Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-80">
-              {bankBalanceSummary?.data &&
-              bankBalanceSummary.data.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={bankBalanceSummary.data}
-                    margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="0"
-                      stroke="#e5e7eb"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="bank_name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      formatter={(value: number) =>
-                        value.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })
-                      }
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                      }}
-                      cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-                    />
-                    <Legend
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="line"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="current_balance"
-                      stroke="#059669"
-                      name="Current Balance"
-                      strokeWidth={2.5}
-                      dot={{ fill: '#059669', r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 6 }}
-                      isAnimationActive={true}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  No bank account data available
+                  No expense data available
                 </div>
               )}
             </div>

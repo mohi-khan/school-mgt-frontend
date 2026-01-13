@@ -75,7 +75,9 @@ import {
   getBankPaymentReport,
   getCashPaymentReport,
   getExpenseReport,
+  getExpenseSummary,
   getIncomeReport,
+  getIncomeSummary,
   getMfsPaymentReport,
   getPaymentReport,
   getPaymentSummary,
@@ -2360,6 +2362,40 @@ export const useGetPaymentSummary = () => {
         throw new Error('Token not found')
       }
       return getPaymentSummary(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetIncomeSummary = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['incomeSummary'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getIncomeSummary(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetExpenseSummary = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['expenseSummary'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getExpenseSummary(token)
     },
     enabled: !!token,
     select: (data) => data,
