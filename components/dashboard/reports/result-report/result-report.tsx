@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronUp,
   Printer,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type { CreateExamResultsType, GetExamResultsType } from '@/utils/type'
@@ -208,7 +209,7 @@ const ReportCard = React.forwardRef<
 
 ReportCard.displayName = 'ReportCard'
 
-const ExamResults = (): ReactElement => {
+const ResultReport = (): ReactElement => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
@@ -497,7 +498,7 @@ const ExamResults = (): ReactElement => {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results')
 
-    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '') 
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
     const fileName = `result-report-${timestamp}.xlsx`
 
     const excelBuffer = XLSX.write(workbook, {
@@ -555,7 +556,7 @@ const ExamResults = (): ReactElement => {
           <div className="bg-amber-100 p-2 rounded-md">
             <FileText className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Exam Results</h2>
+          <h2 className="text-lg font-semibold">Result Report</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -568,30 +569,13 @@ const ExamResults = (): ReactElement => {
             />
           </div>
           <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={() => setIsImportPopupOpen(true)}
-          >
-            <Upload className="h-4 w-4" />
-            Import
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
             onClick={exportToExcel}
+            variant="ghost"
+            className="flex items-center gap-2 bg-green-100 text-green-900 hover:bg-green-200"
             disabled={!groupedExamResults || groupedExamResults.length === 0}
           >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button
-            className="bg-amber-500 hover:bg-amber-600 text-black"
-            onClick={() => {
-              resetForm()
-              setIsPopupOpen(true)
-            }}
-          >
-            Add
+            <FileSpreadsheet className="h-4 w-4" />
+            Excel
           </Button>
         </div>
       </div>
@@ -1122,4 +1106,4 @@ const ExamResults = (): ReactElement => {
   )
 }
 
-export default ExamResults
+export default ResultReport

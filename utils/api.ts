@@ -49,6 +49,8 @@ import {
   StudentPromotionsType,
   GetTransactionReportType,
   GetPaymentSummaryType,
+  GetIncomeSummaryType,
+  GetExpenseSummaryType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -1104,6 +1106,28 @@ export async function getExpenseReport(
 export async function getPaymentSummary(token: string) {
   return fetchApi<GetPaymentSummaryType>({
     url: 'api/dashboard/payment-summary',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getIncomeSummary(token: string) {
+  return fetchApi<GetIncomeSummaryType>({
+    url: 'api/dashboard/income-summary',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getExpenseSummary(token: string) {
+  return fetchApi<GetExpenseSummaryType>({
+    url: 'api/dashboard/expense-summary',
     method: 'GET',
     headers: {
       Authorization: token,
