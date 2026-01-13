@@ -364,9 +364,11 @@ export const incomeSchema = z.object({
   name: z.string(),
   invoiceNumber: z.number(),
   date: z.string(),
+  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
+  bankAccountId: z.number().nullable().optional(),
+  mfsId: z.number().nullable().optional(),
   amount: z.number(),
   description: z.string().nullable().optional(),
-  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
   createdBy: z.number(),
   createdAt: z.date().optional(), // default now
   updatedBy: z.number().nullable().optional(),
@@ -375,6 +377,11 @@ export const incomeSchema = z.object({
 export type CreateIncomesType = z.infer<typeof incomeSchema>
 export type GetIncomesType = z.infer<typeof incomeSchema> & {
   incomeHead: string
+  bankName: string
+  accountNumber: number
+  branch: string
+  accountName: string
+  mfsNumber: number
 }
 
 export const expenseHeadSchema = z.object({
@@ -396,6 +403,8 @@ export const expenseSchema = z.object({
   invoiceNumber: z.number(),
   date: z.string(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
+  bankAccountId: z.number().nullable().optional(),
+  mfsId: z.number().nullable().optional(),
   amount: z.number(),
   description: z.string().nullable().optional(),
   createdBy: z.number(),
@@ -406,6 +415,11 @@ export const expenseSchema = z.object({
 export type CreateExpensesType = z.infer<typeof expenseSchema>
 export type GetExpensesType = z.infer<typeof expenseSchema> & {
   expenseHead: string
+  bankName: string
+  accountNumber: number
+  branch: string
+  accountName: string
+  mfsNumber: number
 }
 
 export const bankMfsCashSchema = z.object({
