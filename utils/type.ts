@@ -366,6 +366,7 @@ export const incomeSchema = z.object({
   date: z.string(),
   amount: z.number(),
   description: z.string().nullable().optional(),
+  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
   createdBy: z.number(),
   createdAt: z.date().optional(), // default now
   updatedBy: z.number().nullable().optional(),
@@ -394,6 +395,7 @@ export const expenseSchema = z.object({
   name: z.string(),
   invoiceNumber: z.number(),
   date: z.string(),
+  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
   amount: z.number(),
   description: z.string().nullable().optional(),
   createdBy: z.number(),

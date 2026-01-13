@@ -1,11 +1,18 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useCallback, useEffect, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type React from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Pagination,
   PaginationContent,
@@ -13,16 +20,33 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from "lucide-react"
-import { Popup } from "@/utils/popup"
-import type { CreateExpensesType, GetExpensesType } from "@/utils/type"
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
-import { useAtom } from "jotai"
-import { useRouter } from "next/navigation"
-import { formatDate, formatDateForInput, formatNumber } from "@/utils/conversions"
-import { useAddExpense, useGetExpenses, useUpdateExpense, useDeleteExpense, useGetExpenseHeads } from "@/hooks/use-api"
-import { CustomCombobox } from "@/utils/custom-combobox"
+} from '@/components/ui/pagination'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
+import { Popup } from '@/utils/popup'
+import type { CreateExpensesType, GetExpensesType } from '@/utils/type'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/navigation'
+import {
+  formatDate,
+  formatDateForInput,
+  formatNumber,
+} from '@/utils/conversions'
+import {
+  useAddExpense,
+  useGetExpenses,
+  useUpdateExpense,
+  useDeleteExpense,
+  useGetExpenseHeads,
+} from '@/hooks/use-api'
+import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,8 +55,8 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/alert-dialog'
+import { Textarea } from '@/components/ui/textarea'
 
 const Expenses = () => {
   useInitializeUser()
@@ -47,32 +71,37 @@ const Expenses = () => {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetExpensesType>("date")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [sortColumn, setSortColumn] = useState<keyof GetExpensesType>('date')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExpenseId, setDeletingExpenseId] = useState<number | null>(null)
+  const [deletingExpenseId, setDeletingExpenseId] = useState<number | null>(
+    null
+  )
 
   const [formData, setFormData] = useState<CreateExpensesType>({
     expenseHeadId: 0,
-    name: "",
+    name: '',
     invoiceNumber: 0,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split('T')[0],
+    method: 'cash',
     amount: 0,
     description: null,
     createdBy: userData?.userId || 0,
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target
-    if (type === "number") {
+    if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : 0 }))
-    } else if (type === "date") {
+    } else if (type === 'date') {
       setFormData((prev) => ({ ...prev, [name]: value }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }))
@@ -82,9 +111,10 @@ const Expenses = () => {
   const resetForm = () => {
     setFormData({
       expenseHeadId: 0,
-      name: "",
+      name: '',
       invoiceNumber: 0,
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
+      method: 'cash',
       amount: 0,
       description: null,
       createdBy: userData?.userId || 0,
@@ -115,10 +145,27 @@ const Expenses = () => {
 
   const handleSort = (column: keyof GetExpensesType) => {
     if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortColumn(column)
-      setSortDirection("asc")
+      setSortDirection('asc')
+    }
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (name === 'method') {
+      const paymentMethod = value as CreateExpensesType['method']
+      setFormData((prev) => ({
+        ...prev,
+        method: paymentMethod,
+        bankAccountId: null,
+        mfsId: null,
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
     }
   }
 
@@ -137,17 +184,19 @@ const Expenses = () => {
 
   const sortedExpenses = useMemo(() => {
     return [...filteredExpenses].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ""
-      const bValue = b[sortColumn] ?? ""
+      const aValue = a[sortColumn] ?? ''
+      const bValue = b[sortColumn] ?? ''
 
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
       }
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
       }
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
       return 0
     })
   }, [filteredExpenses, sortColumn, sortDirection])
@@ -163,18 +212,18 @@ const Expenses = () => {
     e.preventDefault()
     setError(null)
 
-    if (!formData.name || formData.name.trim() === "") {
-      setError("Please enter name")
+    if (!formData.name || formData.name.trim() === '') {
+      setError('Please enter name')
       return
     }
 
     if (!formData.invoiceNumber || formData.invoiceNumber === 0) {
-      setError("Please enter invoice number")
+      setError('Please enter invoice number')
       return
     }
 
     if (!formData.amount || formData.amount === 0) {
-      setError("Please enter amount")
+      setError('Please enter amount')
       return
     }
 
@@ -193,14 +242,14 @@ const Expenses = () => {
         addMutation.mutate(submitData)
       }
     } catch (err) {
-      setError("Failed to save expense")
+      setError('Failed to save expense')
       console.error(err)
     }
   }
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError("Error saving expense")
+      setError('Error saving expense')
     }
   }, [addMutation.error, updateMutation.error])
 
@@ -210,6 +259,7 @@ const Expenses = () => {
       name: expense.name,
       invoiceNumber: expense.invoiceNumber,
       date: formatDateForInput(expense.date),
+      method: expense.method,
       amount: expense.amount,
       description: expense.description ?? null,
       createdBy: userData?.userId || 0,
@@ -261,19 +311,34 @@ const Expenses = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("name")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('name')}
+                className="cursor-pointer"
+              >
                 Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("expenseHead")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('expenseHead')}
+                className="cursor-pointer"
+              >
                 Expense Head <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("invoiceNumber")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('invoiceNumber')}
+                className="cursor-pointer"
+              >
                 Invoice Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("date")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('date')}
+                className="cursor-pointer"
+              >
                 Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("amount")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('amount')}
+                className="cursor-pointer"
+              >
                 Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Action</TableHead>
@@ -302,10 +367,14 @@ const Expenses = () => {
               paginatedExpenses.map((expense) => (
                 <TableRow key={expense.expenseId}>
                   <TableCell className="capitalize">{expense.name}</TableCell>
-                  <TableCell className="capitalize">{expense.expenseHead || "N/A"}</TableCell>
+                  <TableCell className="capitalize">
+                    {expense.expenseHead || 'N/A'}
+                  </TableCell>
                   <TableCell>{expense.invoiceNumber}</TableCell>
                   <TableCell>{formatDate(new Date(expense.date))}</TableCell>
-                  <TableCell>{formatNumber(expense.amount.toFixed(2))}</TableCell>
+                  <TableCell>
+                    {formatNumber(expense.amount.toFixed(2))}
+                  </TableCell>
                   <TableCell>
                     <div className="flex justify-start gap-2">
                       <Button
@@ -320,7 +389,9 @@ const Expenses = () => {
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteClick(expense.expenseId || 0)}
+                        onClick={() =>
+                          handleDeleteClick(expense.expenseId || 0)
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -340,21 +411,35 @@ const Expenses = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
 
               {[...Array(totalPages)].map((_, index) => {
-                if (index === 0 || index === totalPages - 1 || (index >= currentPage - 2 && index <= currentPage + 2)) {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= currentPage - 2 && index <= currentPage + 2)
+                ) {
                   return (
                     <PaginationItem key={`page-${index}`}>
-                      <PaginationLink onClick={() => setCurrentPage(index + 1)} isActive={currentPage === index + 1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(index + 1)}
+                        isActive={currentPage === index + 1}
+                      >
                         {index + 1}
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -366,8 +451,14 @@ const Expenses = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -379,7 +470,7 @@ const Expenses = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={resetForm}
-        title={isEditMode ? "Edit Expense" : "Add Expense"}
+        title={isEditMode ? 'Edit Expense' : 'Add Expense'}
         size="sm:max-w-2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -390,8 +481,8 @@ const Expenses = () => {
               <CustomCombobox
                 items={
                   expenseHeads?.data?.map((head) => ({
-                    id: head?.expenseHeadId?.toString() || "0",
-                    name: head.expenseHead || "Unnamed head",
+                    id: head?.expenseHeadId?.toString() || '0',
+                    name: head.expenseHead || 'Unnamed head',
                   })) || []
                 }
                 value={
@@ -399,7 +490,9 @@ const Expenses = () => {
                     ? {
                         id: formData.expenseHeadId.toString(),
                         name:
-                          expenseHeads?.data?.find((h) => h.expenseHeadId === formData.expenseHeadId)?.expenseHead || "",
+                          expenseHeads?.data?.find(
+                            (h) => h.expenseHeadId === formData.expenseHeadId
+                          )?.expenseHead || '',
                       }
                     : null
                 }
@@ -418,13 +511,20 @@ const Expenses = () => {
               <Label htmlFor="name">
                 Name <span className="text-red-500">*</span>
               </Label>
-              <Input id="name" name="name" type="text" value={formData.name} onChange={handleInputChange} required />
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
             </div>
 
             {/* Invoice Number */}
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">
-                Invoice Number <span className="text-red-500">*</span>
+                Voucher Number <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="invoiceNumber"
@@ -442,7 +542,36 @@ const Expenses = () => {
               <Label htmlFor="date">
                 Date <span className="text-red-500">*</span>
               </Label>
-              <Input id="date" name="date" type="date" value={formData.date} onChange={handleInputChange} required />
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="method">
+                Payment Method <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                name="method"
+                value={formData.method}
+                onValueChange={(value) => handleSelectChange('method', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                  <SelectItem value="bkash">bKash</SelectItem>
+                  <SelectItem value="nagad">Nagad</SelectItem>
+                  <SelectItem value="rocket">Rocket</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Amount */}
@@ -468,37 +597,52 @@ const Expenses = () => {
               <Textarea
                 id="description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleInputChange}
                 rows={3}
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={resetForm}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
-              {addMutation.isPending || updateMutation.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              disabled={addMutation.isPending || updateMutation.isPending}
+            >
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
       {/* Delete Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Expense</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this expense? This action cannot be undone.
+              Are you sure you want to delete this expense? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingExpenseId) {

@@ -1,11 +1,25 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useCallback, useEffect, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type React from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Pagination,
   PaginationContent,
@@ -13,16 +27,26 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from "lucide-react"
-import { Popup } from "@/utils/popup"
-import type { CreateIncomesType, GetIncomesType } from "@/utils/type"
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
-import { useAtom } from "jotai"
-import { useRouter } from "next/navigation"
-import { formatDate, formatDateForInput, formatNumber } from "@/utils/conversions"
-import { useAddIncome, useGetIncomes, useUpdateIncome, useDeleteIncome, useGetIncomeHeads } from "@/hooks/use-api"
-import { CustomCombobox } from "@/utils/custom-combobox"
+} from '@/components/ui/pagination'
+import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
+import { Popup } from '@/utils/popup'
+import type { CreateIncomesType, GetIncomesType } from '@/utils/type'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/navigation'
+import {
+  formatDate,
+  formatDateForInput,
+  formatNumber,
+} from '@/utils/conversions'
+import {
+  useAddIncome,
+  useGetIncomes,
+  useUpdateIncome,
+  useDeleteIncome,
+  useGetIncomeHeads,
+} from '@/hooks/use-api'
+import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,8 +55,8 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/alert-dialog'
+import { Textarea } from '@/components/ui/textarea'
 
 const Incomes = () => {
   useInitializeUser()
@@ -47,9 +71,9 @@ const Incomes = () => {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetIncomesType>("date")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [sortColumn, setSortColumn] = useState<keyof GetIncomesType>('date')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -60,19 +84,22 @@ const Incomes = () => {
 
   const [formData, setFormData] = useState<CreateIncomesType>({
     incomeHeadId: 0,
-    name: "",
+    name: '',
     invoiceNumber: 0,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split('T')[0],
     amount: 0,
     description: null,
+    method: 'cash',
     createdBy: userData?.userId || 0,
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target
-    if (type === "number") {
+    if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : 0 }))
-    } else if (type === "date") {
+    } else if (type === 'date') {
       setFormData((prev) => ({ ...prev, [name]: value }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }))
@@ -82,11 +109,12 @@ const Incomes = () => {
   const resetForm = () => {
     setFormData({
       incomeHeadId: 0,
-      name: "",
+      name: '',
       invoiceNumber: 0,
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
       amount: 0,
       description: null,
+      method: 'cash',
       createdBy: userData?.userId || 0,
     })
     setEditingIncomeId(null)
@@ -115,10 +143,27 @@ const Incomes = () => {
 
   const handleSort = (column: keyof GetIncomesType) => {
     if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortColumn(column)
-      setSortDirection("asc")
+      setSortDirection('asc')
+    }
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (name === 'method') {
+      const paymentMethod = value as CreateIncomesType['method']
+      setFormData((prev) => ({
+        ...prev,
+        method: paymentMethod,
+        bankAccountId: null,
+        mfsId: null,
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
     }
   }
 
@@ -137,17 +182,19 @@ const Incomes = () => {
 
   const sortedIncomes = useMemo(() => {
     return [...filteredIncomes].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ""
-      const bValue = b[sortColumn] ?? ""
+      const aValue = a[sortColumn] ?? ''
+      const bValue = b[sortColumn] ?? ''
 
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
       }
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
       }
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
       return 0
     })
   }, [filteredIncomes, sortColumn, sortDirection])
@@ -163,18 +210,18 @@ const Incomes = () => {
     e.preventDefault()
     setError(null)
 
-    if (!formData.name || formData.name.trim() === "") {
-      setError("Please enter name")
+    if (!formData.name || formData.name.trim() === '') {
+      setError('Please enter name')
       return
     }
 
     if (!formData.invoiceNumber || formData.invoiceNumber === 0) {
-      setError("Please enter invoice number")
+      setError('Please enter invoice number')
       return
     }
 
     if (!formData.amount || formData.amount === 0) {
-      setError("Please enter amount")
+      setError('Please enter amount')
       return
     }
 
@@ -193,14 +240,14 @@ const Incomes = () => {
         addMutation.mutate(submitData)
       }
     } catch (err) {
-      setError("Failed to save income")
+      setError('Failed to save income')
       console.error(err)
     }
   }
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError("Error saving income")
+      setError('Error saving income')
     }
   }, [addMutation.error, updateMutation.error])
 
@@ -212,6 +259,7 @@ const Incomes = () => {
       date: formatDateForInput(income.date),
       amount: income.amount,
       description: income.description ?? null,
+      method: income.method,
       createdBy: userData?.userId || 0,
     })
     setEditingIncomeId(income.incomeId || null)
@@ -261,19 +309,40 @@ const Incomes = () => {
         <Table>
           <TableHeader className="bg-amber-100">
             <TableRow>
-              <TableHead onClick={() => handleSort("name")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('name')}
+                className="cursor-pointer"
+              >
                 Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("incomeHead")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('incomeHead')}
+                className="cursor-pointer"
+              >
                 Income Head <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("invoiceNumber")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('invoiceNumber')}
+                className="cursor-pointer"
+              >
                 Invoice Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("date")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('date')}
+                className="cursor-pointer"
+              >
                 Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead onClick={() => handleSort("amount")} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort('method')}
+                className="cursor-pointer"
+              >
+                Method <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('amount')}
+                className="cursor-pointer"
+              >
                 Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Action</TableHead>
@@ -302,10 +371,15 @@ const Incomes = () => {
               paginatedIncomes.map((income) => (
                 <TableRow key={income.incomeId}>
                   <TableCell className="capitalize">{income.name}</TableCell>
-                  <TableCell className="capitalize">{income.incomeHead || "N/A"}</TableCell>
+                  <TableCell className="capitalize">
+                    {income.incomeHead || 'N/A'}
+                  </TableCell>
                   <TableCell>{income.invoiceNumber}</TableCell>
                   <TableCell>{formatDate(new Date(income.date))}</TableCell>
-                  <TableCell>{formatNumber(income.amount.toFixed(2))}</TableCell>
+                  <TableCell>{income.method}</TableCell>
+                  <TableCell>
+                    {formatNumber(income.amount.toFixed(2))}
+                  </TableCell>
                   <TableCell>
                     <div className="flex justify-start gap-2">
                       <Button
@@ -340,21 +414,35 @@ const Incomes = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
 
               {[...Array(totalPages)].map((_, index) => {
-                if (index === 0 || index === totalPages - 1 || (index >= currentPage - 2 && index <= currentPage + 2)) {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= currentPage - 2 && index <= currentPage + 2)
+                ) {
                   return (
                     <PaginationItem key={`page-${index}`}>
-                      <PaginationLink onClick={() => setCurrentPage(index + 1)} isActive={currentPage === index + 1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(index + 1)}
+                        isActive={currentPage === index + 1}
+                      >
                         {index + 1}
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -366,8 +454,14 @@ const Incomes = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -379,7 +473,7 @@ const Incomes = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={resetForm}
-        title={isEditMode ? "Edit Income" : "Add Income"}
+        title={isEditMode ? 'Edit Income' : 'Add Income'}
         size="sm:max-w-2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -390,8 +484,8 @@ const Incomes = () => {
               <CustomCombobox
                 items={
                   incomeHeads?.data?.map((head) => ({
-                    id: head?.incomeHeadId?.toString() || "0",
-                    name: head.incomeHead || "Unnamed head",
+                    id: head?.incomeHeadId?.toString() || '0',
+                    name: head.incomeHead || 'Unnamed head',
                   })) || []
                 }
                 value={
@@ -399,7 +493,9 @@ const Incomes = () => {
                     ? {
                         id: formData.incomeHeadId.toString(),
                         name:
-                          incomeHeads?.data?.find((h) => h.incomeHeadId === formData.incomeHeadId)?.incomeHead || "",
+                          incomeHeads?.data?.find(
+                            (h) => h.incomeHeadId === formData.incomeHeadId
+                          )?.incomeHead || '',
                       }
                     : null
                 }
@@ -418,13 +514,20 @@ const Incomes = () => {
               <Label htmlFor="name">
                 Name <span className="text-red-500">*</span>
               </Label>
-              <Input id="name" name="name" type="text" value={formData.name} onChange={handleInputChange} required />
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
             </div>
 
             {/* Invoice Number */}
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">
-                Invoice Number <span className="text-red-500">*</span>
+                Money Receit Number <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="invoiceNumber"
@@ -442,7 +545,36 @@ const Incomes = () => {
               <Label htmlFor="date">
                 Date <span className="text-red-500">*</span>
               </Label>
-              <Input id="date" name="date" type="date" value={formData.date} onChange={handleInputChange} required />
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="method">
+                Payment Method <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                name="method"
+                value={formData.method}
+                onValueChange={(value) => handleSelectChange('method', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                  <SelectItem value="bkash">bKash</SelectItem>
+                  <SelectItem value="nagad">Nagad</SelectItem>
+                  <SelectItem value="rocket">Rocket</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Amount */}
@@ -468,37 +600,52 @@ const Incomes = () => {
               <Textarea
                 id="description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleInputChange}
                 rows={3}
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={resetForm}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
-              {addMutation.isPending || updateMutation.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              disabled={addMutation.isPending || updateMutation.isPending}
+            >
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
       {/* Delete Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Income</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this income? This action cannot be undone.
+              Are you sure you want to delete this income? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingIncomeId) {
