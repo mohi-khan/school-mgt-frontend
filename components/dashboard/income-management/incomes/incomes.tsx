@@ -425,7 +425,7 @@ const Incomes = () => {
                       : '-'}
                   </TableCell>
                   <TableCell>
-                    {income.mfsNumber || '-'}
+                    {income.mfsNumber && income.accountName ? `${income.accountName} - ${income.mfsNumber}` : '-'}
                   </TableCell>
                   <TableCell>
                     {formatNumber(income.amount.toFixed(2))}

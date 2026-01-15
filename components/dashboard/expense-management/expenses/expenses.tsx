@@ -425,7 +425,11 @@ const Expenses = () => {
                       ? `${expense.bankName} - ${expense.branch} - ${expense.accountNumber}`
                       : '-'}
                   </TableCell>
-                  <TableCell>{expense.mfsNumber || '-'}</TableCell>
+                  <TableCell>
+                    {expense.mfsNumber && expense.accountName
+                      ? `${expense.accountName} - ${expense.mfsNumber}`
+                      : '-'}
+                  </TableCell>
                   <TableCell>
                     {formatNumber(expense.amount.toFixed(2))}
                   </TableCell>
