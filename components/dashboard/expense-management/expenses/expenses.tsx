@@ -354,7 +354,7 @@ const Expenses = () => {
                 onClick={() => handleSort('invoiceNumber')}
                 className="cursor-pointer"
               >
-                Invoice Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Voucher Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('date')}

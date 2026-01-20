@@ -73,6 +73,11 @@ import { saveAs } from 'file-saver'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
 import { useReactToPrint } from 'react-to-print'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const MoneyReceipt = React.forwardRef<
   HTMLDivElement,
@@ -280,6 +285,7 @@ const Students = () => {
   )
   const [remarks, setRemarks] = useState<string>('')
   const [selectedFees, setSelectedFees] = useState<number[]>([])
+  const [showAllFees, setShowAllFees] = useState(false)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
@@ -326,6 +332,7 @@ const Students = () => {
     setPaymentDate(new Date().toISOString().split('T')[0])
     setRemarks('')
     setSelectedFees([])
+    setShowAllFees(false)
   }, [])
 
   const closePopup = useCallback(() => {
@@ -583,6 +590,24 @@ const Students = () => {
     }
   }
 
+  const filteredAndSortedFees = useMemo(() => {
+    if (!studentFees?.data) return []
+
+    let fees = studentFees.data
+
+    // Filter based on showAllFees state
+    if (!showAllFees) {
+      fees = fees.filter((fee: any) => fee.status !== 'Paid')
+    }
+
+    // Sort by due date (earliest first)
+    return [...fees].sort((a: any, b: any) => {
+      const dateA = new Date(a.dueDate).getTime()
+      const dateB = new Date(b.dueDate).getTime()
+      return dateA - dateB
+    })
+  }, [studentFees?.data, showAllFees])
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -759,18 +784,23 @@ const Students = () => {
                     <TableCell>{formatNumber(totalPaidAmount)}</TableCell>
                     <TableCell>
                       <div className="flex justify-start gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700"
-                          onClick={() =>
-                            handleFeeCollectionClick(
-                              student.studentDetails.studentId ?? 0
-                            )
-                          }
-                        >
-                          <DollarSign className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700"
+                              onClick={() =>
+                                handleFeeCollectionClick(
+                                  student.studentDetails.studentId ?? 0
+                                )
+                              }
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Collect Fees</TooltipContent>
+                        </Tooltip>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -959,20 +989,29 @@ const Students = () => {
                   )}
                   )
                 </h3>
-                <button
-                  className="flex items-center gap-2 text-amber-600 hover:text-amber-700 border border-amber-600 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={handlePrintReceipt}
-                  disabled={
-                    !studentFees?.data ||
-                    studentFees?.data.every(
-                      (fee: any) => fee.status === 'Unpaid'
-                    )
-                  }
-                  type="button"
-                >
-                  <Printer className="w-4" />
-                  <span className="text-sm">Print Money Receipt</span>
-                </button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAllFees(!showAllFees)}
+                    className="text-sm"
+                  >
+                    {showAllFees ? 'Show Less' : 'Show All'}
+                  </Button>
+                  <button
+                    className="flex items-center gap-2 text-amber-600 hover:text-amber-700 border border-amber-600 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handlePrintReceipt}
+                    disabled={
+                      !studentFees?.data ||
+                      studentFees?.data.every(
+                        (fee: any) => fee.status === 'Unpaid'
+                      )
+                    }
+                    type="button"
+                  >
+                    <Printer className="w-4" />
+                    <span className="text-sm">Print Money Receipt</span>
+                  </button>
+                </div>
               </div>
               {isLoadingFees ? (
                 <div className="text-center py-4">Loading fees...</div>
@@ -990,7 +1029,7 @@ const Students = () => {
                             checked={
                               selectedFees.length > 0 &&
                               selectedFees.length ===
-                                studentFees?.data?.filter(
+                                filteredAndSortedFees.filter(
                                   (fee: any) => fee.status !== 'Paid'
                                 ).length
                             }
@@ -1006,7 +1045,7 @@ const Students = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {studentFees?.data?.map((fee: any) => {
+                      {filteredAndSortedFees?.map((fee: any) => {
                         const isDueDatePassed =
                           new Date(fee.dueDate) < new Date()
                         const isPaid = fee.status === 'Paid'

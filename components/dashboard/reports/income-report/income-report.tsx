@@ -26,13 +26,23 @@ const IncomeReport = () => {
   const [toDate, setToDate] = useState('')
 
   const { data: incomeReports } = useGetIncomeReport(fromDate, toDate)
+  console.log("🚀 ~ IncomeReport ~ incomeReports:", incomeReports)
 
   const exportToExcel = () => {
     const flatData = incomeReports?.data?.map((report) => ({
       Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
       Name: report.name || 'N/A',
       'Income Head': report.incomeHead || 'N/A',
-      'Invoice Number': report.invoiceNumber || 'N/A',
+      'Money Receit Number': report.invoiceNumber || 'N/A',
+      Method: report.method || 'N/A',
+      'Bank Account':
+      report.bankName && report.branch && report.accountNumber
+      ? `${report.bankName} - ${report.branch} - ${report.accountNumber}`
+      : '-',
+      'MFS Account':
+      report.mfsNumber && report.mfsAccountName
+      ? `${report.mfsAccountName} - ${report.mfsNumber}`
+      : '-',
       Amount: report.amount || 0,
     }))
 
@@ -64,7 +74,7 @@ const IncomeReport = () => {
     })
 
     const pdf = new jsPDF({
-      orientation: 'p',
+      orientation: 'l',
       unit: 'pt',
       format: 'a4',
     })
@@ -251,22 +261,40 @@ const IncomeReport = () => {
                       <TableHead className="font-bold">Name</TableHead>
                       <TableHead className="font-bold">Income Head</TableHead>
                       <TableHead className="font-bold">
-                        Invoice Number
+                        Money Receit Number
                       </TableHead>
+                      <TableHead className="font-bold">Method</TableHead>
+                      <TableHead className="font-bold">Bank Account</TableHead>
+                      <TableHead className="font-bold">MFS Account</TableHead>
                       <TableHead className="font-bold">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {incomeReports.data.map((report, index) => (
-                      <TableRow key={report.incomeId || index}>
+                      <TableRow key={index}>
                         <TableCell>
                           {report.date
                             ? formatDate(new Date(report.date))
-                            : 'N/A'}
+                            : '-'}
                         </TableCell>
-                        <TableCell>{report.name || 'N/A'}</TableCell>
-                        <TableCell>{report.incomeHead || 'N/A'}</TableCell>
-                        <TableCell>{report.invoiceNumber || 'N/A'}</TableCell>
+                        <TableCell>{report.name || '-'}</TableCell>
+                        <TableCell>{report.incomeHead || '-'}</TableCell>
+                        <TableCell>{report.invoiceNumber || '-'}</TableCell>
+                        <TableCell className="capitalize">
+                          {report.method || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {report.bankName &&
+                          report.branch &&
+                          report.accountNumber
+                            ? `${report.bankName} - ${report.branch} - ${report.accountNumber}`
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {report.mfsNumber && report.mfsAccountName
+                            ? `${report.mfsAccountName} - ${report.mfsNumber}`
+                            : '-'}
+                        </TableCell>
                         <TableCell className="text-green-600">
                           {formatNumber(Number(report.amount || 0))}
                         </TableCell>

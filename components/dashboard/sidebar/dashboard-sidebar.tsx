@@ -124,7 +124,7 @@ export function DashboardSidebar() {
           href: '/dashboard/exams-management/exams',
         },
         {
-          title: 'Exam Results',
+          title: 'Result Entry',
           href: '/dashboard/exams-management/exam-results',
         },
       ],
@@ -173,18 +173,18 @@ export function DashboardSidebar() {
           title: 'Payment Report',
           href: '/dashboard/reports/payment-report',
         },
-        {
-          title: 'Bank Payment Report',
-          href: '/dashboard/reports/bank-payment-report',
-        },
-        {
-          title: 'MFS Payment Report',
-          href: '/dashboard/reports/mfs-payment-report',
-        },
-        {
-          title: 'Cash Payment Report',
-          href: '/dashboard/reports/cash-payment-report',
-        },
+        // {
+        //   title: 'Bank Payment Report',
+        //   href: '/dashboard/reports/bank-payment-report',
+        // },
+        // {
+        //   title: 'MFS Payment Report',
+        //   href: '/dashboard/reports/mfs-payment-report',
+        // },
+        // {
+        //   title: 'Cash Payment Report',
+        //   href: '/dashboard/reports/cash-payment-report',
+        // },
         {
           title: 'Transaction Report',
           href: '/dashboard/reports/transaction-report',
