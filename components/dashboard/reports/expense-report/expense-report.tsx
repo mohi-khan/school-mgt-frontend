@@ -1,52 +1,59 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { File, FileSpreadsheet, Search } from "lucide-react"
-import * as XLSX from "xlsx"
-import { saveAs } from "file-saver"
-import html2canvas from "html2canvas"
-import { jsPDF } from "jspdf"
-import { useGetExpenseReport } from "@/hooks/use-api"
-import { formatDate, formatNumber } from "@/utils/conversions"
+import { useState } from 'react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { File, FileSpreadsheet, Search } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+import { useGetExpenseReport } from '@/hooks/use-api'
+import { formatDate, formatNumber } from '@/utils/conversions'
 
 const ExpenseReport = () => {
-  const [fromDate, setFromDate] = useState("")
-  const [toDate, setToDate] = useState("")
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
   const { data: expenseReports } = useGetExpenseReport(fromDate, toDate)
 
   const exportToExcel = () => {
     const flatData = expenseReports?.data?.map((report) => ({
-      Date: report.date ? formatDate(new Date(report.date)) : "N/A",
-      Name: report.name || "N/A",
-      "Expense Head": report.expenseHead || "N/A",
-      "Invoice Number": report.invoiceNumber || "N/A",
+      Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
+      Name: report.name || 'N/A',
+      'Expense Head': report.expenseHead || 'N/A',
+      'Voucher Number': report.invoiceNumber || 'N/A',
       Amount: report.amount || 0,
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData || [])
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Expense Report")
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Expense Report')
 
     const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
+      bookType: 'xlsx',
+      type: 'array',
     })
 
     const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
     })
 
     saveAs(blob, `expense-report-${fromDate}-to-${toDate}.xlsx`)
   }
 
   const generatePdf = async () => {
-    const targetRef = document.getElementById("expense-report-content")
+    const targetRef = document.getElementById('expense-report-content')
     if (!targetRef) return
 
     await new Promise((res) => setTimeout(res, 200))
@@ -57,9 +64,9 @@ const ExpenseReport = () => {
     })
 
     const pdf = new jsPDF({
-      orientation: "p",
-      unit: "pt",
-      format: "a4",
+      orientation: 'p',
+      unit: 'pt',
+      format: 'a4',
     })
 
     const pageWidth = pdf.internal.pageSize.getWidth()
@@ -79,21 +86,38 @@ const ExpenseReport = () => {
     while (heightLeftPx > 0) {
       const sliceHeightPx = Math.min(heightLeftPx, usablePageHeight / scale)
 
-      const tempCanvas = document.createElement("canvas")
-      const tempCtx = tempCanvas.getContext("2d")
+      const tempCanvas = document.createElement('canvas')
+      const tempCtx = tempCanvas.getContext('2d')
 
       tempCanvas.width = canvas.width
       tempCanvas.height = sliceHeightPx
 
-      tempCtx?.drawImage(canvas, 0, sourceY, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx)
+      tempCtx?.drawImage(
+        canvas,
+        0,
+        sourceY,
+        canvas.width,
+        sliceHeightPx,
+        0,
+        0,
+        canvas.width,
+        sliceHeightPx
+      )
 
-      const imgDataSlice = tempCanvas.toDataURL("image/jpeg")
+      const imgDataSlice = tempCanvas.toDataURL('image/jpeg')
 
       if (pageCount > 0) {
         pdf.addPage()
       }
 
-      pdf.addImage(imgDataSlice, "JPEG", horizontalPadding, marginTop, imgWidth, sliceHeightPx * scale)
+      pdf.addImage(
+        imgDataSlice,
+        'JPEG',
+        horizontalPadding,
+        marginTop,
+        imgWidth,
+        sliceHeightPx * scale
+      )
 
       heightLeftPx -= sliceHeightPx
       sourceY += sliceHeightPx
@@ -104,33 +128,37 @@ const ExpenseReport = () => {
     const totalPages = pdf.internal.pages.length - 1
 
     const today = new Date()
-    const dayName = today.toLocaleDateString("en-US", { weekday: "long" })
-    const monthName = today.toLocaleDateString("en-US", { month: "long" })
+    const dayName = today.toLocaleDateString('en-US', { weekday: 'long' })
+    const monthName = today.toLocaleDateString('en-US', { month: 'long' })
     const day = today.getDate()
     const year = today.getFullYear()
 
     for (let i = 1; i <= totalPages; i++) {
       pdf.setPage(i)
       pdf.setFontSize(12)
-      pdf.setFont("bold")
-      pdf.text("School Management System", leftTextMargin, 35)
+      pdf.setFont('bold')
+      pdf.text('School Management System', leftTextMargin, 35)
 
       pdf.setFontSize(10)
       const baseText = `Expense Report from ${fromDate} to ${toDate} ( Date : `
-      pdf.setFont("bold")
+      pdf.setFont('bold')
       pdf.text(baseText, leftTextMargin, 50)
       let currentX = leftTextMargin + pdf.getTextWidth(baseText)
       pdf.text(dayName, currentX, 50)
       currentX += pdf.getTextWidth(dayName)
-      pdf.text(", ", currentX, 50)
-      currentX += pdf.getTextWidth(", ")
+      pdf.text(', ', currentX, 50)
+      currentX += pdf.getTextWidth(', ')
       pdf.text(monthName, currentX, 50)
       currentX += pdf.getTextWidth(monthName)
       pdf.text(` ${day}, ${year} )`, currentX, 50)
 
       pdf.setFontSize(10)
-      pdf.setFont("normal")
-      pdf.text(`Page ${i} of ${totalPages}`, pageWidth - horizontalPadding - 50, pageHeight - marginBottom + 20)
+      pdf.setFont('normal')
+      pdf.text(
+        `Page ${i} of ${totalPages}`,
+        pageWidth - horizontalPadding - 50,
+        pageHeight - marginBottom + 20
+      )
     }
 
     pdf.save(`expense-report-${fromDate}-to-${toDate}.pdf`)
@@ -201,7 +229,9 @@ const ExpenseReport = () => {
         {!fromDate || !toDate ? (
           <Card className="shadow-md">
             <CardContent className="p-8 text-center text-gray-500">
-              <p className="text-sm text-blue-600">Please select both from and to dates, then click Search</p>
+              <p className="text-sm text-blue-600">
+                Please select both from and to dates, then click Search
+              </p>
             </CardContent>
           </Card>
         ) : !expenseReports?.data || expenseReports.data.length === 0 ? (
@@ -220,18 +250,44 @@ const ExpenseReport = () => {
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Name</TableHead>
                       <TableHead className="font-bold">Expense Head</TableHead>
-                      <TableHead className="font-bold">Invoice Number</TableHead>
+                      <TableHead className="font-bold">
+                        Voucher Number
+                      </TableHead>
+                      <TableHead className="font-bold">Method</TableHead>
+                      <TableHead className="font-bold">Bank Account</TableHead>
+                      <TableHead className="font-bold">MFS Account</TableHead>
                       <TableHead className="font-bold">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {expenseReports.data.map((report, index) => (
                       <TableRow key={report.expenseId || index}>
-                        <TableCell>{report.date ? formatDate(new Date(report.date)) : "N/A"}</TableCell>
-                        <TableCell>{report.name || "N/A"}</TableCell>
-                        <TableCell>{report.expenseHead || "N/A"}</TableCell>
-                        <TableCell>{report.invoiceNumber || "N/A"}</TableCell>
-                        <TableCell className="text-green-600">{formatNumber(Number(report.amount || 0))}</TableCell>
+                        <TableCell>
+                          {report.date
+                            ? formatDate(new Date(report.date))
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell>{report.name || 'N/A'}</TableCell>
+                        <TableCell>{report.expenseHead || 'N/A'}</TableCell>
+                        <TableCell>{report.invoiceNumber || 'N/A'}</TableCell>
+                        <TableCell className="capitalize">
+                          {report.method || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {report.bankName &&
+                          report.branch &&
+                          report.accountNumber
+                            ? `${report.bankName} - ${report.branch} - ${report.accountNumber}`
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {report.mfsNumber && report.mfsAccountName
+                            ? `${report.mfsAccountName} - ${report.mfsNumber}`
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-green-600">
+                          {formatNumber(Number(report.amount || 0))}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

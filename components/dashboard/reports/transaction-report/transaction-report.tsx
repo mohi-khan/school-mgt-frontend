@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -13,6 +13,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { File, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
@@ -24,18 +31,75 @@ import { formatDate, formatNumber } from '@/utils/conversions'
 const TransactionReport = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [selectedMethod, setSelectedMethod] = useState('all')
 
   const { data: transactionReports } = useGetTransactionReport(fromDate, toDate)
 
+  // Filter data based on selected method
+  const filteredData = useMemo(() => {
+    if (!transactionReports?.data) return []
+    if (selectedMethod === 'all') return transactionReports.data
+    return transactionReports.data.filter(
+      (report) => report.method === selectedMethod
+    )
+  }, [transactionReports?.data, selectedMethod])
+
+  // Determine which columns to show based on selected method
+  const columnVisibility = useMemo(() => {
+    const bankMethods = [
+      'bank',
+      'bank to bank',
+      'cash to bank',
+      'bank to cash',
+      'bank to mfs',
+      'mfs to bank',
+    ]
+    const mfsMethods = [
+      'mfs',
+      'mfs to mfs',
+      'cash to mfs',
+      'mfs to cash',
+      'bank to mfs',
+      'mfs to bank',
+    ]
+
+    return {
+      showBank:
+        selectedMethod === 'all' || bankMethods.includes(selectedMethod),
+      showMfs: selectedMethod === 'all' || mfsMethods.includes(selectedMethod),
+    }
+  }, [selectedMethod])
+
   const exportToExcel = () => {
-    const flatData = transactionReports?.data?.map((report) => ({
-      Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
-      Particulars: report.particulars || 'N/A',
-      Remarks: report.remarks || 'N/A',
-      Deposit: report.deposit || 0,
-      Withdraw: report.withdraw || 0,
-      Reference: report.reference || 'N/A',
-    }))
+    const flatData = filteredData?.map((report) => {
+      const baseData: Record<string, any> = {
+        Date: report.date ? formatDate(new Date(report.date)) : '-',
+        Particulars: report.particulars || '-',
+        Deposit: report.deposit || 0,
+        Withdraw: report.withdraw || 0,
+        Method: report.method || '-',
+      }
+
+      // Add bank column only if needed
+      if (columnVisibility.showBank) {
+        baseData['Bank Account'] =
+          report.bankName && report.branch && report.accountNumber
+            ? `${report.bankName} - ${report.branch} - ${report.accountNumber}`
+            : '-'
+      }
+
+      // Add MFS column only if needed
+      if (columnVisibility.showMfs) {
+        baseData['MFS Account'] =
+          report.mfsNumber && report.mfsAccountName
+            ? `${report.mfsType} - ${report.mfsAccountName} - ${report.mfsNumber}`
+            : '-'
+      }
+
+      baseData['Remarks'] = report.remarks || '-'
+
+      return baseData
+    })
 
     const worksheet = XLSX.utils.json_to_sheet(flatData || [])
     const workbook = XLSX.utils.book_new()
@@ -175,9 +239,7 @@ const TransactionReport = () => {
             onClick={exportToExcel}
             variant="ghost"
             className="flex items-center gap-2 bg-green-100 text-green-900 hover:bg-green-200"
-            disabled={
-              !transactionReports?.data || transactionReports.data.length === 0
-            }
+            disabled={!filteredData || filteredData.length === 0}
           >
             <FileSpreadsheet className="h-4 w-4" />
             Excel
@@ -187,9 +249,7 @@ const TransactionReport = () => {
             variant="outline"
             size="sm"
             className="flex items-center gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 print:hidden"
-            disabled={
-              !transactionReports?.data || transactionReports.data.length === 0
-            }
+            disabled={!filteredData || filteredData.length === 0}
           >
             <File className="h-4 w-4" />
             PDF
@@ -227,6 +287,32 @@ const TransactionReport = () => {
             />
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="method" className="text-sm font-medium">
+              Method:
+            </Label>
+            <Select value={selectedMethod} onValueChange={setSelectedMethod}>
+              <SelectTrigger id="method" className="w-48">
+                <SelectValue placeholder="All Methods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Methods</SelectItem>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="bank">Bank</SelectItem>
+                <SelectItem value="mfs">MFS</SelectItem>
+                <SelectItem value="cash to bank">Cash to Bank</SelectItem>
+                <SelectItem value="cash to mfs">Cash to MFS</SelectItem>
+                <SelectItem value="bank to bank">Bank to Bank</SelectItem>
+                <SelectItem value="mfs to mfs">MFS to MFS</SelectItem>
+                <SelectItem value="bank to mfs">Bank to MFS</SelectItem>
+                <SelectItem value="mfs to bank">MFS to Bank</SelectItem>
+                <SelectItem value="bank to cash">Bank to Cash</SelectItem>
+                <SelectItem value="mfs to cash">MFS to Cash</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Report Content */}
@@ -235,15 +321,14 @@ const TransactionReport = () => {
           <Card className="shadow-md">
             <CardContent className="p-8 text-center text-gray-500">
               <p className="text-sm text-amber-600">
-                Please select both from and to dates, then click Search
+                Please select both from and to dates
               </p>
             </CardContent>
           </Card>
-        ) : !transactionReports?.data ||
-          transactionReports.data.length === 0 ? (
+        ) : !filteredData || filteredData.length === 0 ? (
           <Card className="shadow-md">
             <CardContent className="p-8 text-center text-gray-500">
-              No transaction records found for the selected date range
+              No transaction records found for the selected criteria
             </CardContent>
           </Card>
         ) : (
@@ -257,27 +342,57 @@ const TransactionReport = () => {
                       <TableHead className="font-bold">Particulars</TableHead>
                       <TableHead className="font-bold">Deposit</TableHead>
                       <TableHead className="font-bold">Withdraw</TableHead>
+                      <TableHead className="font-bold">Method</TableHead>
+                      {columnVisibility.showBank && (
+                        <TableHead className="font-bold">
+                          Bank Account
+                        </TableHead>
+                      )}
+                      {columnVisibility.showMfs && (
+                        <TableHead className="font-bold">MFS Account</TableHead>
+                      )}
                       <TableHead className="font-bold">Remarks</TableHead>
-                      {/* <TableHead className="font-bold">Reference</TableHead> */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactionReports.data.map((report, index) => (
+                    {filteredData.map((report, index) => (
                       <TableRow key={report.id || index}>
                         <TableCell>
                           {report.date
                             ? formatDate(new Date(report.date))
-                            : 'N/A'}
+                            : '-'}
                         </TableCell>
-                        <TableCell>{report.particulars || 'N/A'}</TableCell>
+                        <TableCell className="capitalize">
+                          {report.particulars || '-'}
+                        </TableCell>
                         <TableCell className="text-green-600">
                           {formatNumber(Number(report.deposit || 0))}
                         </TableCell>
                         <TableCell className="text-red-600">
                           {formatNumber(Number(report.withdraw || 0))}
                         </TableCell>
-                        <TableCell className='w-1/3'>{report.remarks || 'N/A'}</TableCell>
-                        {/* <TableCell>{report.reference || 'N/A'}</TableCell> */}
+                        <TableCell className="capitalize">
+                          {report.method || '-'}
+                        </TableCell>
+                        {columnVisibility.showBank && (
+                          <TableCell>
+                            {report.bankName &&
+                            report.branch &&
+                            report.accountNumber
+                              ? `${report.bankName} - ${report.branch} - ${report.accountNumber}`
+                              : '-'}
+                          </TableCell>
+                        )}
+                        {columnVisibility.showMfs && (
+                          <TableCell className="capitalize">
+                            {report.mfsNumber && report.mfsAccountName
+                              ? `${report.mfsType} - ${report.mfsAccountName} - ${report.mfsNumber}`
+                              : '-'}
+                          </TableCell>
+                        )}
+                        <TableCell className="max-w-xs">
+                          {report.remarks || '-'}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -521,24 +521,49 @@ export const cashPaymentReportSchema = z.object({
 export type GetCashPaymentReportType = z.infer<typeof cashPaymentReportSchema>
 
 export const transactionReportSchema = z.object({
-  id: z.number().optional(),
+  id: z.number(),
   date: z.string(),
-  particulars: z.string(),
-  remarks: z.string(),
-  deposit: z.number().optional(),
-  withdraw: z.number().optional(),
-  reference: z.number().optional(),
+  particulars: z.enum(['contra', 'expense', 'receipt']),
+  remarks: z.string().nullable(),
+  deposit: z.number(),
+  withdraw: z.number(),
+  method: z.enum([
+    'cash',
+    'bank',
+    'mfs',
+    'cash to bank',
+    'cash to mfs',
+    'bank to bank',
+    'mfs to mfs',
+    'bank to mfs',
+    'mfs to bank',
+    'bank to cash',
+    'mfs to cash',
+  ]),
+  bankName: z.string().nullable(),
+  accountNumber: z.string().nullable(),
+  branch: z.string().nullable(),
+  mfsType: z.string().nullable(),
+  mfsAccountName: z.string().nullable(),
+  mfsNumber: z.string().nullable(),
+  reference: z.number(),
 })
 export type GetTransactionReportType = z.infer<typeof transactionReportSchema>
 
 export const incomeReportSchema = z.object({
-  incomeId: z.number().optional(),
-  name: z.string().optional(),
-  incomeHeadId: z.number().optional(),
-  incomeHead: z.string().optional(),
-  invoiceNumber: z.number().optional(),
-  date: z.string().optional(),
-  amount: z.number().optional(),
+  id: z.number().optional(),
+  source: z.enum(['income', 'student_payment']),
+  name: z.string(),
+  incomeHead: z.string().nullable(),
+  invoiceNumber: z.number().nullable(),
+  date: z.string(),
+  amount: z.number(),
+  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
+  bankName: z.string().nullable(),
+  accountNumber: z.string().nullable(),
+  branch: z.string().nullable(),
+  mfsAccountName: z.string().nullable(),
+  mfsNumber: z.string().nullable(),
 })
 export type GetIncomeReportType = z.infer<typeof incomeReportSchema>
 
@@ -550,6 +575,12 @@ export const expenseReportSchema = z.object({
   invoiceNumber: z.number().optional(),
   date: z.string().optional(),
   amount: z.number().optional(),
+  method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
+  bankName: z.string().nullable(),
+  accountNumber: z.string().nullable(),
+  branch: z.string().nullable(),
+  mfsAccountName: z.string().nullable(),
+  mfsNumber: z.string().nullable(),
 })
 export type GetExpenseReportType = z.infer<typeof expenseReportSchema>
 

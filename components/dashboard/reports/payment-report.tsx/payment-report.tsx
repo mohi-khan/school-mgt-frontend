@@ -344,13 +344,13 @@ const PaymentReport = () => {
                           report.accountNumber &&
                           report.branch
                             ? `${report.bankName} - ${report.accountNumber} - ${report.branch}`
-                            : 'N/A'}
+                            : '-'}
                         </TableCell>
 
                         <TableCell>
                           {report.mfsName && report.mfsNumber && report.mfsType
                             ? `${report.mfsName} - ${report.mfsNumber} - ${report.mfsType}`
-                            : 'N/A'}
+                            : '-'}
                         </TableCell>
 
                         <TableCell className="text-green-600">
