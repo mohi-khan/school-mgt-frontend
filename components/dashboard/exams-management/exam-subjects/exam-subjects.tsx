@@ -43,6 +43,7 @@ import {
   useDeleteExamSubject,
   useGetClasses,
   useGetSessions,
+  useGetExamGroups,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -63,6 +64,7 @@ const ExamSubjects = () => {
   const { data: classes } = useGetClasses()
   const { data: examSubjects } = useGetExamSubjects()
   const { data: sessions } = useGetSessions()
+  const { data: examGroups } = useGetExamGroups()
 
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +73,12 @@ const ExamSubjects = () => {
   const [itemsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [expandedParentGroups, setExpandedParentGroups] = useState<Set<string>>(
+    new Set()
+  )
+  const [expandedClassGroups, setExpandedClassGroups] = useState<Set<string>>(
+    new Set()
+  )
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -86,11 +93,15 @@ const ExamSubjects = () => {
 
   const [isCopyPopupOpen, setIsCopyPopupOpen] = useState(false)
   const [selectedGroupForCopy, setSelectedGroupForCopy] = useState<{
-    classId: number
+    examGroupId: number
     sessionId: number
-    className: string
+    examGroupName: string
     sessionName: string
-    subjects: GetExamSubjectsType[]
+    classGroups: Array<{
+      classId: number
+      className: string
+      subjects: GetExamSubjectsType[]
+    }>
   } | null>(null)
   const [copyFormData, setCopyFormData] = useState<{
     targetSessionId: number | null
@@ -101,6 +112,8 @@ const ExamSubjects = () => {
       startTime: string
       duration: number
       examMarks: number
+      classId: number
+      className: string
     }>
   }>({
     targetSessionId: null,
@@ -116,6 +129,7 @@ const ExamSubjects = () => {
     examMarks: 100,
     classId: null,
     sessionId: null,
+    examGroupsId: null,
     createdBy: userData?.userId || 0,
   })
 
@@ -151,6 +165,7 @@ const ExamSubjects = () => {
       examMarks: 100,
       classId: null,
       sessionId: null,
+      examGroupsId: null,
       createdBy: userData?.userId || 0,
     })
     setEditingExamSubjectId(null)
@@ -185,46 +200,95 @@ const ExamSubjects = () => {
         exam.subjectName?.toLowerCase().includes(searchLower) ||
         exam.subjectCode?.toLowerCase().includes(searchLower) ||
         exam.className?.toLowerCase().includes(searchLower) ||
-        exam.sessionName?.toLowerCase().includes(searchLower)
+        exam.sessionName?.toLowerCase().includes(searchLower) ||
+        exam.examGroupName?.toLowerCase().includes(searchLower)
       )
     })
   }, [examSubjects?.data, searchTerm])
 
-  const groupedExamSubjects = useMemo(() => {
-    const groups = new Map<
+  // Two-level grouping: Parent group (examGroup + session), then child groups (class)
+  const hierarchicalGroups = useMemo(() => {
+    const parentGroups = new Map<
       string,
       {
-        classId: number
+        examGroupId: number
         sessionId: number
-        className: string
+        examGroupName: string
         sessionName: string
-        subjects: GetExamSubjectsType[]
+        classGroups: Map<
+          number,
+          {
+            classId: number
+            className: string
+            subjects: GetExamSubjectsType[]
+          }
+        >
+        latestCreatedAt: Date
       }
     >()
 
-    filteredExamSubjects.forEach((subject) => {
-      const groupKey = `${subject.classId}-${subject.sessionId}`
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, {
-          classId: subject.classId || 0,
+    // Sort by createdAt (latest first)
+    const sortedSubjects = [...filteredExamSubjects].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return dateB - dateA
+    })
+
+    sortedSubjects.forEach((subject) => {
+      const parentKey = `${subject.examGroupsId || 0}-${subject.sessionId || 0}`
+
+      if (!parentGroups.has(parentKey)) {
+        parentGroups.set(parentKey, {
+          examGroupId: subject.examGroupsId || 0,
           sessionId: subject.sessionId || 0,
-          className: subject.className || 'Unassigned',
+          examGroupName: subject.examGroupName || 'Unassigned',
           sessionName: subject.sessionName || 'Unassigned',
+          classGroups: new Map(),
+          latestCreatedAt: subject.createdAt
+            ? new Date(subject.createdAt)
+            : new Date(0),
+        })
+      }
+
+      const parentGroup = parentGroups.get(parentKey)!
+      const classId = subject.classId || 0
+
+      if (!parentGroup.classGroups.has(classId)) {
+        parentGroup.classGroups.set(classId, {
+          classId: classId,
+          className: subject.className || 'Unassigned',
           subjects: [],
         })
       }
-      groups.get(groupKey)!.subjects.push(subject)
+
+      parentGroup.classGroups.get(classId)!.subjects.push(subject)
+
+      // Update latest createdAt
+      if (subject.createdAt) {
+        const subjectDate = new Date(subject.createdAt)
+        if (subjectDate > parentGroup.latestCreatedAt) {
+          parentGroup.latestCreatedAt = subjectDate
+        }
+      }
     })
 
-    return Array.from(groups.values())
+    // Convert to array and sort by latestCreatedAt (latest first)
+    const result = Array.from(parentGroups.values())
+      .map((parentGroup) => ({
+        ...parentGroup,
+        classGroups: Array.from(parentGroup.classGroups.values()),
+      }))
+      .sort((a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime())
+
+    return result
   }, [filteredExamSubjects])
 
   const paginatedGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    return groupedExamSubjects.slice(startIndex, startIndex + itemsPerPage)
-  }, [groupedExamSubjects, currentPage, itemsPerPage])
+    return hierarchicalGroups.slice(startIndex, startIndex + itemsPerPage)
+  }, [hierarchicalGroups, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(groupedExamSubjects.length / itemsPerPage)
+  const totalPages = Math.ceil(hierarchicalGroups.length / itemsPerPage)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -291,6 +355,7 @@ const ExamSubjects = () => {
       examMarks: exam.examMarks,
       classId: exam.classId,
       sessionId: exam.sessionId,
+      examGroupsId: exam.examGroupsId,
       createdBy: exam.createdBy,
     })
     setEditingExamSubjectId(exam.examSubjectId || null)
@@ -303,8 +368,20 @@ const ExamSubjects = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const toggleGroupExpanded = (groupKey: string) => {
-    setExpandedGroups((prev) => {
+  const toggleParentGroupExpanded = (groupKey: string) => {
+    setExpandedParentGroups((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey)
+      } else {
+        newSet.add(groupKey)
+      }
+      return newSet
+    })
+  }
+
+  const toggleClassGroupExpanded = (groupKey: string) => {
+    setExpandedClassGroups((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(groupKey)) {
         newSet.delete(groupKey)
@@ -316,17 +393,24 @@ const ExamSubjects = () => {
   }
 
   const handleCopyClick = (group: any) => {
-    setSelectedGroupForCopy(group)
-    setCopyFormData({
-      targetSessionId: null,
-      subjects: group.subjects.map((subject: GetExamSubjectsType) => ({
+    // Flatten all subjects from all class groups
+    const allSubjects = group.classGroups.flatMap((classGroup: any) =>
+      classGroup.subjects.map((subject: GetExamSubjectsType) => ({
         subjectName: subject.subjectName,
         subjectCode: subject.subjectCode,
         examDate: new Date().toISOString().split('T')[0],
         startTime: '09:00',
         duration: subject.duration,
         examMarks: subject.examMarks,
-      })),
+        classId: subject.classId || 0,
+        className: subject.className || 'Unassigned',
+      }))
+    )
+
+    setSelectedGroupForCopy(group)
+    setCopyFormData({
+      targetSessionId: null,
+      subjects: allSubjects,
     })
     setIsCopyPopupOpen(true)
   }
@@ -367,8 +451,9 @@ const ExamSubjects = () => {
           startTime: subject.startTime,
           duration: subject.duration,
           examMarks: subject.examMarks,
-          classId: selectedGroupForCopy.classId,
+          classId: subject.classId,
           sessionId: copyFormData.targetSessionId,
+          examGroupsId: selectedGroupForCopy.examGroupId, // Use parent group's examGroupId
           createdBy: userData?.userId || 0,
         }
         return addMutation.mutateAsync(data)
@@ -423,7 +508,7 @@ const ExamSubjects = () => {
         </div>
       </div>
 
-      {/* Grouped Display */}
+      {/* Hierarchical Display */}
       <div className="space-y-4">
         {!examSubjects?.data ? (
           <div className="text-center py-8 text-gray-600">
@@ -439,137 +524,203 @@ const ExamSubjects = () => {
           </div>
         ) : (
           <>
-            {paginatedGroups.map((group) => {
-              const groupKey = `${group.classId}-${group.sessionId}`
-              const isExpanded = expandedGroups.has(groupKey)
+            {paginatedGroups.map((parentGroup) => {
+              const parentKey = `${parentGroup.examGroupId}-${parentGroup.sessionId}`
+              const isParentExpanded = expandedParentGroups.has(parentKey)
 
               return (
                 <div
-                  key={groupKey}
-                  className="rounded-lg border border-gray-200 overflow-hidden"
+                  key={parentKey}
+                  className="rounded-lg border-2 border-amber-300 overflow-hidden shadow-md"
                 >
+                  {/* Parent Group Header (Exam Group + Session) */}
                   <div
-                    className="bg-gradient-to-r bg-slate-50 p-4 flex items-center justify-between cursor-pointer transition-colors"
-                    onClick={() => toggleGroupExpanded(groupKey)}
+                    className="bg-gradient-to-r from-amber-100 to-amber-50 p-4 flex items-center gap-4 cursor-pointer"
+                    onClick={() => toggleParentGroupExpanded(parentKey)}
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <button className="p-1 hover:bg-white rounded-md transition-colors">
-                        {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-amber-700" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-amber-700" />
-                        )}
-                      </button>
-                      <div className="flex-1">
-                        <div className="font-bold text-gray-800 text-base">
-                          {group.className} - {group.sessionName}
-                        </div>
-                        <div className="text-sm text-gray-700 mt-1">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-gray-600">
-                              Total Subjects:
-                            </span>
-                            <span className="font-medium text-amber-700">
-                              {group.subjects.length}
-                            </span>
+                    <button className="p-1 hover:bg-amber-200 rounded-md transition-colors">
+                      {isParentExpanded ? (
+                        <ChevronUp className="h-6 w-6 text-amber-700" />
+                      ) : (
+                        <ChevronDown className="h-6 w-6 text-amber-700" />
+                      )}
+                    </button>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900 text-lg">
+                        {parentGroup.examGroupName}  ({parentGroup.sessionName})
+                      </div>
+                      <div className="text-sm text-gray-700 mt-1 flex gap-4">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-gray-600">Classes:</span>
+                          <span className="font-medium text-amber-700">
+                            {parentGroup.classGroups.length}
                           </span>
-                        </div>
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-gray-600">Total Subjects:</span>
+                          <span className="font-medium text-amber-700">
+                            {parentGroup.classGroups.reduce(
+                              (sum, cg) => sum + cg.subjects.length,
+                              0
+                            )}
+                          </span>
+                        </span>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleCopyClick(group)
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </Button>
                   </div>
 
-                  {isExpanded && (
-                    <div className="bg-white border-t border-gray-200 p-4">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-gray-50 hover:bg-gray-50">
-                            <TableHead className="text-gray-700 font-semibold">
-                              Subject Name
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold">
-                              Subject Code
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold">
-                              Exam Date
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold">
-                              Start Time
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold">
-                              Duration (min)
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold">
-                              Marks
-                            </TableHead>
-                            <TableHead className="text-gray-700 font-semibold text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {group.subjects.map((subject) => (
-                            <TableRow
-                              key={subject.examSubjectId}
-                              className="hover:bg-amber-50"
-                            >
-                              <TableCell className="capitalize font-medium text-gray-800">
-                                {subject.subjectName || '-'}
-                              </TableCell>
-                              <TableCell className="uppercase font-medium text-gray-700">
-                                {subject.subjectCode || '-'}
-                              </TableCell>
-                              <TableCell className="text-gray-700">
-                                {formatDate(new Date(subject.examDate))}
-                              </TableCell>
-                              <TableCell className="text-gray-700">
-                                {formatTime(subject.startTime)}
-                              </TableCell>
-                              <TableCell className="text-gray-700">
-                                {subject.duration}
-                              </TableCell>
-                              <TableCell className="font-semibold text-gray-800">
-                                {subject.examMarks}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                    onClick={() => handleEditClick(subject)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() =>
-                                      handleDeleteClick(
-                                        subject.examSubjectId || 0
-                                      )
-                                    }
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                  {/* Class Groups (Child Level) */}
+                  {isParentExpanded && (
+                    <div className="bg-white p-4 space-y-3">
+                      {parentGroup.classGroups.map((classGroup) => {
+                        const classKey = `${parentKey}-${classGroup.classId}`
+                        const isClassExpanded =
+                          expandedClassGroups.has(classKey)
+
+                        return (
+                          <div
+                            key={classKey}
+                            className="rounded-lg border border-gray-300 overflow-hidden"
+                          >
+                            {/* Class Group Header */}
+                            <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                              <div
+                                className="flex items-center gap-3 flex-1 cursor-pointer"
+                                onClick={() =>
+                                  toggleClassGroupExpanded(classKey)
+                                }
+                              >
+                                <button className="p-1 hover:bg-white rounded-md transition-colors">
+                                  {isClassExpanded ? (
+                                    <ChevronUp className="h-5 w-5 text-gray-700" />
+                                  ) : (
+                                    <ChevronDown className="h-5 w-5 text-gray-700" />
+                                  )}
+                                </button>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-800">
+                                    Class: {classGroup.className}
+                                  </div>
+                                  <div className="text-sm text-gray-600 mt-0.5">
+                                    <span className="inline-flex items-center gap-1">
+                                      <span>Subjects:</span>
+                                      <span className="font-medium text-amber-600">
+                                        {classGroup.subjects.length}
+                                      </span>
+                                    </span>
+                                  </div>
                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-2 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyClick({
+                                    examGroupId: parentGroup.examGroupId,
+                                    sessionId: parentGroup.sessionId,
+                                    examGroupName: parentGroup.examGroupName,
+                                    sessionName: parentGroup.sessionName,
+                                    classGroups: [classGroup],
+                                  })
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                                Copy
+                              </Button>
+                            </div>
+
+                            {/* Subjects Table */}
+                            {isClassExpanded && (
+                              <div className="bg-white border-t border-gray-200 p-3">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-gray-50 hover:bg-gray-50">
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Subject Name
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Subject Code
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Exam Date
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Start Time
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Duration (min)
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold">
+                                        Marks
+                                      </TableHead>
+                                      <TableHead className="text-gray-700 font-semibold text-right">
+                                        Actions
+                                      </TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {classGroup.subjects.map((subject) => (
+                                      <TableRow
+                                        key={subject.examSubjectId}
+                                        className="hover:bg-amber-50"
+                                      >
+                                        <TableCell className="capitalize font-medium text-gray-800">
+                                          {subject.subjectName || '-'}
+                                        </TableCell>
+                                        <TableCell className="uppercase font-medium text-gray-700">
+                                          {subject.subjectCode || '-'}
+                                        </TableCell>
+                                        <TableCell className="text-gray-700">
+                                          {formatDate(
+                                            new Date(subject.examDate)
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-gray-700">
+                                          {formatTime(subject.startTime)}
+                                        </TableCell>
+                                        <TableCell className="text-gray-700">
+                                          {subject.duration}
+                                        </TableCell>
+                                        <TableCell className="font-semibold text-gray-800">
+                                          {subject.examMarks}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex justify-end gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                              onClick={() =>
+                                                handleEditClick(subject)
+                                              }
+                                            >
+                                              <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                              onClick={() =>
+                                                handleDeleteClick(
+                                                  subject.examSubjectId || 0
+                                                )
+                                              }
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -580,7 +731,7 @@ const ExamSubjects = () => {
       </div>
 
       {/* Pagination */}
-      {groupedExamSubjects.length > 0 && (
+      {hierarchicalGroups.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -650,35 +801,60 @@ const ExamSubjects = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Subject Name */}
             <div className="space-y-2">
-              <Label htmlFor="subjectName">
-                Subject Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="subjectName"
-                name="subjectName"
-                type="text"
-                value={formData.subjectName}
-                onChange={handleInputChange}
-                placeholder="Enter subject name"
-                required
+              <Label htmlFor="examGroupsId">Exam Group</Label>
+              <CustomCombobox
+                items={
+                  examGroups?.data?.map((group) => ({
+                    id: group?.examGroupsId?.toString() || '0',
+                    name: group.examGroupName || 'Unnamed group',
+                  })) || []
+                }
+                value={
+                  formData.examGroupsId
+                    ? {
+                        id: formData.examGroupsId.toString(),
+                        name:
+                          examGroups?.data?.find(
+                            (g) => g.examGroupsId === formData.examGroupsId
+                          )?.examGroupName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'examGroupsId',
+                    value ? String(value.id) : ''
+                  )
+                }
+                placeholder="Select exam group"
               />
             </div>
 
-            {/* Subject Code */}
             <div className="space-y-2">
-              <Label htmlFor="subjectCode">
-                Subject Code <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="subjectCode"
-                name="subjectCode"
-                type="text"
-                value={formData.subjectCode}
-                onChange={handleInputChange}
-                placeholder="Enter subject code"
-                required
+              <Label htmlFor="sessionId">Session</Label>
+              <CustomCombobox
+                items={
+                  sessions?.data?.map((session) => ({
+                    id: session?.sessionId?.toString() || '0',
+                    name: session.sessionName || 'Unnamed session',
+                  })) || []
+                }
+                value={
+                  formData.sessionId
+                    ? {
+                        id: formData.sessionId.toString(),
+                        name:
+                          sessions?.data?.find(
+                            (s) => s.sessionId === formData.sessionId
+                          )?.sessionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange('sessionId', value ? String(value.id) : '')
+                }
+                placeholder="Select session"
               />
             </div>
 
@@ -709,30 +885,35 @@ const ExamSubjects = () => {
               />
             </div>
 
+            {/* Subject Name */}
             <div className="space-y-2">
-              <Label htmlFor="sessionId">Session</Label>
-              <CustomCombobox
-                items={
-                  sessions?.data?.map((session) => ({
-                    id: session?.sessionId?.toString() || '0',
-                    name: session.sessionName || 'Unnamed session',
-                  })) || []
-                }
-                value={
-                  formData.sessionId
-                    ? {
-                        id: formData.sessionId.toString(),
-                        name:
-                          sessions?.data?.find(
-                            (s) => s.sessionId === formData.sessionId
-                          )?.sessionName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange('sessionId', value ? String(value.id) : '')
-                }
-                placeholder="Select session"
+              <Label htmlFor="subjectName">
+                Subject Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="subjectName"
+                name="subjectName"
+                type="text"
+                value={formData.subjectName}
+                onChange={handleInputChange}
+                placeholder="Enter subject name"
+                required
+              />
+            </div>
+
+            {/* Subject Code */}
+            <div className="space-y-2">
+              <Label htmlFor="subjectCode">
+                Subject Code <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="subjectCode"
+                name="subjectCode"
+                type="text"
+                value={formData.subjectCode}
+                onChange={handleInputChange}
+                placeholder="Enter subject code"
+                required
               />
             </div>
 
@@ -857,7 +1038,7 @@ const ExamSubjects = () => {
       <Popup
         isOpen={isCopyPopupOpen}
         onClose={resetCopyForm}
-        title={`Copy Subjects from ${selectedGroupForCopy?.className} - ${selectedGroupForCopy?.sessionName}`}
+        title={`Copy Subjects from ${selectedGroupForCopy?.examGroupName} - ${selectedGroupForCopy?.sessionName}`}
         size="sm:max-w-5xl"
       >
         <form onSubmit={handleCopySubmit} className="space-y-4 py-4">
@@ -896,6 +1077,12 @@ const ExamSubjects = () => {
               }
               placeholder="Select target session"
             />
+            <p className="text-sm text-gray-600 mt-2">
+              Copying to same exam group:{' '}
+              <span className="font-semibold text-amber-700">
+                {selectedGroupForCopy?.examGroupName}
+              </span>
+            </p>
           </div>
 
           {/* Subjects List */}
@@ -910,6 +1097,9 @@ const ExamSubjects = () => {
                     {index + 1}
                   </span>
                   {subject.subjectName} ({subject.subjectCode})
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    - Class: {subject.className}
+                  </span>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-4">

@@ -284,6 +284,7 @@ export type CreateExamGroupType = z.infer<typeof examGroupsSchema>
 export const examSubjectsSchema = z.object({
   examSubjectId: z.number().optional(),
   subjectName: z.string(),
+  examGroupsId: z.number().nullable(),
   subjectCode: z.string(),
   examDate: z.string(),
   startTime: z.string(),
@@ -300,6 +301,7 @@ export type CreateExamSubjectsType = z.infer<typeof examSubjectsSchema>
 export type GetExamSubjectsType = z.infer<typeof examSubjectsSchema> & {
   className: string
   sessionName: string
+  examGroupName: string
 }
 
 export const examsSchema = z.object({
