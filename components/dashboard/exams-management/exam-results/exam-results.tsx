@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-
 import type { ReactElement } from 'react'
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
@@ -45,11 +44,11 @@ import {
   useUpdateExamResult,
   useDeleteExamResult,
   useGetSessions,
-  useGetExams,
   useGetAllStudents,
   useGetExamSubjects,
   useGetClasses,
   useGetSections,
+  useGetExamGroups,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
@@ -72,139 +71,144 @@ const ReportCard = React.forwardRef<
     studentName: string
     className: string
     sectionName: string
-    examName: string
+    examGroupName: string
     sessionName: string
     results: GetExamResultsType[]
   }
->(({ studentName, className, sectionName, examName, results, sessionName }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className="w-full max-w-4xl mx-auto bg-white shadow-lg print:shadow-none"
-    >
-      {/* Header */}
-      <div className="border-b-4 border-amber-300 p-8">
-        <h1 className="text-3xl font-bold text-gray-800 tracking-wide text-center">
-          STUDENT REPORT CARD
-        </h1>
-        <h1 className="text-xl font-bold text-gray-800 tracking-wide text-center">
-          {examName}
-        </h1>
+>(
+  (
+    {
+      studentName,
+      className,
+      sectionName,
+      examGroupName,
+      results,
+      sessionName,
+    },
+    ref
+  ) => {
+    return (
+      <div
+        ref={ref}
+        className="w-full max-w-4xl mx-auto bg-white shadow-lg print:shadow-none"
+      >
+        {/* Header */}
+        <div className="border-b-4 border-amber-300 p-8">
+          <h1 className="text-3xl font-bold text-gray-800 tracking-wide text-center">
+            STUDENT REPORT CARD
+          </h1>
+          <h1 className="text-xl font-bold text-gray-800 tracking-wide text-center">
+            {examGroupName}
+          </h1>
 
-        {/* Student Info */}
-        <div className="mt-6 space-y-3 text-sm">
-          <div className="flex justify-between gap-6">
-            <div className="flex gap-2 flex-1">
-              <span className="text-gray-600">Name:</span>
-              <p className="font-semibold border-b border-gray-400 flex-1">
-                {studentName}
-              </p>
+          {/* Student Info */}
+          <div className="mt-6 space-y-3 text-sm">
+            <div className="flex justify-between gap-6">
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Name:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {studentName}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-600">Date:</span>
+                <p className="font-semibold border-b border-gray-400 min-w-[100px]">
+                  {new Date().toLocaleDateString()}
+                </p>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <span className="text-gray-600">Date:</span>
-              <p className="font-semibold border-b border-gray-400 min-w-[100px]">
-                {new Date().toLocaleDateString()}
-              </p>
+
+            <div className="flex justify-between gap-6">
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Class:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {className}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Section:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {sectionName}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Session:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {sessionName}
+                </p>
+              </div>
             </div>
           </div>
-
-          <div className="flex justify-between gap-6">
-            <div className="flex gap-2 flex-1">
-              <span className="text-gray-600">Class:</span>
-              <p className="font-semibold border-b border-gray-400 flex-1">
-                {className}
-              </p>
-            </div>
-            <div className="flex gap-2 flex-1">
-              <span className="text-gray-600">Section:</span>
-              <p className="font-semibold border-b border-gray-400 flex-1">
-                {sectionName}
-              </p>
-            </div>
-            <div className="flex gap-2 flex-1">
-              <span className="text-gray-600">Session:</span>
-              <p className="font-semibold border-b border-gray-400 flex-1">
-                {sessionName}
-              </p>
-            </div>
-          </div>
-
-          {/* <div className="flex gap-2">
-            <span className="text-gray-600">Exam Session:</span>
-            <p className="font-semibold border-b border-gray-400 flex-1">
-              {sessionName}
-            </p>
-          </div> */}
         </div>
-      </div>
 
-      {/* Grades Table */}
-      <div className="p-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-amber-300">
-              <th className="border border-gray-300 px-4 py-3 text-left text-black">
-                Subject
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
-                Marks
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((result, idx) => (
-              <tr key={result.examResultId}>
-                <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
-                  {result.examSubjectName || '-'}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
-                  {result.gainedMarks}
-                </td>
+        {/* Grades Table */}
+        <div className="p-8">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-amber-300">
+                <th className="border border-gray-300 px-4 py-3 text-left text-black">
+                  Subject
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
+                  Marks
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Notes & Comments */}
-      <div className="px-8 pb-8">
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-2">Notes</p>
-            <div className="border border-gray-300 h-20"></div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-2">
-              Teacher Comments
-            </p>
-            <div className="border border-gray-300 h-20"></div>
-          </div>
+            </thead>
+            <tbody>
+              {results.map((result, idx) => (
+                <tr key={result.examResultId}>
+                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
+                    {result.examSubjectName || '-'}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
+                    {result.gainedMarks}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
-        <div className="grid grid-cols-3 gap-8 mt-6">
-          <div>
-            <p className="border-t border-gray-400 pt-2 text-center">
-              Class Teacher
-            </p>
-          </div>
-          <div></div>
-          <div>
-            <p className="border-t border-gray-400 pt-2 text-center">
-              Principal
-            </p>
+        {/* Notes & Comments */}
+        <div className="px-8 pb-8">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">Notes</p>
+              <div className="border border-gray-300 h-20"></div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">
+                Teacher Comments
+              </p>
+              <div className="border border-gray-300 h-20"></div>
+            </div>
           </div>
         </div>
 
-        <p className="text-center mt-6">
-          Generated on {new Date().toLocaleDateString()}
-        </p>
+        {/* Footer */}
+        <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
+          <div className="grid grid-cols-3 gap-8 mt-6">
+            <div>
+              <p className="border-t border-gray-400 pt-2 text-center">
+                Class Teacher
+              </p>
+            </div>
+            <div></div>
+            <div>
+              <p className="border-t border-gray-400 pt-2 text-center">
+                Principal
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center mt-6">
+            Generated on {new Date().toLocaleDateString()}
+          </p>
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 
 ReportCard.displayName = 'ReportCard'
 
@@ -215,7 +219,7 @@ const ExamResults = (): ReactElement => {
 
   const { data: examResults } = useGetExamResults()
   const { data: sessions } = useGetSessions()
-  const { data: exams } = useGetExams()
+  const { data: examGroups } = useGetExamGroups()
   const { data: students } = useGetAllStudents()
   const { data: classes } = useGetClasses()
   const { data: sections } = useGetSections()
@@ -253,7 +257,7 @@ const ExamResults = (): ReactElement => {
     }
   >({
     sessionId: null,
-    examId: null,
+    examGroupsId: null,
     studentId: null,
     examSubjectId: null,
     gainedMarks: 0,
@@ -267,9 +271,11 @@ const ExamResults = (): ReactElement => {
   const reactToPrintFn = useReactToPrint({ contentRef })
   const [selectedGroupForPrint, setSelectedGroupForPrint] = useState<{
     studentName: string
-    examId: number
-    examName: string
+    examGroupsId: number
+    examGroupName: string
     sessionName: string
+    className: string
+    sectionName: string
     results: GetExamResultsType[]
   } | null>(null)
 
@@ -307,7 +313,7 @@ const ExamResults = (): ReactElement => {
   const resetForm = () => {
     setFormData({
       sessionId: null,
-      examId: null,
+      examGroupsId: null,
       studentId: null,
       examSubjectId: null,
       gainedMarks: 0,
@@ -355,7 +361,7 @@ const ExamResults = (): ReactElement => {
       const searchLower = searchTerm.toLowerCase()
       return (
         result.studentName?.toLowerCase().includes(searchLower) ||
-        result.examName?.toLowerCase().includes(searchLower) ||
+        result.examGroupName?.toLowerCase().includes(searchLower) ||
         result.sessionName?.toLowerCase().includes(searchLower) ||
         result.examSubjectName?.toLowerCase().includes(searchLower)
       )
@@ -367,8 +373,8 @@ const ExamResults = (): ReactElement => {
       string,
       {
         studentName: string
-        examId: number
-        examName: string
+        examGroupsId: number
+        examGroupName: string
         className: string
         sectionName: string
         results: GetExamResultsType[]
@@ -376,12 +382,12 @@ const ExamResults = (): ReactElement => {
     >()
 
     filteredExamResults.forEach((result) => {
-      const groupKey = `${result.studentName}-${result.examId}`
+      const groupKey = `${result.studentName}-${result.examGroupsId}`
       if (!groups.has(groupKey)) {
         groups.set(groupKey, {
           studentName: result.studentName || '',
-          examId: result.examId || 0,
-          examName: result.examName || '',
+          examGroupsId: result.examGroupsId || 0,
+          examGroupName: result.examGroupName || '',
           className: result.className || '',
           sectionName: result.sectionName || '',
           results: [],
@@ -436,7 +442,7 @@ const ExamResults = (): ReactElement => {
   const handleEditClick = (result: GetExamResultsType) => {
     setFormData({
       sessionId: result.sessionId ?? null,
-      examId: result.examId ?? null,
+      examGroupsId: result.examGroupsId ?? null,
       studentId: result.studentId ?? null,
       examSubjectId: result.examSubjectId ?? null,
       gainedMarks: result.gainedMarks,
@@ -456,7 +462,15 @@ const ExamResults = (): ReactElement => {
   }
 
   const handlePrintGroup = (group: any) => {
-    setSelectedGroupForPrint(group)
+    setSelectedGroupForPrint({
+      studentName: group.studentName,
+      examGroupsId: group.examGroupsId,
+      examGroupName: group.examGroupName,
+      sessionName: group.results[0]?.sessionName || 'N/A',
+      className: group.className,
+      sectionName: group.sectionName,
+      results: group.results,
+    })
     setTimeout(() => {
       reactToPrintFn && reactToPrintFn()
     }, 100)
@@ -486,7 +500,7 @@ const ExamResults = (): ReactElement => {
         Class: group.className || '',
         Section: group.sectionName || '',
         'Session Name': result.sessionName || '',
-        'Exam Name': group.examName || '',
+        'Exam Group Name': group.examGroupName || '',
         'Subject Name': result.examSubjectName || '',
         'Gained Marks': result.gainedMarks || 0,
       }))
@@ -497,7 +511,7 @@ const ExamResults = (): ReactElement => {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results')
 
-    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '') 
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
     const fileName = `result-report-${timestamp}.xlsx`
 
     const excelBuffer = XLSX.write(workbook, {
@@ -524,7 +538,9 @@ const ExamResults = (): ReactElement => {
           sectionId?: number | null
         } = {
           sessionId: row['Session Id'] ? Number(row['Session Id']) : null,
-          examId: row['Exam Id'] ? Number(row['Exam Id']) : null,
+          examGroupsId: row['Exam Group Id']
+            ? Number(row['Exam Group Id'])
+            : null,
           studentId: row['Student Id'] ? Number(row['Student Id']) : null,
           examSubjectId: row['Exam Subject Id']
             ? Number(row['Exam Subject Id'])
@@ -613,7 +629,7 @@ const ExamResults = (): ReactElement => {
         ) : (
           <>
             {paginatedGroups.map((group) => {
-              const groupKey = `${group.studentName}-${group.examId}`
+              const groupKey = `${group.studentName}-${group.examGroupsId}`
               const isExpanded = expandedGroups.has(groupKey)
 
               return (
@@ -651,9 +667,9 @@ const ExamResults = (): ReactElement => {
                             </span>
                           </span>
                           <span className="inline-flex items-center gap-1">
-                            <span className="text-gray-600">Exam:</span>
+                            <span className="text-gray-600">Exam Group:</span>
                             <span className="font-medium text-amber-700">
-                              {group.examName}
+                              {group.examGroupName}
                             </span>
                           </span>
                         </div>
@@ -837,30 +853,34 @@ const ExamResults = (): ReactElement => {
               />
             </div>
 
-            {/* Exam */}
+            {/* Exam Group */}
             <div className="space-y-2">
-              <Label htmlFor="examId">Exam</Label>
+              <Label htmlFor="examGroupsId">Exam Group</Label>
               <CustomCombobox
                 items={
-                  exams?.data?.map((exam) => ({
-                    id: exam?.examId?.toString() || '0',
-                    name: exam.examName || 'Unnamed exam',
+                  examGroups?.data?.map((group) => ({
+                    id: group?.examGroupsId?.toString() || '0',
+                    name: group.examGroupName || 'Unnamed group',
                   })) || []
                 }
                 value={
-                  formData.examId
+                  formData.examGroupsId
                     ? {
-                        id: formData.examId.toString(),
+                        id: formData.examGroupsId.toString(),
                         name:
-                          exams?.data?.find((e) => e.examId === formData.examId)
-                            ?.examName || '',
+                          examGroups?.data?.find(
+                            (g) => g.examGroupsId === formData.examGroupsId
+                          )?.examGroupName || '',
                       }
                     : null
                 }
                 onChange={(value) =>
-                  handleSelectChange('examId', value ? String(value.id) : '')
+                  handleSelectChange(
+                    'examGroupsId',
+                    value ? String(value.id) : ''
+                  )
                 }
-                placeholder="Select exam"
+                placeholder="Select exam group"
               />
             </div>
 
@@ -1042,7 +1062,7 @@ const ExamResults = (): ReactElement => {
                 <strong>Session Id</strong> - Numeric ID
               </li>
               <li>
-                <strong>Exam Id</strong> - Numeric ID
+                <strong>Exam Group Id</strong> - Numeric ID
               </li>
               <li>
                 <strong>Student Id</strong> - Numeric ID
@@ -1107,13 +1127,11 @@ const ExamResults = (): ReactElement => {
           {selectedGroupForPrint && (
             <ReportCard
               studentName={selectedGroupForPrint.studentName}
-              className={selectedGroupForPrint.results[0]?.className || 'N/A'}
-              sectionName={
-                selectedGroupForPrint.results[0]?.sectionName || 'N/A'
-              }
-              examName={selectedGroupForPrint.examName}
+              className={selectedGroupForPrint.className}
+              sectionName={selectedGroupForPrint.sectionName}
+              examGroupName={selectedGroupForPrint.examGroupName}
               results={selectedGroupForPrint.results}
-              sessionName={selectedGroupForPrint.results[0]?.sessionName || 'N/A'}
+              sessionName={selectedGroupForPrint.sessionName}
             />
           )}
         </div>
