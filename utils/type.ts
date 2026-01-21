@@ -290,6 +290,7 @@ export const examSubjectsSchema = z.object({
   duration: z.number(),
   examMarks: z.number(),
   classId: z.number().nullable(),
+  sessionId: z.number().nullable(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -298,6 +299,7 @@ export const examSubjectsSchema = z.object({
 export type CreateExamSubjectsType = z.infer<typeof examSubjectsSchema>
 export type GetExamSubjectsType = z.infer<typeof examSubjectsSchema> & {
   className: string
+  sessionName: string
 }
 
 export const examsSchema = z.object({
