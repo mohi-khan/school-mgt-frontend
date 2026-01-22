@@ -19,7 +19,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useGetClasses,
-  useGetClassesByClassId,
+  useGetSectionsByClassId,
   useGetFeesMasters,
   useGetSessions,
   useGetStudentById,
@@ -103,7 +103,7 @@ const EditStudent = () => {
     studentFees: [],
   })
 
-  const { data: sections } = useGetClassesByClassId(
+  const { data: sections } = useGetSectionsByClassId(
     formData.studentDetails.classId || 0
   )
 
