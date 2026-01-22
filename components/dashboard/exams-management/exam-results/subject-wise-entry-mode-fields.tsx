@@ -177,36 +177,6 @@ export const SubjectWiseEntryModeFields: React.FC<
         </div>
       </div>
 
-      {/* Exam Group */}
-      <div className="space-y-2 mt-4">
-        <Label htmlFor="examGroupsId">
-          Exam Group <span className="text-red-500">*</span>
-        </Label>
-        <CustomCombobox
-          items={
-            (examGroups?.data || [])?.map((group: any) => ({
-              id: group?.examGroupId?.toString() || '0',
-              name: group?.examGroupName || 'Unnamed group',
-            })) || []
-          }
-          value={
-            formData.examGroupsId
-              ? {
-                  id: formData.examGroupsId.toString(),
-                  name:
-                    (examGroups?.data || [])?.find(
-                      (g: any) => g?.examGroupId === formData.examGroupsId
-                    )?.examGroupName || '',
-                }
-              : null
-          }
-          onChange={(value) =>
-            handleSelectChange('examGroupsId', value ? String(value.id) : '')
-          }
-          placeholder="Select exam group"
-        />
-      </div>
-
       <div className="border-t pt-4 mt-4">
         <div className="flex justify-between items-center mb-4">
           <Label className="text-base font-semibold">Student Results</Label>

@@ -175,36 +175,6 @@ export const StudentWiseEntryModeFields: React.FC<
             disabled={!!formData.studentId}
           />
         </div>
-
-        {/* Exam Group */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="examGroupsId">
-            Exam Group <span className="text-red-500">*</span>
-          </Label>
-          <CustomCombobox
-            items={
-              (examGroups?.data || [])?.map((group: any) => ({
-                id: group?.examGroupId?.toString() || '0',
-                name: group?.examGroupName || 'Unnamed group',
-              })) || []
-            }
-            value={
-              formData.examGroupsId
-                ? {
-                    id: formData.examGroupsId.toString(),
-                    name:
-                      (examGroups?.data || [])?.find(
-                        (g: any) => g?.examGroupId === formData.examGroupsId
-                      )?.examGroupName || '',
-                  }
-                : null
-            }
-            onChange={(value) =>
-              handleSelectChange('examGroupsId', value ? String(value.id) : '')
-            }
-            placeholder="Select exam group"
-          />
-        </div>
       </div>
 
       <div className="border-t pt-4 mt-4">

@@ -677,17 +677,21 @@ const ExamResults = (): ReactElement => {
       return
     }
 
-    const flatData = groupedExamResults.flatMap((group: any) =>
-      group.results.map((result: any) => ({
-        'Student Name': result.studentName || '',
-        Class: result.className || '',
-        Section: result.sectionName || '',
-        'Session Name': result.sessionName || '',
-        'Exam Group Name': group.examGroupName || '',
-        'Subject Name': result.examSubjectName || '',
-        'Gained Marks': result.gainedMarks || 0,
-      }))
-    )
+    const flatData = (examResults?.data || []).map((result) => ({
+      'Session Id': result.sessionId || '',
+      'Exam Group Id': result.examGroupsId || '',
+      'Student Id': result.studentId || '',
+      'Class Id': result?.classId || '',
+      'Section Id': result?.sectionId || '',
+      'Exam Subject Id': result.examSubjectId || '',
+      'Gained Marks': result.gainedMarks || 0,
+      // Optional: Include names for reference
+      'Session Name (No need while inserting data)': result.sessionName || '',
+      'Exam Name (No need while inserting data)': result.examGroupName || '',
+      'Student Name (No need while inserting data)': result.studentName || '',
+      'Subject Name (No need while inserting data)':
+        result.examSubjectName || '',
+    }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
     const workbook = XLSX.utils.book_new()
