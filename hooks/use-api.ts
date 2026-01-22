@@ -137,7 +137,7 @@ export const useGetSections = () => {
   })
 }
 
-export const useGetClassesByClassId = (id: number) => {
+export const useGetSectionsByClassId = (id: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 

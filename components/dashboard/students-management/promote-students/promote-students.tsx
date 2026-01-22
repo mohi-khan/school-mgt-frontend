@@ -28,7 +28,7 @@ import {
   useGetClasses,
   useGetSections,
   useGetSessions,
-  useGetClassesByClassId,
+  useGetSectionsByClassId,
 } from '@/hooks/use-api'
 
 const PromoteStudents = () => {
@@ -64,10 +64,10 @@ const PromoteStudents = () => {
 
   const { data: classesData } = useGetClasses()
   // For students filter
-  const { data: sectionsData } = useGetClassesByClassId(selectedClassId ?? 0)
+  const { data: sectionsData } = useGetSectionsByClassId(selectedClassId ?? 0)
 
   // For promotion popup
-  const { data: promoteSectionsData } = useGetClassesByClassId(
+  const { data: promoteSectionsData } = useGetSectionsByClassId(
     promoteClassId ?? 0
   )
 

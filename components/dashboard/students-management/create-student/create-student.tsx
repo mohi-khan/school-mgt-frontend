@@ -19,7 +19,7 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useAddStudent,
   useGetClasses,
-  useGetClassesByClassId,
+  useGetSectionsByClassId,
   useGetFeesMasters,
   useGetSessions,
 } from '@/hooks/use-api'
@@ -97,7 +97,7 @@ const CreateStudent = () => {
     studentFees: [],
   })
 
-  const { data: sections } = useGetClassesByClassId(
+  const { data: sections } = useGetSectionsByClassId(
     formData.studentDetails.classId || 0
   )
 
