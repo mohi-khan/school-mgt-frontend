@@ -1138,7 +1138,7 @@ const ExamSubjects = () => {
                   {/* Duration */}
                   <div className="space-y-1">
                     <Label htmlFor={`duration-${index}`} className="text-xs">
-                      Duration (min)
+                      Duration (min) <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id={`duration-${index}`}
@@ -1152,15 +1152,13 @@ const ExamSubjects = () => {
                           Number(e.target.value)
                         )
                       }
-                      readOnly
-                      className="bg-gray-100"
                     />
                   </div>
 
                   {/* Exam Marks */}
                   <div className="space-y-1">
                     <Label htmlFor={`examMarks-${index}`} className="text-xs">
-                      Marks
+                      Marks <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id={`examMarks-${index}`}
@@ -1174,8 +1172,6 @@ const ExamSubjects = () => {
                           Number(e.target.value)
                         )
                       }
-                      readOnly
-                      className="bg-gray-100"
                     />
                   </div>
                 </div>
