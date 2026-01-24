@@ -262,7 +262,14 @@ const Incomes = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
+  useEffect(() => {
+    // Sync paymentMethod state with formData.method
+    setPaymentMethod(formData.method)
+  }, [formData.method])
+
+  // Update handleEditClick to set paymentMethod
   const handleEditClick = (income: GetIncomesType) => {
+    const method = income.method
     setFormData({
       incomeHeadId: income.incomeHeadId ?? null,
       name: income.name,
@@ -270,11 +277,12 @@ const Incomes = () => {
       date: formatDateForInput(income.date),
       amount: income.amount,
       description: income.description ?? null,
-      method: income.method,
+      method: method,
       bankAccountId: income.bankAccountId,
       mfsId: income.mfsId,
       createdBy: userData?.userId || 0,
     })
+    setPaymentMethod(method) // Add this line
     setEditingIncomeId(income.incomeId || null)
     setIsEditMode(true)
     setIsPopupOpen(true)
@@ -353,7 +361,8 @@ const Incomes = () => {
                 onClick={() => handleSort('invoiceNumber')}
                 className="cursor-pointer"
               >
-                Money Receit Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Money Receit Number{' '}
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('date')}
@@ -425,7 +434,9 @@ const Incomes = () => {
                       : '-'}
                   </TableCell>
                   <TableCell>
-                    {income.mfsNumber && income.accountName ? `${income.accountName} - ${income.mfsNumber}` : '-'}
+                    {income.mfsNumber && income.accountName
+                      ? `${income.accountName} - ${income.mfsNumber}`
+                      : '-'}
                   </TableCell>
                   <TableCell>
                     {formatNumber(income.amount.toFixed(2))}
