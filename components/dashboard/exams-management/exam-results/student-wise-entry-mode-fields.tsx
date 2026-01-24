@@ -3,8 +3,6 @@
 import React from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import type { CreateExamResultsType } from '@/utils/type'
 
@@ -20,8 +18,6 @@ interface StudentWiseEntryModeFieldsProps {
   }
   handleSelectChange: (name: string, value: string) => void
   studentWiseResults: StudentResultEntry[]
-  addSubjectEntry: () => void
-  removeSubjectEntry: (index: number) => void
   updateSubjectEntry: (
     index: number,
     field: keyof StudentResultEntry,
@@ -41,8 +37,6 @@ export const StudentWiseEntryModeFields: React.FC<
   formData,
   handleSelectChange,
   studentWiseResults,
-  addSubjectEntry,
-  removeSubjectEntry,
   updateSubjectEntry,
   students = { data: [] },
   sessions = { data: [] },
@@ -63,7 +57,7 @@ export const StudentWiseEntryModeFields: React.FC<
               (students?.data || [])?.map((student: any) => ({
                 id: student?.studentDetails?.studentId?.toString() || '0',
                 name:
-                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''}`.trim() ||
+                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.className || ''} - ${student?.studentDetails?.sectionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
                   'Unnamed student',
               })) || []
             }
@@ -81,6 +75,21 @@ export const StudentWiseEntryModeFields: React.FC<
                         (s: any) =>
                           s?.studentDetails?.studentId === formData.studentId
                       )?.studentDetails?.lastName || ''
+                    } - ${
+                      (students?.data || [])?.find(
+                        (s: any) =>
+                          s?.studentDetails?.studentId === formData.studentId
+                      )?.studentDetails?.className || ''
+                    } - ${
+                      (students?.data || [])?.find(
+                        (s: any) =>
+                          s?.studentDetails?.studentId === formData.studentId
+                      )?.studentDetails?.sectionName || ''
+                    } - ${
+                      (students?.data || [])?.find(
+                        (s: any) =>
+                          s?.studentDetails?.studentId === formData.studentId
+                      )?.studentDetails?.rollNo || ''
                     }`.trim(),
                   }
                 : null
@@ -178,96 +187,65 @@ export const StudentWiseEntryModeFields: React.FC<
       </div>
 
       <div className="border-t pt-4 mt-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <Label className="text-base font-semibold">Subject Results</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addSubjectEntry}
-            disabled={!formData.studentId || !formData.classId}
-          >
-            Add Subject
-          </Button>
         </div>
 
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {studentWiseResults.map((entry, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-12 gap-4 items-end border p-3 rounded-md"
-            >
-              <div className="col-span-7 space-y-2">
-                <Label>Subject</Label>
-                <CustomCombobox
-                  items={
-                    (filteredSubjectsByClass || [])?.map((subject: any) => ({
-                      id: subject?.examSubjectId?.toString() || '0',
-                      name: subject?.subjectName || 'Unnamed subject',
-                    })) || []
-                  }
-                  value={
-                    entry.examSubjectId
-                      ? {
-                          id: entry.examSubjectId.toString(),
-                          name:
-                            (filteredSubjectsByClass || [])?.find(
-                              (s: any) =>
-                                s?.examSubjectId === entry.examSubjectId
-                            )?.subjectName || '',
-                        }
-                      : null
-                  }
-                  onChange={(value) =>
-                    updateSubjectEntry(
-                      index,
-                      'examSubjectId',
-                      value ? Number(value.id) : null
-                    )
-                  }
-                  placeholder={
-                    formData.classId
-                      ? 'Select subject'
-                      : 'Select student first'
-                  }
-                  disabled={!formData.classId}
-                />
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredSubjectsByClass && filteredSubjectsByClass.length > 0 ? (
+            <>
+              <div className="grid grid-cols-12 gap-4 items-center px-3 py-2 bg-gray-50 rounded-md font-medium text-sm">
+                <div className="col-span-8">Subject Name</div>
+                <div className="col-span-4">Gained Marks</div>
               </div>
-              <div className="col-span-4 space-y-2">
-                <Label>Gained Marks</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={entry.gainedMarks}
-                  onChange={(e) =>
-                    updateSubjectEntry(
-                      index,
-                      'gainedMarks',
-                      Number(e.target.value)
-                    )
-                  }
-                  placeholder="0"
-                />
-              </div>
-              <div className="col-span-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
-                  onClick={() => removeSubjectEntry(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-          {studentWiseResults.length === 0 && (
-            <div className="text-center py-4 text-gray-500 text-sm">
+              {filteredSubjectsByClass.map((subject: any, index: number) => {
+                const resultEntry = studentWiseResults.find(
+                  (entry) => entry.examSubjectId === subject.examSubjectId
+                )
+                const resultIndex = studentWiseResults.findIndex(
+                  (entry) => entry.examSubjectId === subject.examSubjectId
+                )
+
+                return (
+                  <div
+                    key={subject.examSubjectId || index}
+                    className="grid grid-cols-12 gap-4 items-center border p-3 rounded-md hover:bg-gray-50"
+                  >
+                    <div className="col-span-8">
+                      <Label className="font-normal">
+                        {subject?.subjectName || 'Unnamed subject'}
+                      </Label>
+                    </div>
+                    <div className="col-span-4">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={resultEntry?.gainedMarks || ''}
+                        onChange={(e) => {
+                          const value =
+                            e.target.value === '' ? 0 : Number(e.target.value)
+                          if (resultIndex !== -1) {
+                            updateSubjectEntry(
+                              resultIndex,
+                              'gainedMarks',
+                              value
+                            )
+                          }
+                        }}
+                        placeholder="0"
+                        disabled={!formData.studentId || !formData.classId}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-500 text-sm border rounded-md">
               {!formData.studentId || !formData.classId
-                ? 'Please select a student first to add subjects'
-                : 'No subjects added yet. Click "Add Subject" to begin.'}
+                ? 'Please select a student first to view subjects'
+                : 'No subjects available for this class'}
             </div>
           )}
         </div>

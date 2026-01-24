@@ -47,7 +47,7 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
               (students?.data || [])?.map((student: any) => ({
                 id: student?.studentDetails?.studentId?.toString() || '0',
                 name:
-                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''}`.trim() ||
+                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.className || ''} - ${student?.studentDetails?.sectionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
                   'Unnamed student',
               })) || []
             }
@@ -61,7 +61,7 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
                           s?.studentDetails?.studentId === formData.studentId
                       )
                       return foundStudent
-                        ? `${foundStudent?.studentDetails?.firstName || ''} ${foundStudent?.studentDetails?.lastName || ''}`.trim()
+                        ? `${foundStudent?.studentDetails?.firstName || ''} ${foundStudent?.studentDetails?.lastName || ''} - ${foundStudent?.studentDetails?.className || ''} - ${foundStudent?.studentDetails?.sectionName || ''} - ${foundStudent?.studentDetails?.rollNo || ''}`.trim()
                         : ''
                     })(),
                   }

@@ -3,8 +3,6 @@
 import React from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import type { CreateExamResultsType } from '@/utils/type'
 
@@ -20,8 +18,6 @@ interface SubjectWiseEntryModeFieldsProps {
   }
   handleSelectChange: (name: string, value: string) => void
   subjectWiseStudents: SubjectWiseStudent[]
-  addStudentEntry: () => void
-  removeStudentEntry: (index: number) => void
   updateStudentEntry: (
     index: number,
     field: keyof SubjectWiseStudent,
@@ -42,8 +38,6 @@ export const SubjectWiseEntryModeFields: React.FC<
   formData,
   handleSelectChange,
   subjectWiseStudents,
-  addStudentEntry,
-  removeStudentEntry,
   updateStudentEntry,
   students = { data: [] },
   sessions = { data: [] },
@@ -53,6 +47,14 @@ export const SubjectWiseEntryModeFields: React.FC<
   sectionsByClass = { data: [] },
   filteredSubjectsByClass = [],
 }) => {
+  // Filter students by selected class and section
+  const filteredStudents = (students?.data || [])?.filter((student: any) => {
+    return (
+      student?.studentDetails?.classId === formData.classId &&
+      student?.studentDetails?.sectionId === formData.sectionId
+    )
+  })
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
@@ -178,111 +180,76 @@ export const SubjectWiseEntryModeFields: React.FC<
       </div>
 
       <div className="border-t pt-4 mt-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <Label className="text-base font-semibold">Student Results</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addStudentEntry}
-            disabled={!formData.classId || !formData.sectionId}
-          >
-            Add Student
-          </Button>
+          {formData.classId &&
+            formData.sectionId &&
+            filteredStudents.length > 0 && (
+              <p className="text-sm text-gray-600 mt-1">
+                {filteredStudents.length} student
+                {filteredStudents.length !== 1 ? 's' : ''} found
+              </p>
+            )}
         </div>
 
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {subjectWiseStudents.map((entry, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-12 gap-4 items-end border p-3 rounded-md"
-            >
-              <div className="col-span-7 space-y-2">
-                <Label>Student</Label>
-                <CustomCombobox
-                  items={
-                    (students?.data || [])
-                      ?.filter((student: any) => {
-                        // Filter by class and section
-                        return (
-                          student?.studentDetails?.classId ===
-                            formData.classId &&
-                          student?.studentDetails?.sectionId ===
-                            formData.sectionId
-                        )
-                      })
-                      .map((student: any) => ({
-                        id:
-                          student?.studentDetails?.studentId?.toString() ||
-                          '0',
-                        name:
-                          `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''}`.trim() ||
-                          'Unnamed student',
-                      })) || []
-                  }
-                  value={
-                    entry.studentId
-                      ? {
-                          id: entry.studentId.toString(),
-                          name: `${
-                            (students?.data || [])?.find(
-                              (s: any) =>
-                                s?.studentDetails?.studentId === entry.studentId
-                            )?.studentDetails?.firstName || ''
-                          } ${
-                            (students?.data || [])?.find(
-                              (s: any) =>
-                                s?.studentDetails?.studentId === entry.studentId
-                            )?.studentDetails?.lastName || ''
-                          }`.trim(),
-                        }
-                      : null
-                  }
-                  onChange={(value) =>
-                    updateStudentEntry(
-                      index,
-                      'studentId',
-                      value ? Number(value.id) : null
-                    )
-                  }
-                  placeholder="Select student"
-                />
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredStudents && filteredStudents.length > 0 ? (
+            <>
+              <div className="grid grid-cols-12 gap-4 items-center px-3 py-2 bg-gray-50 rounded-md font-medium text-sm">
+                <div className="col-span-8">Student Name</div>
+                <div className="col-span-4">Gained Marks</div>
               </div>
-              <div className="col-span-4 space-y-2">
-                <Label>Gained Marks</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={entry.gainedMarks}
-                  onChange={(e) =>
-                    updateStudentEntry(
-                      index,
-                      'gainedMarks',
-                      Number(e.target.value)
-                    )
-                  }
-                  placeholder="0"
-                />
-              </div>
-              <div className="col-span-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
-                  onClick={() => removeStudentEntry(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-          {subjectWiseStudents.length === 0 && (
-            <div className="text-center py-4 text-gray-500 text-sm">
+              {filteredStudents.map((student: any, index: number) => {
+                const studentId = student?.studentDetails?.studentId
+                const studentName =
+                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''}`.trim() ||
+                  'Unnamed student'
+
+                const resultEntry = subjectWiseStudents.find(
+                  (entry) => entry.studentId === studentId
+                )
+                const resultIndex = subjectWiseStudents.findIndex(
+                  (entry) => entry.studentId === studentId
+                )
+
+                return (
+                  <div
+                    key={studentId || index}
+                    className="grid grid-cols-12 gap-4 items-center border p-3 rounded-md hover:bg-gray-50"
+                  >
+                    <div className="col-span-8">
+                      <Label className="font-normal">{studentName}</Label>
+                    </div>
+                    <div className="col-span-4">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={resultEntry?.gainedMarks || ''}
+                        onChange={(e) => {
+                          const value =
+                            e.target.value === '' ? 0 : Number(e.target.value)
+                          if (resultIndex !== -1) {
+                            updateStudentEntry(
+                              resultIndex,
+                              'gainedMarks',
+                              value
+                            )
+                          }
+                        }}
+                        placeholder="0"
+                        disabled={!formData.examSubjectId}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-500 text-sm border rounded-md">
               {!formData.classId || !formData.sectionId
-                ? 'Please select class and section first'
-                : 'No students added yet. Click "Add Student" to begin.'}
+                ? 'Please select class and section to view students'
+                : 'No students found in this class and section'}
             </div>
           )}
         </div>
