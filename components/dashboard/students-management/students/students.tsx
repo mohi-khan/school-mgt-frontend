@@ -223,7 +223,7 @@ const MoneyReceipt = React.forwardRef<
 
         {/* Footer */}
         <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
-          <div className="grid grid-cols-3 gap-8 mt-6">
+          <div className="grid grid-cols-3 gap-8 mt-20">
             <div>
               <p className="border-t border-gray-400 pt-2 text-center">
                 Collected By
