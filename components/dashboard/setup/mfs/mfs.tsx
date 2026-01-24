@@ -360,7 +360,7 @@ const Mfs = () => {
                   <TableCell>{account.mfsNumber}</TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                         account.mfsType === 'bkash'
                           ? 'bg-pink-100 text-pink-800'
                           : account.mfsType === 'nagad'
@@ -474,7 +474,7 @@ const Mfs = () => {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="accountName">Account Name*</Label>
+              <Label htmlFor="accountName">Account Name <span className="text-red-500">*</span></Label>
               <Input
                 id="accountName"
                 name="accountName"
@@ -487,7 +487,7 @@ const Mfs = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mfsNumber">MFS Number*</Label>
+              <Label htmlFor="mfsNumber">MFS Number <span className="text-red-500">*</span></Label>
               <Input
                 id="mfsNumber"
                 name="mfsNumber"
@@ -500,7 +500,7 @@ const Mfs = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mfsType">MFS Type*</Label>
+              <Label htmlFor="mfsType">MFS Type <span className="text-red-500">*</span></Label>
               <Select
                 value={
                   (formData.mfsType as 'bkash' | 'nagad' | 'rocket')
@@ -520,7 +520,7 @@ const Mfs = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="balance">Balance*</Label>
+              <Label htmlFor="balance">Balance <span className="text-red-500">*</span></Label>
               <Input
                 id="balance"
                 name="balance"
@@ -529,6 +529,7 @@ const Mfs = () => {
                 onChange={handleInputChange}
                 placeholder="Enter balance"
                 required
+                disabled={isEditMode}
               />
             </div>
           </div>

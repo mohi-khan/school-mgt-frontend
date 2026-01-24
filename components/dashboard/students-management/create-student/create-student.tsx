@@ -245,8 +245,6 @@ const CreateStudent = () => {
       return setError('Please enter last name')
     if (!studentDetails.admissionNo || studentDetails.admissionNo <= 0)
       return setError('Please enter valid admission number')
-    if (!studentDetails.rollNo || studentDetails.rollNo <= 0)
-      return setError('Please enter valid roll number')
     if (!studentDetails.email.trim()) return setError('Please enter email')
     if (!studentDetails.phoneNumber.trim())
       return setError('Please enter phone number')
@@ -549,7 +547,7 @@ const CreateStudent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="studentDetails.rollNo">
-                Roll Number <span className="text-red-500">*</span>
+                Roll Number
               </Label>
               <Input
                 id="studentDetails.rollNo"
@@ -561,7 +559,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="classId">Class</Label>
+              <Label htmlFor="classId">Class <span className="text-red-500">*</span></Label>
               <CustomCombobox
                 items={
                   classes?.data?.map((cls) => ({
@@ -589,7 +587,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sectionId">Section</Label>
+              <Label htmlFor="sectionId">Section <span className="text-red-500">*</span></Label>
               <CustomCombobox
                 items={
                   sections?.data?.map((section) => ({
@@ -619,7 +617,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sessionId">Session</Label>
+              <Label htmlFor="sessionId">Session <span className="text-red-500">*</span></Label>
               <CustomCombobox
                 items={
                   sessions?.data?.map((session) => ({
@@ -666,7 +664,7 @@ const CreateStudent = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.dateOfBirth">Date of Birth</Label>
+              <Label htmlFor="studentDetails.dateOfBirth">Date of Birth <span className="text-red-500">*</span></Label>
               <Input
                 id="studentDetails.dateOfBirth"
                 name="studentDetails.dateOfBirth"
@@ -677,7 +675,7 @@ const CreateStudent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="studentDetails.email">
-                Email <span className="text-red-500">*</span>
+                Email
               </Label>
               <Input
                 id="studentDetails.email"
@@ -702,7 +700,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.religion">Religion</Label>
+              <Label htmlFor="studentDetails.religion">Religion <span className="text-red-500">*</span></Label>
               <Input
                 id="studentDetails.religion"
                 name="studentDetails.religion"
@@ -758,7 +756,7 @@ const CreateStudent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="studentDetails.admissionDate">
-                Admission Date
+                Admission Date <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="studentDetails.admissionDate"
@@ -769,7 +767,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.address">Address</Label>
+              <Label htmlFor="studentDetails.address">Address <span className="text-red-500">*</span></Label>
               <Input
                 id="studentDetails.address"
                 name="studentDetails.address"
@@ -803,7 +801,7 @@ const CreateStudent = () => {
           <h3 className="text-md font-semibold mb-4">Father Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.fatherName">Father Name</Label>
+              <Label htmlFor="studentDetails.fatherName">Father Name <span className="text-red-500">*</span></Label>
               <Input
                 id="studentDetails.fatherName"
                 name="studentDetails.fatherName"
@@ -875,7 +873,7 @@ const CreateStudent = () => {
           <h3 className="text-md font-semibold mb-4">Mother Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherName">Mother Name</Label>
+              <Label htmlFor="studentDetails.motherName">Mother Name <span className="text-red-500">*</span></Label>
               <Input
                 id="studentDetails.motherName"
                 name="studentDetails.motherName"

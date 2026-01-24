@@ -263,20 +263,28 @@ const Expenses = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (expense: GetExpensesType) => {
+  useEffect(() => {
+    // Sync paymentMethod state with formData.method
+    setPaymentMethod(formData.method)
+  }, [formData.method])
+
+  // Update handleEditClick to set paymentMethod
+  const handleEditClick = (income: GetExpensesType) => {
+    const method = income.method
     setFormData({
-      expenseHeadId: expense.expenseHeadId ?? null,
-      name: expense.name,
-      invoiceNumber: expense.invoiceNumber,
-      date: formatDateForInput(expense.date),
-      method: expense.method,
-      amount: expense.amount,
-      bankAccountId: expense.bankAccountId,
-      mfsId: expense.mfsId,
-      description: expense.description ?? null,
+      expenseHeadId: income.expenseHeadId ?? null,
+      name: income.name,
+      invoiceNumber: income.invoiceNumber,
+      date: formatDateForInput(income.date),
+      amount: income.amount,
+      description: income.description ?? null,
+      method: method,
+      bankAccountId: income.bankAccountId,
+      mfsId: income.mfsId,
       createdBy: userData?.userId || 0,
     })
-    setEditingExpenseId(expense.expenseId || null)
+    setPaymentMethod(method) // Add this line
+    setEditingExpenseId(income.expenseId || null)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }

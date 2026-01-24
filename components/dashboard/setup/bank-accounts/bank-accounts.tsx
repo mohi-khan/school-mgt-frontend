@@ -478,7 +478,7 @@ const BankAccounts = () => {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bankName">Bank Name*</Label>
+              <Label htmlFor="bankName">Bank Name <span className="text-red-500">*</span></Label>
               <Input
                 id="bankName"
                 name="bankName"
@@ -491,7 +491,7 @@ const BankAccounts = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accountNumber">Account Number*</Label>
+              <Label htmlFor="accountNumber">Account Number <span className="text-red-500">*</span></Label>
               <Input
                 id="accountNumber"
                 name="accountNumber"
@@ -504,7 +504,7 @@ const BankAccounts = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accountName">Account Name*</Label>
+              <Label htmlFor="accountName">Account Name <span className="text-red-500">*</span></Label>
               <Input
                 id="accountName"
                 name="accountName"
@@ -517,7 +517,7 @@ const BankAccounts = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="branch">Branch</Label>
+              <Label htmlFor="branch">Branch <span className="text-red-500">*</span></Label>
               <Input
                 id="branch"
                 name="branch"
@@ -529,7 +529,7 @@ const BankAccounts = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="balance">Balance*</Label>
+              <Label htmlFor="balance">Balance <span className="text-red-500">*</span></Label>
               <Input
                 id="balance"
                 name="balance"
@@ -539,6 +539,7 @@ const BankAccounts = () => {
                 placeholder="Enter balance"
                 required
                 maxLength={50}
+                disabled={isEditMode}
               />
             </div>
           </div>
