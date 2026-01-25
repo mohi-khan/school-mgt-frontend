@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -18,11 +18,7 @@ interface SubjectWiseEntryModeFieldsProps {
   }
   handleSelectChange: (name: string, value: string) => void
   subjectWiseStudents: SubjectWiseStudent[]
-  updateStudentEntry: (
-    index: number,
-    field: keyof SubjectWiseStudent,
-    value: number | null
-  ) => void
+  setSubjectWiseStudents: Dispatch<SetStateAction<SubjectWiseStudent[]>>
   students: any
   sessions: any
   classes: any
@@ -30,6 +26,7 @@ interface SubjectWiseEntryModeFieldsProps {
   examGroups: any
   sectionsByClass: any
   filteredSubjectsByClass: any
+  examResults: any // Add this to check existing results
 }
 
 export const SubjectWiseEntryModeFields: React.FC<
@@ -38,7 +35,7 @@ export const SubjectWiseEntryModeFields: React.FC<
   formData,
   handleSelectChange,
   subjectWiseStudents,
-  updateStudentEntry,
+  setSubjectWiseStudents,
   students = { data: [] },
   sessions = { data: [] },
   classes = { data: [] },
@@ -46,6 +43,7 @@ export const SubjectWiseEntryModeFields: React.FC<
   examGroups = { data: [] },
   sectionsByClass = { data: [] },
   filteredSubjectsByClass = [],
+  examResults = { data: [] },
 }) => {
   // Filter students by selected class and section
   const filteredStudents = (students?.data || [])?.filter((student: any) => {
@@ -54,6 +52,57 @@ export const SubjectWiseEntryModeFields: React.FC<
       student?.studentDetails?.sectionId === formData.sectionId
     )
   })
+
+  // Helper function to check if result already exists in database
+  const getExistingResult = (studentId: number) => {
+    if (
+      !formData.examSubjectId ||
+      !formData.examGroupsId ||
+      !formData.sessionId
+    )
+      return null
+
+    return (examResults?.data || []).find(
+      (result: any) =>
+        result.studentId === studentId &&
+        result.examGroupsId === formData.examGroupsId &&
+        result.examSubjectId === formData.examSubjectId &&
+        result.sessionId === formData.sessionId
+    )
+  }
+
+  // Helper function to get or create marks for a student
+  const getMarksForStudent = (studentId: number): number => {
+    // First check if it exists in database
+    const existingResult = getExistingResult(studentId)
+    if (existingResult) {
+      return existingResult.gainedMarks
+    }
+
+    // Then check in current form data
+    const entry = subjectWiseStudents.find((e) => e.studentId === studentId)
+    return entry ? entry.gainedMarks : 0
+  }
+
+  // Helper function to update marks for a student
+  const handleMarksChange = (studentId: number, marks: number) => {
+    setSubjectWiseStudents((prev) => {
+      const existingIndex = prev.findIndex((e) => e.studentId === studentId)
+
+      if (existingIndex !== -1) {
+        // Update existing entry
+        const updated = [...prev]
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          gainedMarks: marks,
+        }
+        return updated
+      } else {
+        // Add new entry
+        return [...prev, { studentId: studentId, gainedMarks: marks }]
+      }
+    })
+  }
 
   return (
     <>
@@ -205,40 +254,43 @@ export const SubjectWiseEntryModeFields: React.FC<
                   `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''}`.trim() ||
                   'Unnamed student'
 
-                const resultEntry = subjectWiseStudents.find(
-                  (entry) => entry.studentId === studentId
-                )
-                const resultIndex = subjectWiseStudents.findIndex(
-                  (entry) => entry.studentId === studentId
-                )
+                const currentMarks = getMarksForStudent(studentId)
+                const existingResult = getExistingResult(studentId)
+                const isDisabled = !formData.examSubjectId || !!existingResult
 
                 return (
                   <div
                     key={studentId || index}
-                    className="grid grid-cols-12 gap-4 items-center border p-3 rounded-md hover:bg-gray-50"
+                    className={`grid grid-cols-12 gap-4 items-center border p-3 rounded-md ${
+                      existingResult ? 'bg-gray-100' : 'hover:bg-gray-50'
+                    }`}
                   >
                     <div className="col-span-8">
-                      <Label className="font-normal">{studentName}</Label>
+                      <Label className="font-normal">
+                        {studentName}
+                        {existingResult && (
+                          <span className="ml-2 text-xs text-green-600 font-semibold">
+                            (Already Added)
+                          </span>
+                        )}
+                      </Label>
                     </div>
                     <div className="col-span-4">
                       <Input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={resultEntry?.gainedMarks || ''}
+                        value={currentMarks || ''}
                         onChange={(e) => {
                           const value =
                             e.target.value === '' ? 0 : Number(e.target.value)
-                          if (resultIndex !== -1) {
-                            updateStudentEntry(
-                              resultIndex,
-                              'gainedMarks',
-                              value
-                            )
-                          }
+                          handleMarksChange(studentId, value)
                         }}
                         placeholder="0"
-                        disabled={!formData.examSubjectId}
+                        disabled={isDisabled}
+                        className={
+                          existingResult ? 'bg-gray-200 cursor-not-allowed' : ''
+                        }
                       />
                     </div>
                   </div>

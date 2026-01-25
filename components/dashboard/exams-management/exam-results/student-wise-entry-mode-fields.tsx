@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -18,17 +18,14 @@ interface StudentWiseEntryModeFieldsProps {
   }
   handleSelectChange: (name: string, value: string) => void
   studentWiseResults: StudentResultEntry[]
-  updateSubjectEntry: (
-    index: number,
-    field: keyof StudentResultEntry,
-    value: number | null
-  ) => void
+  setStudentWiseResults: Dispatch<SetStateAction<StudentResultEntry[]>>
   students: any
   sessions: any
   classes: any
   sections: any
   examGroups: any
   filteredSubjectsByClass: any
+  examResults: any // Add this to check existing results
 }
 
 export const StudentWiseEntryModeFields: React.FC<
@@ -37,14 +34,62 @@ export const StudentWiseEntryModeFields: React.FC<
   formData,
   handleSelectChange,
   studentWiseResults,
-  updateSubjectEntry,
+  setStudentWiseResults,
   students = { data: [] },
   sessions = { data: [] },
   classes = { data: [] },
   sections = { data: [] },
   examGroups = { data: [] },
   filteredSubjectsByClass = [],
+  examResults = { data: [] },
 }) => {
+  // Helper function to check if result already exists in database
+  const getExistingResult = (subjectId: number) => {
+    if (!formData.studentId || !formData.examGroupsId || !formData.sessionId)
+      return null
+
+    return (examResults?.data || []).find(
+      (result: any) =>
+        result.studentId === formData.studentId &&
+        result.examGroupsId === formData.examGroupsId &&
+        result.examSubjectId === subjectId &&
+        result.sessionId === formData.sessionId
+    )
+  }
+
+  // Helper function to get or create marks for a subject
+  const getMarksForSubject = (subjectId: number): number => {
+    // First check if it exists in database
+    const existingResult = getExistingResult(subjectId)
+    if (existingResult) {
+      return existingResult.gainedMarks
+    }
+
+    // Then check in current form data
+    const entry = studentWiseResults.find((e) => e.examSubjectId === subjectId)
+    return entry ? entry.gainedMarks : 0
+  }
+
+  // Helper function to update marks for a subject
+  const handleMarksChange = (subjectId: number, marks: number) => {
+    setStudentWiseResults((prev) => {
+      const existingIndex = prev.findIndex((e) => e.examSubjectId === subjectId)
+
+      if (existingIndex !== -1) {
+        // Update existing entry
+        const updated = [...prev]
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          gainedMarks: marks,
+        }
+        return updated
+      } else {
+        // Add new entry
+        return [...prev, { examSubjectId: subjectId, gainedMarks: marks }]
+      }
+    })
+  }
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
@@ -199,21 +244,27 @@ export const StudentWiseEntryModeFields: React.FC<
                 <div className="col-span-4">Gained Marks</div>
               </div>
               {filteredSubjectsByClass.map((subject: any, index: number) => {
-                const resultEntry = studentWiseResults.find(
-                  (entry) => entry.examSubjectId === subject.examSubjectId
-                )
-                const resultIndex = studentWiseResults.findIndex(
-                  (entry) => entry.examSubjectId === subject.examSubjectId
-                )
+                const subjectId = subject.examSubjectId
+                const currentMarks = getMarksForSubject(subjectId)
+                const existingResult = getExistingResult(subjectId)
+                const isDisabled =
+                  !formData.studentId || !formData.classId || !!existingResult
 
                 return (
                   <div
-                    key={subject.examSubjectId || index}
-                    className="grid grid-cols-12 gap-4 items-center border p-3 rounded-md hover:bg-gray-50"
+                    key={subjectId || index}
+                    className={`grid grid-cols-12 gap-4 items-center border p-3 rounded-md ${
+                      existingResult ? 'bg-gray-100' : 'hover:bg-gray-50'
+                    }`}
                   >
                     <div className="col-span-8">
                       <Label className="font-normal">
                         {subject?.subjectName || 'Unnamed subject'}
+                        {existingResult && (
+                          <span className="ml-2 text-xs text-green-600 font-semibold">
+                            (Already Added)
+                          </span>
+                        )}
                       </Label>
                     </div>
                     <div className="col-span-4">
@@ -221,20 +272,17 @@ export const StudentWiseEntryModeFields: React.FC<
                         type="number"
                         min="0"
                         step="0.01"
-                        value={resultEntry?.gainedMarks || ''}
+                        value={currentMarks || ''}
                         onChange={(e) => {
                           const value =
                             e.target.value === '' ? 0 : Number(e.target.value)
-                          if (resultIndex !== -1) {
-                            updateSubjectEntry(
-                              resultIndex,
-                              'gainedMarks',
-                              value
-                            )
-                          }
+                          handleMarksChange(subjectId, value)
                         }}
                         placeholder="0"
-                        disabled={!formData.studentId || !formData.classId}
+                        disabled={isDisabled}
+                        className={
+                          existingResult ? 'bg-gray-200 cursor-not-allowed' : ''
+                        }
                       />
                     </div>
                   </div>
