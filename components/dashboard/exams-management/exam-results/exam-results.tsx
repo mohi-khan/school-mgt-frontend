@@ -1373,15 +1373,14 @@ const ExamResults = (): ReactElement => {
               formData={formData}
               handleSelectChange={handleSelectChange}
               studentWiseResults={studentWiseResults}
-              addSubjectEntry={addSubjectEntry}
-              removeSubjectEntry={removeSubjectEntry}
-              updateSubjectEntry={updateSubjectEntry}
+              setStudentWiseResults={setStudentWiseResults} // ← Changed
               students={students}
               sessions={sessions}
               classes={classes}
               sections={sections}
               examGroups={examGroups}
               filteredSubjectsByClass={filteredSubjectsByClass}
+              examResults={examResults}
             />
           )}
 
@@ -1391,9 +1390,7 @@ const ExamResults = (): ReactElement => {
               formData={formData}
               handleSelectChange={handleSelectChange}
               subjectWiseStudents={subjectWiseStudents}
-              addStudentEntry={addStudentEntry}
-              removeStudentEntry={removeStudentEntry}
-              updateStudentEntry={updateStudentEntry}
+              setSubjectWiseStudents={setSubjectWiseStudents} // ← Changed
               students={students}
               sessions={sessions}
               classes={classes}
@@ -1401,6 +1398,7 @@ const ExamResults = (): ReactElement => {
               examGroups={examGroups}
               sectionsByClass={sectionsByClass}
               filteredSubjectsByClass={filteredSubjectsByClass}
+              examResults={examResults}
             />
           )}
 
