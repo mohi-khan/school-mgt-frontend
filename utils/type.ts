@@ -53,6 +53,18 @@ export const sectionsSchema = z.object({
 })
 export type GetSectionsType = z.infer<typeof sectionsSchema>
 
+export const openingBalanceSchema = z.object({
+  openingBalanceId: z.number().int().optional(),
+  type: z.enum(['cash', 'bank', 'mfs']),
+  amount: z.number().positive('Amount must be greater than 0'),
+  createdBy: z.number().int(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().optional().nullable(),
+  updatedAt: z.date().optional().nullable(),
+})
+export type CreateOpeningBalancesType = z.infer<typeof openingBalanceSchema>
+export type GetOpeningBalancesType = z.infer<typeof openingBalanceSchema>
+
 export const bankAccountSchema = z.object({
   bankAccountId: z.number().int().optional(),
   bankName: z.string().min(1, 'Bank name is required').max(100),

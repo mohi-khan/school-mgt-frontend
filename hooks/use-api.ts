@@ -19,6 +19,7 @@ import {
   createIncome,
   createIncomeHead,
   createMfs,
+  createOpeningBalance,
   createStudentWithFees,
   deleteBankAccount,
   deleteBankMfsCash,
@@ -67,6 +68,7 @@ import {
   getAllIncomeHeads,
   getAllIncomes,
   getAllMfss,
+  getAllOpeningBalances,
   getAllSections,
   getAllSectionsByClassId,
   getAllSessions,
@@ -103,6 +105,7 @@ import {
   CreateIncomeHeadsType,
   CreateIncomesType,
   CreateMfssType,
+  CreateOpeningBalancesType,
   CreateStudentWithFeesType,
   GetClassType,
   GetExamGroupType,
@@ -289,6 +292,59 @@ export const useGetSessions = () => {
     enabled: !!token,
     select: (data) => data,
   })
+}
+
+//opening balance
+export const useGetOpeningBalances = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['openingBalances'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllOpeningBalances(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddOpeningBalance = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateOpeningBalancesType) => {
+      return createOpeningBalance(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('opening balance added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['openingBalances'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding opening balance:', error)
+    },
+  })
+
+  return mutation
 }
 
 //bank accounts
