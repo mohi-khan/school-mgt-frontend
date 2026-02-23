@@ -51,6 +51,8 @@ import {
   GetPaymentSummaryType,
   GetIncomeSummaryType,
   GetExpenseSummaryType,
+  GetOpeningBalancesType,
+  CreateOpeningBalancesType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -296,6 +298,30 @@ export async function getAllSessions(token: string) {
   return fetchApi<GetSessionsType[]>({
     url: 'api/sessions/getall',
     method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//opening balance APIs
+export async function getAllOpeningBalances(token: string) {
+  return fetchApi<GetOpeningBalancesType[]>({
+    url: 'api/opening-balances/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createOpeningBalance(data: CreateOpeningBalancesType, token: string) {
+  return fetchApi<CreateOpeningBalancesType>({
+    url: 'api/opening-balances/create',
+    method: 'POST',
+    body: data,
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
