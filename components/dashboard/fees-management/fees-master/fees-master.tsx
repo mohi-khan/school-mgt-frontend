@@ -28,7 +28,15 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, DollarSign, Edit2, Trash2 } from 'lucide-react'
+import {
+  Search,
+  DollarSign,
+  Edit2,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+} from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type { CreateFeesMasterType, GetFeesMasterType } from '@/utils/type'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
@@ -72,10 +80,11 @@ const FeesMaster = () => {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [sortColumn, setSortColumn] =
-    useState<keyof GetFeesMasterType>('dueDate')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [searchTerm, setSearchTerm] = useState('')
+
+  const [expandedParentGroups, setExpandedParentGroups] = useState<Set<string>>(
+    new Set()
+  )
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -87,6 +96,27 @@ const FeesMaster = () => {
   const [deletingFeesMasterId, setDeletingFeesMasterId] = useState<
     number | null
   >(null)
+
+  const [isCopyPopupOpen, setIsCopyPopupOpen] = useState(false)
+  const [selectedGroupForCopy, setSelectedGroupForCopy] = useState<{
+    feesGroupId: number
+    feesGroupName: string
+    year: number
+  } | null>(null)
+  const [copySubjects, setCopySubjects] = useState<
+    Array<{
+      feesGroupId: number | null
+      feesGroupName: string
+      feesTypeId: number | null
+      feesTypeName: string
+      dueDate: string
+      amount: number
+      fineType: 'none' | 'percentage' | 'fixed amount'
+      percentageFineAmount: number | null
+      fixedFineAmount: number | null
+      perDay: boolean
+    }>
+  >([])
 
   const [formData, setFormData] = useState<CreateFeesMasterType>({
     feesGroupId: null,
@@ -167,61 +197,78 @@ const FeesMaster = () => {
     reset: resetForm,
   })
 
-  const handleSort = (column: keyof GetFeesMasterType) => {
-    if (column === sortColumn) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortDirection('asc')
-    }
-  }
-
   const filteredFeesMasters = useMemo(() => {
     if (!feesMasters?.data) return []
     return feesMasters.data.filter((fees: GetFeesMasterType) => {
       const searchLower = searchTerm.toLowerCase()
       return (
-        fees.amount?.toString().includes(searchLower) ||
+        fees.feesGroupName?.toLowerCase().includes(searchLower) ||
+        fees.feesTypeName?.toLowerCase().includes(searchLower) ||
         fees.fineType?.toLowerCase().includes(searchLower) ||
-        fees.dueDate?.toString().includes(searchLower)
+        fees.amount?.toString().includes(searchLower)
       )
     })
   }, [feesMasters?.data, searchTerm])
 
-  const sortedFeesMasters = useMemo(() => {
-    return [...filteredFeesMasters].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ''
-      const bValue = b[sortColumn] ?? ''
+  // Two-level grouping: feesGroup + year
+  const hierarchicalGroups = useMemo(() => {
+    const parentGroups = new Map<
+      string,
+      {
+        feesGroupId: number
+        feesGroupName: string
+        year: number
+        fees: GetFeesMasterType[]
+        latestCreatedAt: Date
+      }
+    >()
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
-      }
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-      return 0
+    const sortedFees = [...filteredFeesMasters].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return dateB - dateA
     })
-  }, [filteredFeesMasters, sortColumn, sortDirection])
 
-  const paginatedFeesMasters = useMemo(() => {
+    sortedFees.forEach((fee) => {
+      const year = fee.dueDate ? new Date(fee.dueDate).getFullYear() : 0
+      const parentKey = `${fee.feesGroupId || 0}-${year}`
+
+      if (!parentGroups.has(parentKey)) {
+        parentGroups.set(parentKey, {
+          feesGroupId: fee.feesGroupId || 0,
+          feesGroupName: fee.feesGroupName || 'Unassigned',
+          year,
+          fees: [],
+          latestCreatedAt: fee.createdAt
+            ? new Date(fee.createdAt)
+            : new Date(0),
+        })
+      }
+
+      const group = parentGroups.get(parentKey)!
+      group.fees.push(fee)
+
+      if (fee.createdAt) {
+        const d = new Date(fee.createdAt)
+        if (d > group.latestCreatedAt) group.latestCreatedAt = d
+      }
+    })
+
+    return Array.from(parentGroups.values()).sort(
+      (a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime()
+    )
+  }, [filteredFeesMasters])
+
+  const paginatedGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedFeesMasters.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedFeesMasters, currentPage, itemsPerPage])
+    return hierarchicalGroups.slice(startIndex, startIndex + itemsPerPage)
+  }, [hierarchicalGroups, currentPage, itemsPerPage])
 
-  const totalPages = Math.ceil(sortedFeesMasters.length / itemsPerPage)
+  const totalPages = Math.ceil(hierarchicalGroups.length / itemsPerPage)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    if (!formData.amount || formData.amount === 0) {
-      setError('Please enter amount')
-      return
-    }
 
     if (
       formData.fineType === 'percentage' &&
@@ -241,10 +288,7 @@ const FeesMaster = () => {
 
     try {
       if (isEditMode && editingFeesMasterId) {
-        updateMutation.mutate({
-          id: editingFeesMasterId,
-          data: formData,
-        })
+        updateMutation.mutate({ id: editingFeesMasterId, data: formData })
       } else {
         addMutation.mutate(formData)
       }
@@ -262,7 +306,6 @@ const FeesMaster = () => {
 
   useEffect(() => {
     let calculatedFineAmount = 0
-
     if (formData.fineType === 'percentage' && formData.percentageFineAmount) {
       calculatedFineAmount =
         formData.amount +
@@ -272,14 +315,10 @@ const FeesMaster = () => {
       formData.fixedFineAmount
     ) {
       calculatedFineAmount = formData.amount + formData.fixedFineAmount
-    } else if (formData.fineType === 'none') {
+    } else {
       calculatedFineAmount = formData.amount
     }
-
-    setFormData((prev) => ({
-      ...prev,
-      fineAmount: calculatedFineAmount,
-    }))
+    setFormData((prev) => ({ ...prev, fineAmount: calculatedFineAmount }))
   }, [
     formData.amount,
     formData.fineType,
@@ -306,6 +345,106 @@ const FeesMaster = () => {
   const handleDeleteClick = (feesMasterId: number) => {
     setDeletingFeesMasterId(feesMasterId)
     setIsDeleteDialogOpen(true)
+  }
+
+  const toggleParentGroupExpanded = (groupKey: string) => {
+    setExpandedParentGroups((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey)
+      } else {
+        newSet.add(groupKey)
+      }
+      return newSet
+    })
+  }
+
+  const handleCopyClick = (group: (typeof hierarchicalGroups)[number]) => {
+    const targetYear = group.year + 1
+    const subjects = group.fees.map((fee) => {
+      // Keep same month/day, change year to next year of the source data
+      const originalDate = new Date(fee.dueDate)
+      const newDate = new Date(originalDate)
+      newDate.setFullYear(targetYear)
+      const newDateStr = newDate.toISOString().split('T')[0]
+
+      return {
+        feesGroupId: fee.feesGroupId ?? null,
+        feesGroupName: fee.feesGroupName || 'Unassigned',
+        feesTypeId: fee.feesTypeId ?? null,
+        feesTypeName: fee.feesTypeName || '',
+        dueDate: newDateStr,
+        amount: fee.amount,
+        fineType: fee.fineType as 'none' | 'percentage' | 'fixed amount',
+        percentageFineAmount: fee.percentageFineAmount ?? null,
+        fixedFineAmount: fee.fixedFineAmount ?? null,
+        perDay: fee.perDay ?? false,
+      }
+    })
+
+    setSelectedGroupForCopy({
+      feesGroupId: group.feesGroupId,
+      feesGroupName: group.feesGroupName,
+      year: targetYear,
+    })
+    setCopySubjects(subjects)
+    setIsCopyPopupOpen(true)
+  }
+
+  const handleCopyFieldChange = (
+    index: number,
+    field: string,
+    value: string | number | boolean
+  ) => {
+    setCopySubjects((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item
+        const updated = { ...item, [field]: value }
+        // Clear fine amounts when fineType changes
+        if (field === 'fineType') {
+          updated.percentageFineAmount =
+            value === 'percentage' ? item.percentageFineAmount : null
+          updated.fixedFineAmount =
+            value === 'fixed amount' ? item.fixedFineAmount : null
+        }
+        return updated
+      })
+    )
+  }
+
+  const handleCopySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    try {
+      const promises = copySubjects.map((subject) => {
+        const data: CreateFeesMasterType = {
+          feesGroupId: subject.feesGroupId,
+          feesTypeId: subject.feesTypeId,
+          dueDate: subject.dueDate,
+          amount: subject.amount,
+          fineType: subject.fineType,
+          percentageFineAmount: subject.percentageFineAmount,
+          fixedFineAmount: subject.fixedFineAmount,
+          perDay: subject.perDay,
+        }
+        return addMutation.mutateAsync(data)
+      })
+      await Promise.all(promises)
+      setIsCopyPopupOpen(false)
+      setSelectedGroupForCopy(null)
+      setCopySubjects([])
+    } catch (err) {
+      setError('Failed to copy fees master entries')
+      console.error(err)
+    }
+  }
+
+  const resetCopyForm = () => {
+    setIsCopyPopupOpen(false)
+    setSelectedGroupForCopy(null)
+    setCopySubjects([])
+    setError(null)
   }
 
   return (
@@ -340,113 +479,153 @@ const FeesMaster = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader className="bg-amber-100">
-            <TableRow>
-              <TableHead
-                onClick={() => handleSort('feesGroupName')}
-                className="cursor-pointer"
+      {/* Hierarchical Display */}
+      <div className="space-y-4">
+        {!feesMasters?.data ? (
+          <div className="text-center py-8 text-gray-600">
+            Loading fees masters...
+          </div>
+        ) : feesMasters.data.length === 0 ? (
+          <div className="text-center py-8 text-gray-600">
+            No fees masters found
+          </div>
+        ) : paginatedGroups.length === 0 ? (
+          <div className="text-center py-8 text-gray-600">
+            No fees masters match your search
+          </div>
+        ) : (
+          paginatedGroups.map((group) => {
+            const parentKey = `${group.feesGroupId}-${group.year}`
+            const isExpanded = expandedParentGroups.has(parentKey)
+
+            return (
+              <div
+                key={parentKey}
+                className="rounded-lg border-2 border-amber-300 overflow-hidden shadow-md"
               >
-                Fees Group <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('feesTypeName')}
-                className="cursor-pointer"
-              >
-                Fees Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('fineType')}
-                className="cursor-pointer"
-              >
-                Fine Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('dueDate')}
-                className="cursor-pointer"
-              >
-                Due Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('amount')}
-                className="cursor-pointer"
-              >
-                Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('amount')}
-                className="cursor-pointer"
-              >
-                Per Day <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!feesMasters?.data ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Loading fees masters...
-                </TableCell>
-              </TableRow>
-            ) : feesMasters.data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No fees masters found
-                </TableCell>
-              </TableRow>
-            ) : paginatedFeesMasters.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No fees masters match your search
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedFeesMasters.map((fees) => (
-                <TableRow key={fees.feesMasterId}>
-                  <TableCell className="capitalize">
-                    {fees.feesGroupName}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {fees.feesTypeName}
-                  </TableCell>
-                  <TableCell className="capitalize">{fees.fineType}</TableCell>
-                  <TableCell>{formatDate(new Date(fees.dueDate))}</TableCell>
-                  <TableCell>{formatNumber(fees.amount.toFixed(2))}</TableCell>
-                  <TableCell>{fees.perDay ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-start gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(fees)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() =>
-                          handleDeleteClick(fees.feesMasterId || 0)
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                {/* Group Header */}
+                <div
+                  className="bg-gradient-to-r from-amber-100 to-amber-50 p-4 flex items-center gap-4 cursor-pointer"
+                  onClick={() => toggleParentGroupExpanded(parentKey)}
+                >
+                  <button className="p-1 hover:bg-amber-200 rounded-md transition-colors">
+                    {isExpanded ? (
+                      <ChevronUp className="h-6 w-6 text-amber-700" />
+                    ) : (
+                      <ChevronDown className="h-6 w-6 text-amber-700" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-900 text-lg">
+                      {group.feesGroupName}{' '}
+                      <span className="text-amber-700">({group.year})</span>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    <div className="text-sm text-gray-700 mt-1 flex gap-4">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="text-gray-600">Total Entries:</span>
+                        <span className="font-medium text-amber-700">
+                          {group.fees.length}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCopyClick(group)
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy
+                  </Button>
+                </div>
+
+                {/* Fees Table */}
+                {isExpanded && (
+                  <div className="bg-white border-t border-amber-200 p-3">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="text-gray-700 font-semibold">
+                            Fees Type
+                          </TableHead>
+                          <TableHead className="text-gray-700 font-semibold">
+                            Fine Type
+                          </TableHead>
+                          <TableHead className="text-gray-700 font-semibold">
+                            Due Date
+                          </TableHead>
+                          <TableHead className="text-gray-700 font-semibold">
+                            Amount
+                          </TableHead>
+                          <TableHead className="text-gray-700 font-semibold">
+                            Per Day
+                          </TableHead>
+                          <TableHead className="text-gray-700 font-semibold text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.fees.map((fee) => (
+                          <TableRow
+                            key={fee.feesMasterId}
+                            className="hover:bg-amber-50"
+                          >
+                            <TableCell className="capitalize font-medium text-gray-800">
+                              {fee.feesTypeName || '-'}
+                            </TableCell>
+                            <TableCell className="capitalize text-gray-700">
+                              {fee.fineType}
+                            </TableCell>
+                            <TableCell className="text-gray-700">
+                              {formatDate(new Date(fee.dueDate))}
+                            </TableCell>
+                            <TableCell className="font-semibold text-gray-800">
+                              {formatNumber(fee.amount.toFixed(2))}
+                            </TableCell>
+                            <TableCell className="text-gray-700">
+                              {fee.perDay ? 'Yes' : 'No'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                  onClick={() => handleEditClick(fee)}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() =>
+                                    handleDeleteClick(fee.feesMasterId || 0)
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
 
       {/* Pagination */}
-      {sortedFeesMasters.length > 0 && (
+      {hierarchicalGroups.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -460,7 +639,6 @@ const FeesMaster = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -489,7 +667,6 @@ const FeesMaster = () => {
                 }
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -507,7 +684,7 @@ const FeesMaster = () => {
         </div>
       )}
 
-      {/* Fees Master Popup */}
+      {/* Add/Edit Fees Master Popup */}
       <Popup
         isOpen={isPopupOpen}
         onClose={resetForm}
@@ -629,7 +806,6 @@ const FeesMaster = () => {
               </Select>
             </div>
 
-            {/* Percentage Fine Amount */}
             {formData.fineType === 'percentage' && (
               <div className="space-y-2">
                 <Label htmlFor="percentageFineAmount">
@@ -647,7 +823,6 @@ const FeesMaster = () => {
               </div>
             )}
 
-            {/* Fixed Fine Amount */}
             {formData.fineType === 'fixed amount' && (
               <div className="space-y-2">
                 <Label htmlFor="fixedFineAmount">Fixed Fine Amount</Label>
@@ -734,6 +909,196 @@ const FeesMaster = () => {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Copy Fees Popup */}
+      <Popup
+        isOpen={isCopyPopupOpen}
+        onClose={resetCopyForm}
+        title={`Copy Fees from ${selectedGroupForCopy?.feesGroupName} (${selectedGroupForCopy ? selectedGroupForCopy.year - 1 : ''}) → ${selectedGroupForCopy?.year}`}
+        size="sm:max-w-5xl"
+      >
+        <form onSubmit={handleCopySubmit} className="space-y-4 py-4">
+          <p className="text-sm text-gray-600 pb-2 border-b">
+            Copying{' '}
+            <span className="font-semibold text-amber-700">
+              {copySubjects.length}
+            </span>{' '}
+            entries to year{' '}
+            <span className="font-semibold text-amber-700">
+              {selectedGroupForCopy?.year}
+            </span>
+            . Due dates keep the same month &amp; day with the year updated to{' '}
+            {selectedGroupForCopy?.year}. You can edit any field below before
+            saving.
+          </p>
+
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            {copySubjects.map((subject, index) => (
+              <div
+                key={index}
+                className="p-4 border border-gray-200 rounded-lg space-y-3 bg-gray-50"
+              >
+                <div className="font-semibold text-gray-800 flex items-center gap-2">
+                  <span className="bg-amber-500 text-white px-2 py-1 rounded text-xs">
+                    {index + 1}
+                  </span>
+                  {subject.feesGroupName}
+                  {subject.feesTypeName && (
+                    <span className="text-sm font-normal text-gray-600">
+                      — {subject.feesTypeName}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {/* Due Date */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      Due Date <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="date"
+                      value={subject.dueDate}
+                      onChange={(e) =>
+                        handleCopyFieldChange(index, 'dueDate', e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Amount */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      Amount <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={subject.amount}
+                      onChange={(e) =>
+                        handleCopyFieldChange(
+                          index,
+                          'amount',
+                          Number(e.target.value)
+                        )
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Fine Type */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Fine Type</Label>
+                    <Select
+                      value={subject.fineType}
+                      onValueChange={(value) =>
+                        handleCopyFieldChange(index, 'fineType', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed amount">
+                          Fixed Amount
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Percentage Fine Amount */}
+                  {subject.fineType === 'percentage' && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Percentage Fine Amount</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={subject.percentageFineAmount ?? ''}
+                        onChange={(e) =>
+                          handleCopyFieldChange(
+                            index,
+                            'percentageFineAmount',
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Fixed Fine Amount */}
+                  {subject.fineType === 'fixed amount' && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Fixed Fine Amount</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={subject.fixedFineAmount ?? ''}
+                        onChange={(e) =>
+                          handleCopyFieldChange(
+                            index,
+                            'fixedFineAmount',
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Per Day */}
+                  <div className="space-y-1 flex items-end">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="checkbox"
+                        checked={subject.perDay}
+                        onChange={(e) =>
+                          handleCopyFieldChange(
+                            index,
+                            'perDay',
+                            e.target.checked
+                          )
+                        }
+                        className="w-4 h-4"
+                      />
+                      <Label className="mb-0 text-xs">Per Day</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-4 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetCopyForm}
+              className="hover:bg-gray-100 bg-transparent"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={addMutation.isPending}
+              className="bg-amber-500 hover:bg-amber-600 text-black"
+            >
+              {addMutation.isPending
+                ? 'Copying...'
+                : `Copy ${copySubjects.length} Entries`}
+            </Button>
+          </div>
+        </form>
+      </Popup>
     </div>
   )
 }
