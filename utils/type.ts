@@ -199,6 +199,12 @@ export const studentFeesSchema = z.object({
   studentFeesId: z.number().optional(), // auto-increment
   studentId: z.number().positive().nullable(),
   feesMasterId: z.number().positive().nullable(),
+  feesTypeId: z.number().positive().nullable().optional(),
+  feesTypeName: z.string().optional(),
+  amount: z.number().positive().optional(),
+  dueDate: z.string(),
+  status: z.enum(['Paid', 'Unpaid', 'Partial']).optional(),
+  percentageFineAmount: z.number().optional().nullable(),
 })
 
 export const studnentWithFeesSchema = z.object({

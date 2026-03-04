@@ -245,17 +245,10 @@ const CreateStudent = () => {
       return setError('Please enter last name')
     if (!studentDetails.admissionNo || studentDetails.admissionNo <= 0)
       return setError('Please enter valid admission number')
-    if (!studentDetails.email.trim()) return setError('Please enter email')
     if (!studentDetails.phoneNumber.trim())
       return setError('Please enter phone number')
     if (!studentDetails.fatherPhone.trim())
       return setError('Please enter father phone')
-    if (!studentDetails.fatherEmail.trim())
-      return setError('Please enter father email')
-    if (!studentDetails.motherPhone.trim())
-      return setError('Please enter mother phone')
-    if (!studentDetails.motherEmail.trim())
-      return setError('Please enter mother email')
 
     // Prepare student fees
     const studentFees = selectedFeesMasters.map((feesMasterId) => ({
@@ -546,9 +539,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.rollNo">
-                Roll Number
-              </Label>
+              <Label htmlFor="studentDetails.rollNo">Roll Number</Label>
               <Input
                 id="studentDetails.rollNo"
                 name="studentDetails.rollNo"
@@ -559,7 +550,9 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="classId">Class <span className="text-red-500">*</span></Label>
+              <Label htmlFor="classId">
+                Class <span className="text-red-500">*</span>
+              </Label>
               <CustomCombobox
                 items={
                   classes?.data?.map((cls) => ({
@@ -587,7 +580,9 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sectionId">Section <span className="text-red-500">*</span></Label>
+              <Label htmlFor="sectionId">
+                Section <span className="text-red-500">*</span>
+              </Label>
               <CustomCombobox
                 items={
                   sections?.data?.map((section) => ({
@@ -617,7 +612,9 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sessionId">Session <span className="text-red-500">*</span></Label>
+              <Label htmlFor="sessionId">
+                Session <span className="text-red-500">*</span>
+              </Label>
               <CustomCombobox
                 items={
                   sessions?.data?.map((session) => ({
@@ -664,24 +661,27 @@ const CreateStudent = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.dateOfBirth">Date of Birth <span className="text-red-500">*</span></Label>
+              <Label htmlFor="studentDetails.dateOfBirth">
+                Date of Birth <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.dateOfBirth"
                 name="studentDetails.dateOfBirth"
                 type="date"
                 value={formData.studentDetails.dateOfBirth}
                 onChange={handleInputChange}
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.email">
-                Email
+              <Label htmlFor="studentDetails.admissionDate">
+                Admission Date <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="studentDetails.email"
-                name="studentDetails.email"
-                type="email"
-                value={formData.studentDetails.email}
+                id="studentDetails.admissionDate"
+                name="studentDetails.admissionDate"
+                type="date"
+                value={formData.studentDetails.admissionDate}
                 onChange={handleInputChange}
                 required
               />
@@ -700,7 +700,19 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.religion">Religion <span className="text-red-500">*</span></Label>
+              <Label htmlFor="studentDetails.email">Email</Label>
+              <Input
+                id="studentDetails.email"
+                name="studentDetails.email"
+                type="email"
+                value={formData.studentDetails.email}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.religion">
+                Religion <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.religion"
                 name="studentDetails.religion"
@@ -755,19 +767,7 @@ const CreateStudent = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.admissionDate">
-                Admission Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentDetails.admissionDate"
-                name="studentDetails.admissionDate"
-                type="date"
-                value={formData.studentDetails.admissionDate}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.address">Address <span className="text-red-500">*</span></Label>
+              <Label htmlFor="studentDetails.address">Address</Label>
               <Input
                 id="studentDetails.address"
                 name="studentDetails.address"
@@ -801,24 +801,14 @@ const CreateStudent = () => {
           <h3 className="text-md font-semibold mb-4">Father Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.fatherName">Father Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="studentDetails.fatherName">
+                Father Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.fatherName"
                 name="studentDetails.fatherName"
                 type="text"
                 value={formData.studentDetails.fatherName || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.fatherEmail">
-                Father Email <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentDetails.fatherEmail"
-                name="studentDetails.fatherEmail"
-                type="email"
-                value={formData.studentDetails.fatherEmail}
                 onChange={handleInputChange}
                 required
               />
@@ -834,6 +824,16 @@ const CreateStudent = () => {
                 value={formData.studentDetails.fatherPhone}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.fatherEmail">Father Email</Label>
+              <Input
+                id="studentDetails.fatherEmail"
+                name="studentDetails.fatherEmail"
+                type="email"
+                value={formData.studentDetails.fatherEmail}
+                onChange={handleInputChange}
               />
             </div>
             <div className="space-y-2">
@@ -873,39 +873,36 @@ const CreateStudent = () => {
           <h3 className="text-md font-semibold mb-4">Mother Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherName">Mother Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="studentDetails.motherName">
+                Mother Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.motherName"
                 name="studentDetails.motherName"
                 type="text"
                 value={formData.studentDetails.motherName || ''}
                 onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherEmail">
-                Mother Email <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentDetails.motherEmail"
-                name="studentDetails.motherEmail"
-                type="email"
-                value={formData.studentDetails.motherEmail}
-                onChange={handleInputChange}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherPhone">
-                Mother Phone <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="studentDetails.motherPhone">Mother Phone</Label>
               <Input
                 id="studentDetails.motherPhone"
                 name="studentDetails.motherPhone"
                 type="tel"
                 value={formData.studentDetails.motherPhone}
                 onChange={handleInputChange}
-                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.motherEmail">Mother Email</Label>
+              <Input
+                id="studentDetails.motherEmail"
+                name="studentDetails.motherEmail"
+                type="email"
+                value={formData.studentDetails.motherEmail}
+                onChange={handleInputChange}
               />
             </div>
             <div className="space-y-2">

@@ -53,7 +53,7 @@ const EditStudent = () => {
   const { data: student, isLoading: studentLoading } = useGetStudentById(
     Number(studentId)
   )
-  console.log("🚀 ~ EditStudent ~ student:", student)
+  console.log('🚀 ~ EditStudent ~ student:', student)
   const { data: classes } = useGetClasses()
   const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
@@ -111,6 +111,8 @@ const EditStudent = () => {
   useEffect(() => {
     if (student?.data) {
       const studentData = student.data
+      const genderValue =
+        studentData.studentDetails.gender?.toLowerCase() || 'male'
       const populatedData = {
         studentDetails: {
           ...studentData.studentDetails,
@@ -124,12 +126,17 @@ const EditStudent = () => {
                 .toISOString()
                 .split('T')[0]
             : new Date().toISOString().split('T')[0],
+          // Add these two lines:
+          gender: (genderValue === 'female' ? 'female' : 'male') as
+            | 'male'
+            | 'female',
+          bloodGroup: studentData.studentDetails.bloodGroup || null,
         },
         studentFees: studentData.studentFees || [],
       }
 
       setFormData(populatedData)
-      console.log("🚀 ~ EditStudent ~ populatedData:", populatedData)
+      console.log('🚀 ~ EditStudent ~ populatedData:', populatedData)
       setInitialFormData(populatedData)
 
       // Set selected fees masters
@@ -259,19 +266,10 @@ const EditStudent = () => {
       return setError('Please enter last name')
     if (!studentDetails.admissionNo || studentDetails.admissionNo <= 0)
       return setError('Please enter valid admission number')
-    if (!studentDetails.rollNo || studentDetails.rollNo <= 0)
-      return setError('Please enter valid roll number')
-    if (!studentDetails.email.trim()) return setError('Please enter email')
     if (!studentDetails.phoneNumber.trim())
       return setError('Please enter phone number')
     if (!studentDetails.fatherPhone.trim())
       return setError('Please enter father phone')
-    if (!studentDetails.fatherEmail.trim())
-      return setError('Please enter father email')
-    if (!studentDetails.motherPhone.trim())
-      return setError('Please enter mother phone')
-    if (!studentDetails.motherEmail.trim())
-      return setError('Please enter mother email')
 
     // Prepare student fees
     const studentFees = selectedFeesMasters.map((feesMasterId) => ({
@@ -296,7 +294,7 @@ const EditStudent = () => {
       studentDetails: studentDetailsPayload,
       studentFees: studentFees,
     }
-    console.log("🚀 ~ handleSubmit ~ payloadData2222222:", payloadData)
+    console.log('🚀 ~ handleSubmit ~ payloadData2222222:', payloadData)
 
     form.append('studentDetails', JSON.stringify(studentDetailsPayload))
     form.append('studentFees', JSON.stringify(studentFees))
@@ -332,8 +330,8 @@ const EditStudent = () => {
         id: Number(studentId),
         data: form,
       })
-      console.log("🚀 ~ handleSubmit ~ form:", form)
-      console.log("🚀 ~ handleSubmit ~ payloadData:", payloadData)
+      console.log('🚀 ~ handleSubmit ~ form:', form)
+      console.log('🚀 ~ handleSubmit ~ payloadData:', payloadData)
       console.log('✅ Student updated successfully!')
       toast({
         title: 'Success!',
@@ -444,16 +442,13 @@ const EditStudent = () => {
             </div>
             {/* Roll Number */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.rollNo">
-                Roll Number <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="studentDetails.rollNo">Roll Number</Label>
               <Input
                 id="studentDetails.rollNo"
                 name="studentDetails.rollNo"
                 type="number"
                 value={formData.studentDetails.rollNo || ''}
                 onChange={handleInputChange}
-                required
               />
             </div>
             {/* Class */}
@@ -554,6 +549,7 @@ const EditStudent = () => {
                 Gender <span className="text-red-500">*</span>
               </Label>
               <Select
+                key={`gender-${formData.studentDetails.gender}`}
                 value={formData.studentDetails.gender}
                 onValueChange={(value) => handleSelectChange('gender', value)}
               >
@@ -568,25 +564,28 @@ const EditStudent = () => {
             </div>
             {/* Date of Birth */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.dateOfBirth">Date of Birth</Label>
+              <Label htmlFor="studentDetails.dateOfBirth">
+                Date of Birth <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.dateOfBirth"
                 name="studentDetails.dateOfBirth"
                 type="date"
                 value={formData.studentDetails.dateOfBirth}
                 onChange={handleInputChange}
+                required
               />
             </div>
-            {/* Email */}
+            {/* Admission Date */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.email">
-                Email <span className="text-red-500">*</span>
+              <Label htmlFor="studentDetails.admissionDate">
+                Admission Date
               </Label>
               <Input
-                id="studentDetails.email"
-                name="studentDetails.email"
-                type="email"
-                value={formData.studentDetails.email}
+                id="studentDetails.admissionDate"
+                name="studentDetails.admissionDate"
+                type="date"
+                value={formData.studentDetails.admissionDate}
                 onChange={handleInputChange}
                 required
               />
@@ -605,6 +604,17 @@ const EditStudent = () => {
                 required
               />
             </div>
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.email">Email</Label>
+              <Input
+                id="studentDetails.email"
+                name="studentDetails.email"
+                type="email"
+                value={formData.studentDetails.email}
+                onChange={handleInputChange}
+              />
+            </div>
             {/* Religion */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.religion">Religion</Label>
@@ -620,6 +630,7 @@ const EditStudent = () => {
             <div className="space-y-2">
               <Label htmlFor="bloodGroup">Blood Group</Label>
               <Select
+                key={`bloodGroup-${formData.studentDetails.bloodGroup}`}
                 value={formData.studentDetails.bloodGroup || ''}
                 onValueChange={(value) =>
                   handleSelectChange('bloodGroup', value)
@@ -661,19 +672,6 @@ const EditStudent = () => {
                 type="number"
                 step="0.1"
                 value={formData.studentDetails.weight || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-            {/* Admission Date */}
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.admissionDate">
-                Admission Date
-              </Label>
-              <Input
-                id="studentDetails.admissionDate"
-                name="studentDetails.admissionDate"
-                type="date"
-                value={formData.studentDetails.admissionDate}
                 onChange={handleInputChange}
               />
             </div>
@@ -722,25 +720,14 @@ const EditStudent = () => {
           <div className="grid gap-4 md:grid-cols-2">
             {/* Father Name */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.fatherName">Father Name</Label>
+              <Label htmlFor="studentDetails.fatherName">
+                Father Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.fatherName"
                 name="studentDetails.fatherName"
                 type="text"
                 value={formData.studentDetails.fatherName || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-            {/* Father Email */}
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.fatherEmail">
-                Father Email <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentDetails.fatherEmail"
-                name="studentDetails.fatherEmail"
-                type="email"
-                value={formData.studentDetails.fatherEmail}
                 onChange={handleInputChange}
                 required
               />
@@ -757,6 +744,17 @@ const EditStudent = () => {
                 value={formData.studentDetails.fatherPhone}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+            {/* Father Email */}
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.fatherEmail">Father Email</Label>
+              <Input
+                id="studentDetails.fatherEmail"
+                name="studentDetails.fatherEmail"
+                type="email"
+                value={formData.studentDetails.fatherEmail}
+                onChange={handleInputChange}
               />
             </div>
             {/* Father Occupation */}
@@ -806,41 +804,38 @@ const EditStudent = () => {
           <div className="grid gap-4 md:grid-cols-2">
             {/* Mother Name */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherName">Mother Name</Label>
+              <Label htmlFor="studentDetails.motherName">
+                Mother Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="studentDetails.motherName"
                 name="studentDetails.motherName"
                 type="text"
                 value={formData.studentDetails.motherName || ''}
                 onChange={handleInputChange}
-              />
-            </div>
-            {/* Mother Email */}
-            <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherEmail">
-                Mother Email <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="studentDetails.motherEmail"
-                name="studentDetails.motherEmail"
-                type="email"
-                value={formData.studentDetails.motherEmail}
-                onChange={handleInputChange}
                 required
               />
             </div>
             {/* Mother Phone */}
             <div className="space-y-2">
-              <Label htmlFor="studentDetails.motherPhone">
-                Mother Phone <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="studentDetails.motherPhone">Mother Phone</Label>
               <Input
                 id="studentDetails.motherPhone"
                 name="studentDetails.motherPhone"
                 type="tel"
                 value={formData.studentDetails.motherPhone}
                 onChange={handleInputChange}
-                required
+              />
+            </div>
+            {/* Mother Email */}
+            <div className="space-y-2">
+              <Label htmlFor="studentDetails.motherEmail">Mother Email</Label>
+              <Input
+                id="studentDetails.motherEmail"
+                name="studentDetails.motherEmail"
+                type="email"
+                value={formData.studentDetails.motherEmail}
+                onChange={handleInputChange}
               />
             </div>
             {/* Mother Occupation */}
