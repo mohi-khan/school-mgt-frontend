@@ -15,6 +15,7 @@ import { DollarSign, Upload, Download } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useAddStudent,
@@ -42,17 +43,71 @@ import { formatDate, formatNumber } from '@/utils/conversions'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
-import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
+import { getAllSectionsByClassId } from '@/utils/api'
+
+// ── helper ────────────────────────────────────────────────────────────────────
+function columnIndexToLetter(col: number): string {
+  let letter = ''
+  while (col > 0) {
+    const remainder = (col - 1) % 26
+    letter = String.fromCharCode(65 + remainder) + letter
+    col = Math.floor((col - 1) / 26)
+  }
+  return letter
+}
+
+// ── Column definitions with required flag ─────────────────────────────────────
+const STATIC_COLUMNS = [
+  { header: 'First Name', key: 'firstName', width: 18, required: true }, // A  1
+  { header: 'Last Name', key: 'lastName', width: 18, required: true }, // B  2
+  { header: 'Admission No', key: 'admissionNo', width: 14, required: true }, // C  3
+  { header: 'Roll No', key: 'rollNo', width: 10, required: false }, // D  4
+  { header: 'Class', key: 'classId', width: 30, required: true }, // E  5
+  { header: 'Section', key: 'sectionId', width: 30, required: true }, // F  6
+  { header: 'Session', key: 'sessionId', width: 30, required: true }, // G  7
+  { header: 'Gender', key: 'gender', width: 10, required: true }, // H  8
+  { header: 'Date of Birth', key: 'dateOfBirth', width: 14, required: true }, // I  9
+  { header: 'Admission Date', key: 'admissionDate', width: 14, required: true }, // J  10
+  { header: 'Phone Number', key: 'phoneNumber', width: 16, required: true }, // K  11
+  { header: 'Email', key: 'email', width: 24, required: false }, // L  12
+  { header: 'Religion', key: 'religion', width: 14, required: true }, // M  13
+  { header: 'Blood Group', key: 'bloodGroup', width: 12, required: false }, // N  14
+  { header: 'Height (cm)', key: 'height', width: 12, required: false }, // O  15
+  { header: 'Weight (kg)', key: 'weight', width: 12, required: false }, // P  16
+  { header: 'Address', key: 'address', width: 28, required: false }, // Q  17
+  { header: 'Father Name', key: 'fatherName', width: 18, required: true }, // R  18
+  { header: 'Father Phone', key: 'fatherPhone', width: 16, required: true }, // S  19
+  { header: 'Father Email', key: 'fatherEmail', width: 24, required: false }, // T  20
+  {
+    header: 'Father Occupation',
+    key: 'fatherOccupation',
+    width: 20,
+    required: false,
+  }, // U  21
+  { header: 'Mother Name', key: 'motherName', width: 18, required: true }, // V  22
+  { header: 'Mother Phone', key: 'motherPhone', width: 16, required: false }, // W  23
+  { header: 'Mother Email', key: 'motherEmail', width: 24, required: false }, // X  24
+  {
+    header: 'Mother Occupation',
+    key: 'motherOccupation',
+    width: 20,
+    required: false,
+  }, // Y  25
+]
+// Fees master columns are appended dynamically starting at col 26 (Z)
 
 const CreateStudent = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
   const { data: classes } = useGetClasses()
   const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
   const router = useRouter()
+
   const [error, setError] = useState<string | null>(null)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
@@ -128,33 +183,24 @@ const CreateStudent = () => {
 
   const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setStudentPhotoFile(file)
-    }
+    if (file) setStudentPhotoFile(file)
   }
 
   const handleFatherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setFatherPhotoFile(file)
-    }
+    if (file) setFatherPhotoFile(file)
   }
 
   const handleMotherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setMotherPhotoFile(file)
-    }
+    if (file) setMotherPhotoFile(file)
   }
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'gender' || name === 'bloodGroup') {
       setFormData((prev) => ({
         ...prev,
-        studentDetails: {
-          ...prev.studentDetails,
-          [name]: value || null,
-        },
+        studentDetails: { ...prev.studentDetails, [name]: value || null },
       }))
     } else {
       setFormData((prev) => ({
@@ -168,13 +214,11 @@ const CreateStudent = () => {
   }
 
   const toggleFeesMaster = (feesMasterId: number) => {
-    setSelectedFeesMasters((prev) => {
-      if (prev.includes(feesMasterId)) {
-        return prev.filter((id) => id !== feesMasterId)
-      } else {
-        return [...prev, feesMasterId]
-      }
-    })
+    setSelectedFeesMasters((prev) =>
+      prev.includes(feesMasterId)
+        ? prev.filter((id) => id !== feesMasterId)
+        : [...prev, feesMasterId]
+    )
   }
 
   const resetForm = () => {
@@ -234,11 +278,7 @@ const CreateStudent = () => {
     e.preventDefault()
     setError(null)
     const { studentDetails } = formData
-    console.log('=== FORM SUBMISSION START ===')
-    console.log('📋 Student Details:', studentDetails)
-    console.log('💰 Selected Fees Masters:', selectedFeesMasters)
 
-    // Validations
     if (!studentDetails.firstName.trim())
       return setError('Please enter first name')
     if (!studentDetails.lastName.trim())
@@ -250,186 +290,538 @@ const CreateStudent = () => {
     if (!studentDetails.fatherPhone.trim())
       return setError('Please enter father phone')
 
-    // Prepare student fees
     const studentFees = selectedFeesMasters.map((feesMasterId) => ({
       feesMasterId,
       studentId: null,
     }))
-    console.log('💵 Prepared Student Fees:', studentFees)
 
     const form = new FormData()
-
-    // Add student details as JSON (excluding photo URLs)
     const studentDetailsPayload = {
       ...studentDetails,
       photoUrl: null,
       fatherPhotoUrl: null,
       motherPhotoUrl: null,
     }
-    console.log(
-      '📦 Student Details Payload (without photos):',
-      studentDetailsPayload
-    )
     form.append('studentDetails', JSON.stringify(studentDetailsPayload))
     form.append('studentFees', JSON.stringify(studentFees))
 
-    // Append photos only if they are selected
-    if (studentPhotoFile) {
-      form.append('photoUrl', studentPhotoFile)
-      console.log(`✅ Appended photoUrl to FormData`)
-    }
-    if (fatherPhotoFile) {
-      form.append('fatherPhotoUrl', fatherPhotoFile)
-      console.log(`✅ Appended fatherPhotoUrl to FormData`)
-    }
-    if (motherPhotoFile) {
-      form.append('motherPhotoUrl', motherPhotoFile)
-      console.log(`✅ Appended motherPhotoUrl to FormData`)
-    }
-
-    console.log('📤 FormData contents:')
-    for (const pair of form.entries()) {
-      if (pair[1] instanceof File) {
-        console.log(
-          `  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`
-        )
-      } else {
-        console.log(`  ${pair[0]}: ${pair[1]}`)
-      }
-    }
-    console.log('=== FORM SUBMISSION END ===')
+    if (studentPhotoFile) form.append('photoUrl', studentPhotoFile)
+    if (fatherPhotoFile) form.append('fatherPhotoUrl', fatherPhotoFile)
+    if (motherPhotoFile) form.append('motherPhotoUrl', motherPhotoFile)
 
     try {
       await addMutation.mutateAsync(form as any)
-      console.log('✅ Student created successfully!')
       toast({
         title: 'Success!',
         description: 'Student is added successfully.',
       })
     } catch (err) {
       setError('Failed to create student')
-      console.error('❌ Error creating student:', err)
+      console.error('Error creating student:', err)
     }
   }
 
-  const handleDownloadTemplate = () => {
-    const templateData = [
-      {
-        AdmissionNo: '',
-        RollNo: '',
-        ClassId: '',
-        SectionId: '',
-        SessionId: '',
-        FirstName: '',
-        LastName: '',
-        Gender: 'male',
-        DateOfBirth: '',
-        PhoneNumber: '',
-        Email: '',
-        AdmissionDate: '',
-        Religion: '',
-        BloodGroup: '',
-        Height: '',
-        Weight: '',
-        Address: '',
-        FatherName: '',
-        FatherPhone: '',
-        FatherEmail: '',
-        FatherOccupation: '',
-        MotherName: '',
-        MotherPhone: '',
-        MotherEmail: '',
-        MotherOccupation: '',
-        FeesMasterIds: '',
-      },
-    ]
+  // ── Download Template ──────────────────────────────────────────────────────
+  const handleDownloadTemplate = async () => {
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Student Template')
+    // ── 1. Build class entries, fetching sections per class ──────────────────
+    type ClassEntry = {
+      label: string
+      safeName: string
+      id: number
+      secLabels: string[]
+    }
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array',
+    const classEntries: ClassEntry[] = []
+
+    for (const c of classes?.data ?? []) {
+      const id = c.classData?.classId ?? 0
+      const name = c.classData?.className ?? 'Unnamed'
+      const label = `${name} | ${id}`
+      const safeName =
+        'CLS_' +
+        name
+          .replace(/[^a-zA-Z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '')
+          .slice(0, 200) +
+        '_' +
+        id
+
+      let secLabels: string[] = []
+
+      if (id && token) {
+        try {
+          const result = await queryClient.fetchQuery({
+            queryKey: ['sections', id],
+            queryFn: () => getAllSectionsByClassId(token, id),
+            staleTime: 5 * 60 * 1000,
+          })
+          const sectionList: any[] = Array.isArray(result)
+            ? result
+            : (result?.data ?? [])
+
+          secLabels = sectionList.map(
+            (sec: any) => `${sec.sectionName} | ${sec.sectionId} | ${id}`
+          )
+        } catch (e) {
+          console.warn(`Could not fetch sections for class ${id}:`, e)
+        }
+      }
+
+      classEntries.push({ label, safeName, id, secLabels })
+    }
+
+    // ── 2. Session / gender / blood-group lists ──────────────────────────────
+    const sessionLabels: string[] = (sessions?.data ?? []).map(
+      (s) => `${s.sessionName ?? 'Unnamed'} | ${s.sessionId}`
+    )
+    const genderLabels = ['male', 'female']
+    const bloodGroupLabels = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
+
+    // ── 3. Fees masters list ─────────────────────────────────────────────────
+    // Each fee master becomes its own column in the sheet.
+    // Header format: "Fee Type Name | Group | YYYY (feesMasterId)"
+    // e.g.  "January Fees | Monthly | 2024 (42)"
+    const allFees: GetFeesMasterType[] = feesMasters?.data ?? []
+
+    // ── 4. Hidden Lookup sheet ───────────────────────────────────────────────
+    const lookupSheet = workbook.addWorksheet('Lookup')
+    lookupSheet.state = 'veryHidden'
+
+    // Col A: class labels → ClassList
+    classEntries.forEach(({ label }, idx) => {
+      lookupSheet.getCell(`A${idx + 1}`).value = label
+    })
+    if (classEntries.length > 0) {
+      workbook.definedNames.add(
+        `Lookup!$A$1:$A$${classEntries.length}`,
+        'ClassList'
+      )
+    }
+
+    // Col B: session labels → SessionList
+    sessionLabels.forEach((label, idx) => {
+      lookupSheet.getCell(`B${idx + 1}`).value = label
+    })
+    if (sessionLabels.length > 0) {
+      workbook.definedNames.add(
+        `Lookup!$B$1:$B$${sessionLabels.length}`,
+        'SessionList'
+      )
+    }
+
+    // Col C: genders → GenderList
+    genderLabels.forEach((g, idx) => {
+      lookupSheet.getCell(`C${idx + 1}`).value = g
+    })
+    workbook.definedNames.add(`Lookup!$C$1:$C$2`, 'GenderList')
+
+    // Col D: blood groups → BloodGroupList
+    bloodGroupLabels.forEach((bg, idx) => {
+      lookupSheet.getCell(`D${idx + 1}`).value = bg
+    })
+    workbook.definedNames.add(`Lookup!$D$1:$D$8`, 'BloodGroupList')
+
+    // Col E: class safeNames (VLOOKUP target: A→E = safeName)
+    classEntries.forEach(({ safeName }, idx) => {
+      lookupSheet.getCell(`E${idx + 1}`).value = safeName
     })
 
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    // Col F+: per-class section named ranges
+    let dynCol = 6 // F
+    for (const cls of classEntries) {
+      if (cls.secLabels.length > 0) {
+        const colLetter = columnIndexToLetter(dynCol)
+        cls.secLabels.forEach((label, idx) => {
+          lookupSheet.getCell(`${colLetter}${idx + 1}`).value = label
+        })
+        workbook.definedNames.add(
+          `Lookup!$${colLetter}$1:$${colLetter}$${cls.secLabels.length}`,
+          `${cls.safeName}_SEC`
+        )
+      }
+      dynCol++
+    }
+
+    // ── 5. Main "Create Students" sheet ─────────────────────────────────────
+    const sheet = workbook.addWorksheet('Create Students')
+
+    // Static columns
+    sheet.columns = STATIC_COLUMNS.map(({ header, key, width }) => ({
+      header,
+      key,
+      width,
+    }))
+
+    // Dynamic fee-master columns (one per fee)
+    // Header: "Fee Type | Group | YYYY (id)"
+    allFees.forEach((fee, idx) => {
+      const year = fee.dueDate ? new Date(fee.dueDate).getFullYear() : 'N/A'
+      const colHeader = `${fee.feesTypeName} | ${fee.feesGroupName} | ${year} (${fee.feesMasterId})`
+      const colIdx = STATIC_COLUMNS.length + 1 + idx // 1-based
+      sheet.getColumn(colIdx).width = 40
+      sheet.getColumn(colIdx).header = colHeader
     })
 
+    // ── 6. Style header row with red * for required columns ──────────────────
+    const headerRow = sheet.getRow(1)
+
+    // Style static columns
+    STATIC_COLUMNS.forEach(({ header, required }, idx) => {
+      const cell = headerRow.getCell(idx + 1)
+      cell.value = required
+        ? {
+            richText: [
+              {
+                text: header,
+                font: { bold: true, color: { argb: 'FF000000' } },
+              },
+              { text: ' *', font: { bold: true, color: { argb: 'FFDC2626' } } },
+            ],
+          }
+        : {
+            richText: [
+              {
+                text: header,
+                font: { bold: true, color: { argb: 'FF000000' } },
+              },
+            ],
+          }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFBBF24' },
+      }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    })
+
+    // Style fee-master columns (not required, but distinct color to stand out)
+    allFees.forEach((fee, idx) => {
+      const year = fee.dueDate ? new Date(fee.dueDate).getFullYear() : 'N/A'
+      const colHeader = `${fee.feesTypeName} | ${fee.feesGroupName} | ${year} (${fee.feesMasterId})`
+      const colIdx = STATIC_COLUMNS.length + 1 + idx
+      const cell = headerRow.getCell(colIdx)
+      cell.value = {
+        richText: [
+          {
+            text: colHeader,
+            font: { bold: true, color: { argb: 'FF000000' } },
+          },
+        ],
+      }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFBFDBFE' }, // light blue to distinguish fee columns
+      }
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: 'center',
+        wrapText: true,
+      }
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    })
+
+    headerRow.height = 36
+
+    // ── 7. Add a sub-header hint row for fee columns ─────────────────────────
+    const hintRow = sheet.getRow(2)
+    // Leave static columns empty in hint row
+    STATIC_COLUMNS.forEach((_, idx) => {
+      const cell = hintRow.getCell(idx + 1)
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFEF9C3' },
+      }
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    })
+    // Fee columns: show "Yes / leave blank"
+    allFees.forEach((_, idx) => {
+      const colIdx = STATIC_COLUMNS.length + 1 + idx
+      const cell = hintRow.getCell(colIdx)
+      cell.value = 'Yes = include  |  blank = skip'
+      cell.font = { italic: true, size: 8, color: { argb: 'FF6B7280' } }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFEFF6FF' },
+      }
+      cell.alignment = { horizontal: 'center' }
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+
+      // Yes/No dropdown validation on data rows
+      for (let row = 3; row <= 201; row++) {
+        sheet.getCell(row, colIdx).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Yes,No"'],
+          // showDropDown: false,
+        }
+      }
+    })
+    hintRow.height = 14
+
+    // ── 8. Hidden _helpers sheet for VLOOKUP formulas ───────────────────────
+    // Keeping helpers OFF the main sheet prevents xlsx parser from producing
+    // "__EMPTY" ghost columns/rows when users import the filled template.
+    const helpersSheet = workbook.addWorksheet('_helpers')
+    helpersSheet.state = 'veryHidden'
+
+    // ── 9. Per-row dropdowns and helper formulas (data starts row 3) ─────────
+    for (let row = 3; row <= 201; row++) {
+      // _helpers col A: VLOOKUP class label (main sheet col E) → safeName
+      helpersSheet.getCell(`A${row}`).value = {
+        formula: `IFERROR(VLOOKUP('Create Students'!E${row},Lookup!$A:$E,5,0),"")`,
+      }
+
+      // E: Class dropdown
+      sheet.getCell(`E${row}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Invalid Class',
+        error: 'Please select a class from the dropdown.',
+        formulae: ['ClassList'],
+      }
+
+      // F: Section dropdown — INDIRECT(_helpers col A & "_SEC")
+      sheet.getCell(`F${row}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'warning',
+        errorTitle: 'Select Class First',
+        error: 'Please select a Class in column E first.',
+        formulae: [`INDIRECT(_helpers!$A$${row}&"_SEC")`],
+      }
+
+      // G: Session dropdown
+      sheet.getCell(`G${row}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Invalid Session',
+        error: 'Please select a session from the dropdown.',
+        formulae: ['SessionList'],
+      }
+
+      // H: Gender dropdown
+      sheet.getCell(`H${row}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Invalid Gender',
+        error: 'Please select male or female.',
+        formulae: ['GenderList'],
+      }
+
+      // N: Blood Group dropdown
+      sheet.getCell(`N${row}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Invalid Blood Group',
+        error: 'Please select a valid blood group.',
+        formulae: ['BloodGroupList'],
+      }
+    }
+
+    // ── 10. Freeze top 2 rows and col A so headers stay visible ─────────────
+    sheet.views = [{ state: 'frozen', xSplit: 1, ySplit: 2 }]
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
     saveAs(blob, 'create-students-template.xlsx')
   }
 
+  // ── Parse & submit Excel data ──────────────────────────────────────────────
   const handleExcelDataParsed = (data: any[]) => {
     console.log('Excel data parsed:', data)
   }
 
   const handleExcelSubmit = async (data: any[]) => {
     try {
-      // Process each row and create student records
-      const studentsToCreate = data.map((row) => {
-        // Parse FeesMasterIds from comma-separated string
-        const feesMasterIds = row['FeesMasterIds']
-          ? String(row['FeesMasterIds'])
-              .split(',')
-              .map((id: string) => Number(id.trim()))
-              .filter((id: number) => !isNaN(id))
-          : []
+      const allFeesList: GetFeesMasterType[] = feesMasters?.data ?? []
 
-        return {
-          studentDetails: {
-            admissionNo: Number(row['AdmissionNo']) || 0,
-            rollNo: Number(row['RollNo']) || 0,
-            classId: row['ClassId'] ? Number(row['ClassId']) : null,
-            sectionId: row['SectionId'] ? Number(row['SectionId']) : null,
-            sessionId: row['SessionId'] ? Number(row['SessionId']) : null,
-            firstName: row['FirstName'] || '',
-            lastName: row['LastName'] || '',
-            gender: row['Gender'] || 'male',
-            dateOfBirth: row['DateOfBirth'] || '',
-            religion: row['Religion'] || '',
-            bloodGroup: row['BloodGroup'] || null,
-            height: row['Height'] ? Number(row['Height']) : null,
-            weight: row['Weight'] ? Number(row['Weight']) : null,
-            address: row['Address'] || '',
-            phoneNumber: row['PhoneNumber'] || '',
-            email: row['Email'] || '',
-            admissionDate:
-              row['AdmissionDate'] || new Date().toISOString().split('T')[0],
-            photoUrl: null,
-            isActive: true,
-            fatherName: row['FatherName'] || '',
-            fatherPhone: row['FatherPhone'] || '',
-            fatherEmail: row['FatherEmail'] || '',
-            fatherOccupation: row['FatherOccupation'] || '',
-            fatherPhotoUrl: null,
-            motherName: row['MotherName'] || '',
-            motherPhone: row['MotherPhone'] || '',
-            motherEmail: row['MotherEmail'] || '',
-            motherOccupation: row['MotherOccupation'] || '',
-            motherPhotoUrl: null,
-          },
-          studentFees: feesMasterIds.map((feesMasterId: number) => ({
-            feesMasterId,
-            studentId: null,
-          })),
-        }
+      // Strip trailing " *" from a key — headers were written as richText with
+      // " *" in red, but some xlsx parsers concatenate richText into plain text.
+      const normalizeKey = (k: string) => k.trim().replace(/\s*\*$/, '')
+
+      // Filter out: hint row, __EMPTY-only rows, and rows with no Admission No
+      const validRows = data.filter((row) => {
+        const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
+        if (keys.length === 0) return false
+
+        // Skip the hint row (row 2) — all its fee-col values are "Yes = include..."
+        const allHint = keys.every((k) =>
+          String(row[k] ?? '')
+            .trim()
+            .startsWith('Yes = include')
+        )
+        if (allHint) return false
+
+        // Must have a non-empty Admission No
+        const admKey = keys.find((k) => normalizeKey(k) === 'Admission No')
+        return admKey && String(row[admKey] ?? '').trim() !== ''
       })
 
-      console.log('Students to create:', studentsToCreate)
+      const studentsToCreate = validRows
+        .filter((row) => {
+          const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
+          const firstKey = keys.find((k) => normalizeKey(k) === 'First Name')
+          const lastKey = keys.find((k) => normalizeKey(k) === 'Last Name')
+          return (
+            (firstKey && String(row[firstKey] ?? '').trim()) ||
+            (lastKey && String(row[lastKey] ?? '').trim())
+          )
+        })
+        .map((row) => {
+          const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
 
-      // Submit all students
+          // get() strips trailing " *" so "First Name *" matches "First Name"
+          const get = (colHeader: string) => {
+            const key = keys.find((k) => normalizeKey(k) === colHeader.trim())
+            return key ? row[key] : undefined
+          }
+
+          // ── Parse Class label: "Class Name | classId" ─────────────────────
+          const classLabel: string = String(get('Class') ?? '')
+          const classParts = classLabel.split(' | ')
+          const classId =
+            classParts.length >= 2
+              ? Number(classParts[classParts.length - 1])
+              : null
+
+          // ── Parse Section label: "Section Name | sectionId | classId" ─────
+          const sectionLabel: string = String(get('Section') ?? '')
+          const sectionParts = sectionLabel.split(' | ')
+          const sectionId =
+            sectionParts.length >= 3
+              ? Number(sectionParts[sectionParts.length - 2])
+              : null
+
+          // ── Parse Session label: "Session Name | sessionId" ───────────────
+          const sessionLabel: string = String(get('Session') ?? '')
+          const sessionParts = sessionLabel.split(' | ')
+          const sessionId =
+            sessionParts.length >= 2
+              ? Number(sessionParts[sessionParts.length - 1])
+              : null
+
+          // ── Collect selected fees from per-fee columns ────────────────────
+          // Column header format: "Fee Type | Group | YYYY (feesMasterId)"
+          const feesMasterIds: number[] = []
+
+          for (const fee of allFeesList) {
+            const year = fee.dueDate
+              ? new Date(fee.dueDate).getFullYear()
+              : 'N/A'
+            const colHeader = `${fee.feesTypeName} | ${fee.feesGroupName} | ${year} (${fee.feesMasterId})`
+
+            // normalizeKey strips trailing " *" so richText headers still match
+            const matchedKey = keys.find(
+              (k) => normalizeKey(k) === colHeader.trim()
+            )
+
+            if (matchedKey) {
+              const cellValue = String(row[matchedKey] ?? '')
+                .trim()
+                .toLowerCase()
+              if (['yes', 'y', '1', 'true'].includes(cellValue)) {
+                feesMasterIds.push(fee.feesMasterId!)
+              }
+            }
+          }
+
+          // ── Normalize dates ───────────────────────────────────────────────
+          const normalizeDate = (raw: any): string => {
+            if (!raw) return ''
+            const s = String(raw)
+            if (s.includes('-')) return s
+            const d = new Date(s)
+            return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : s
+          }
+
+          return {
+            studentDetails: {
+              admissionNo: Number(get('Admission No')) || 0,
+              rollNo: Number(get('Roll No')) || 0,
+              classId: classId && !isNaN(classId) ? classId : null,
+              sectionId: sectionId && !isNaN(sectionId) ? sectionId : null,
+              sessionId: sessionId && !isNaN(sessionId) ? sessionId : null,
+              firstName: String(get('First Name') ?? ''),
+              lastName: String(get('Last Name') ?? ''),
+              gender: String(get('Gender') ?? 'male'),
+              dateOfBirth: normalizeDate(get('Date of Birth')),
+              religion: String(get('Religion') ?? ''),
+              bloodGroup: get('Blood Group')
+                ? String(get('Blood Group'))
+                : null,
+              height: get('Height (cm)') ? Number(get('Height (cm)')) : null,
+              weight: get('Weight (kg)') ? Number(get('Weight (kg)')) : null,
+              address: String(get('Address') ?? ''),
+              phoneNumber: String(get('Phone Number') ?? ''),
+              email: String(get('Email') ?? ''),
+              admissionDate:
+                normalizeDate(get('Admission Date')) ||
+                new Date().toISOString().split('T')[0],
+              photoUrl: null,
+              isActive: true,
+              fatherName: String(get('Father Name') ?? ''),
+              fatherPhone: String(get('Father Phone') ?? ''),
+              fatherEmail: String(get('Father Email') ?? ''),
+              fatherOccupation: String(get('Father Occupation') ?? ''),
+              fatherPhotoUrl: null,
+              motherName: String(get('Mother Name') ?? ''),
+              motherPhone: String(get('Mother Phone') ?? ''),
+              motherEmail: String(get('Mother Email') ?? ''),
+              motherOccupation: String(get('Mother Occupation') ?? ''),
+              motherPhotoUrl: null,
+            },
+            studentFees: feesMasterIds.map((feesMasterId) => ({
+              feesMasterId,
+              studentId: null,
+            })),
+          }
+        })
+
+      console.log('Students to create from Excel:', studentsToCreate)
+
       for (const student of studentsToCreate) {
         const form = new FormData()
-        const studentDetailsPayload = {
-          ...student.studentDetails,
-          photoUrl: null,
-          fatherPhotoUrl: null,
-          motherPhotoUrl: null,
-        }
-        form.append('studentDetails', JSON.stringify(studentDetailsPayload))
+        form.append('studentDetails', JSON.stringify(student.studentDetails))
         form.append('studentFees', JSON.stringify(student.studentFees))
-
         await addMutation.mutateAsync(form as any)
       }
 
@@ -453,7 +845,7 @@ const CreateStudent = () => {
   useEffect(() => {
     if (addMutation.error) {
       setError('Error creating student')
-      console.error('❌ Mutation error:', addMutation.error)
+      console.error('Mutation error:', addMutation.error)
     }
   }, [addMutation.error])
 
@@ -494,6 +886,7 @@ const CreateStudent = () => {
           </Button>
         </div>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
         {/* Student Information Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
@@ -940,14 +1333,12 @@ const CreateStudent = () => {
         {/* Student Fees Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Student Fees</h3>
-
           <Accordion type="multiple" className="w-full">
             {Object.entries(grouped ?? {}).map(([groupName, groupFees]) => {
               const groupFeeIds = groupFees.map((f) => f.feesMasterId || 0)
               const isGroupSelected = groupFeeIds.every((id) =>
                 selectedFeesMasters.includes(id)
               )
-
               return (
                 <AccordionItem key={groupName} value={groupName}>
                   <div className="flex items-center gap-2 px-2">
@@ -966,12 +1357,10 @@ const CreateStudent = () => {
                         }
                       }}
                     />
-
                     <AccordionTrigger className="flex-1 text-sm font-medium">
                       {groupName}
                     </AccordionTrigger>
                   </div>
-
                   <AccordionContent>
                     <div className="border rounded-md overflow-hidden bg-white">
                       <Table>
@@ -982,18 +1371,15 @@ const CreateStudent = () => {
                             <TableHead>Amount (BDT)</TableHead>
                           </TableRow>
                         </TableHeader>
-
                         <TableBody>
                           {groupFees.map((fee) => (
                             <TableRow key={fee.feesMasterId}>
                               <TableCell className="text-sm">
                                 {fee.feesTypeName}
                               </TableCell>
-
                               <TableCell className="text-sm">
                                 {formatDate(new Date(fee.dueDate))}
                               </TableCell>
-
                               <TableCell className="text-sm font-medium">
                                 {formatNumber(fee.amount)}
                               </TableCell>
@@ -1024,6 +1410,7 @@ const CreateStudent = () => {
         </div>
       </form>
 
+      {/* Bulk Import Popup */}
       <Popup
         isOpen={isImportPopupOpen}
         onClose={() => setIsImportPopupOpen(false)}
@@ -1031,102 +1418,37 @@ const CreateStudent = () => {
         size="sm:max-w-3xl"
       >
         <div className="py-4">
-          <div className="mb-4 p-4 bg-amber-50 rounded-md">
-            <h3 className="font-semibold mb-2">Excel Format Requirements:</h3>
-            <p className="text-sm text-gray-700 mb-2">
-              Your Excel file should have the following columns:
+          <div className="mb-4 p-4 bg-amber-50 rounded-md text-sm text-gray-700 space-y-1">
+            <p className="font-semibold">How to use:</p>
+            <p>
+              1. Click <strong>Download Template</strong> to get the Excel file
+              with dropdowns pre-filled from your data.
             </p>
-            <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
-              <li>
-                <strong>AdmissionNo</strong> - Numeric admission number
-                (required)
-              </li>
-              <li>
-                <strong>RollNo</strong> - Numeric roll number (required)
-              </li>
-              <li>
-                <strong>FirstName</strong> - Student first name (required)
-              </li>
-              <li>
-                <strong>LastName</strong> - Student last name (required)
-              </li>
-              <li>
-                <strong>Gender</strong> - male or female (required)
-              </li>
-              <li>
-                <strong>DateOfBirth</strong> - Date in YYYY-MM-DD format
-              </li>
-              <li>
-                <strong>Email</strong> - Email address (required)
-              </li>
-              <li>
-                <strong>PhoneNumber</strong> - Phone number (required)
-              </li>
-              <li>
-                <strong>ClassId</strong> - Class ID (optional)
-              </li>
-              <li>
-                <strong>SectionId</strong> - Section ID (optional)
-              </li>
-              <li>
-                <strong>SessionId</strong> - Session ID (optional)
-              </li>
-              <li>
-                <strong>Religion</strong> - Religion (optional)
-              </li>
-              <li>
-                <strong>BloodGroup</strong> - Blood group (optional)
-              </li>
-              <li>
-                <strong>Height</strong> - Height in cm (optional)
-              </li>
-              <li>
-                <strong>Weight</strong> - Weight in kg (optional)
-              </li>
-              <li>
-                <strong>Address</strong> - Address (optional)
-              </li>
-              <li>
-                <strong>FatherName</strong> - Father&apos;s name (optional)
-              </li>
-              <li>
-                <strong>FatherPhone</strong> - Father&apos;s phone (required)
-              </li>
-              <li>
-                <strong>FatherEmail</strong> - Father&apos;s email (required)
-              </li>
-              <li>
-                <strong>FatherOccupation</strong> - Father&apos;s occupation
-                (optional)
-              </li>
-              <li>
-                <strong>MotherName</strong> - Mother&apos;s name (optional)
-              </li>
-              <li>
-                <strong>MotherPhone</strong> - Mother&apos;s phone (required)
-              </li>
-              <li>
-                <strong>MotherEmail</strong> - Mother&apos;s email (required)
-              </li>
-              <li>
-                <strong>MotherOccupation</strong> - Mother&apos;s occupation
-                (optional)
-              </li>
-              <li>
-                <strong>FeesMasterIds</strong> - Comma-separated fee IDs (e.g.,
-                &quot;1,2,3&quot;)
-              </li>
-            </ul>
-            <p className="text-sm text-gray-700 mt-3">
-              <strong>Tip:</strong> Download the template first to see the
-              correct format!
+            <p>
+              2. Select <strong>Class</strong> first — the{' '}
+              <strong>Section</strong> dropdown will filter automatically.
+            </p>
+            <p>
+              3. For <strong>Fees</strong>, each fee has its own column (shown
+              in blue). Type <strong>Yes</strong> (or select from dropdown) in
+              any fee column to assign that fee to the student. Leave blank to
+              skip.
+            </p>
+            <p>
+              4. Fields marked with a red{' '}
+              <span className="text-red-500 font-bold">*</span> in the template
+              are required.
+            </p>
+            <p className="text-xs text-gray-500 pt-1">
+              All foreign-key columns (Class, Section, Session) use
+              human-readable labels; IDs are extracted automatically on import.
             </p>
           </div>
           <ExcelFileInput
             onDataParsed={handleExcelDataParsed}
             onSubmit={handleExcelSubmit}
             submitButtonText="Import Students"
-            dateColumns={['DateOfBirth', 'AdmissionDate']}
+            dateColumns={['Date of Birth', 'Admission Date']}
           />
         </div>
       </Popup>
