@@ -21,9 +21,6 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion'
-import { DollarSign } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 const StudentDetailsPage = () => {
   const { studentId } = useParams()
@@ -36,7 +33,13 @@ const StudentDetailsPage = () => {
   const studentFees = (student?.data as any)?.studentFees
 
   // Group fees by some property, e.g., feesGroupName
-  const grouped = studentFees?.reduce((acc: any, fee: any) => {
+  // Deduplicate by studentFeesId first
+  const uniqueFees = studentFees?.filter(
+    (fee: any, index: number, self: any[]) =>
+      index === self.findIndex((f) => f.studentFeesId === fee.studentFeesId)
+  )
+
+  const grouped = uniqueFees?.reduce((acc: any, fee: any) => {
     const groupName = fee.feesGroupName || 'Other'
     if (!acc[groupName]) acc[groupName] = []
     acc[groupName].push(fee)
@@ -92,7 +95,8 @@ const StudentDetailsPage = () => {
               <strong>DOB:</strong> {formatDate(studentDetails?.dateOfBirth)}
             </p>
             <p>
-              <strong>Blood Group:</strong> {studentDetails?.bloodGroup ?? 'N/A'}
+              <strong>Blood Group:</strong>{' '}
+              {studentDetails?.bloodGroup ?? 'N/A'}
             </p>
             <p>
               <strong>Phone:</strong> {studentDetails?.phoneNumber}
@@ -184,7 +188,8 @@ const StudentDetailsPage = () => {
                   <div className="w-20 h-20 rounded-md bg-gray-200 overflow-hidden">
                     <Image
                       src={
-                        studentDetails?.fatherPhotoUrl || '/user-placeholder.png'
+                        studentDetails?.fatherPhotoUrl ||
+                        '/user-placeholder.png'
                       }
                       alt="Profile"
                       width={128}
@@ -231,7 +236,8 @@ const StudentDetailsPage = () => {
                   <div className="w-20 h-20 rounded-md bg-gray-200 overflow-hidden">
                     <Image
                       src={
-                        studentDetails?.motherPhotoUrl || '/user-placeholder.png'
+                        studentDetails?.motherPhotoUrl ||
+                        '/user-placeholder.png'
                       }
                       alt="Profile"
                       width={128}
@@ -252,7 +258,7 @@ const StudentDetailsPage = () => {
                   <CardTitle className="text-xl font-semibold">
                     Student Fees
                   </CardTitle>
-                  <Link
+                  {/* <Link
                     href={`/dashboard/fees-management/collect-fees/${studentDetails?.studentId}`}
                   >
                     <Button
@@ -262,7 +268,7 @@ const StudentDetailsPage = () => {
                     >
                       <DollarSign className="h-4 w-4" />
                     </Button>
-                  </Link>
+                  </Link> */}
                 </div>
               </CardHeader>
               <CardContent>

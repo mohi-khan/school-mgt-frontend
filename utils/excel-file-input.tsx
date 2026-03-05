@@ -7,9 +7,14 @@ import * as XLSX from 'xlsx'
 interface ExcelFileInputProps<T> {
   onDataParsed: (data: T[]) => void
   onSubmit: (data: T[]) => Promise<void>
-  dateColumns?: string[] // Columns that contain Excel date serial numbers
+  dateColumns?: string[]
   buttonText?: string
   submitButtonText?: string
+  /**
+   * If provided, reads this sheet by name instead of SheetNames[0].
+   * Falls back to SheetNames[0] if the named sheet is not found.
+   */
+  sheetName?: string
 }
 
 function ExcelFileInput<T extends Record<string, any>>({
@@ -18,6 +23,7 @@ function ExcelFileInput<T extends Record<string, any>>({
   dateColumns = [],
   buttonText = 'Choose File',
   submitButtonText = 'Submit Data',
+  sheetName,
 }: ExcelFileInputProps<T>) {
   const [data, setData] = React.useState<T[] | null>(null)
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
@@ -28,29 +34,23 @@ function ExcelFileInput<T extends Record<string, any>>({
     target: HTMLInputElement & EventTarget
   }
 
-  // Convert Excel serial number to a JavaScript date string (YYYY-MM-DD)
   const convertExcelDate = (serial: number): string => {
-    const excelStartDate = new Date(1899, 11, 30) // Excel starts from 1899-12-30
-    const date = new Date(excelStartDate.getTime() + serial * 86400000) // Add days
-    return date.toISOString().split('T')[0] // Format as YYYY-MM-DD
+    const excelStartDate = new Date(1899, 11, 30)
+    const date = new Date(excelStartDate.getTime() + serial * 86400000)
+    return date.toISOString().split('T')[0]
   }
 
-  // Check if a value is likely an Excel date serial number
   const isExcelDateSerial = (value: any, columnName: string): boolean => {
-    // If column is explicitly marked as a date column
     if (dateColumns.includes(columnName)) {
       return typeof value === 'number'
     }
-    // Auto-detect: Excel date serial numbers are typically between 1 (1900-01-01) and 50000 (2036+)
     return typeof value === 'number' && value > 1 && value < 60000
   }
 
-  // Handle Excel file upload
   const handleFileUpload = (e: FileInputEvent): void => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Reset previous state
     setMessage(null)
     setData(null)
 
@@ -63,16 +63,31 @@ function ExcelFileInput<T extends Record<string, any>>({
         const workbook = XLSX.read(event.target.result as string, {
           type: 'binary',
         })
-        const sheetName = workbook.SheetNames[0]
-        const sheet = workbook.Sheets[sheetName]
+
+        // ── Pick the correct sheet ──────────────────────────────────
+        // 1. If sheetName prop is provided, try to find it by name.
+        // 2. Fall back to the first non-hidden-looking sheet.
+        // 3. Final fallback: SheetNames[0].
+        let targetSheetName: string
+
+        if (sheetName && workbook.SheetNames.includes(sheetName)) {
+          targetSheetName = sheetName
+        } else {
+          // Skip sheets named 'Lookup' or starting with '_' (our hidden lookup sheets)
+          const visibleSheet = workbook.SheetNames.find(
+            (n) => n !== 'Lookup' && !n.startsWith('_')
+          )
+          targetSheetName = visibleSheet ?? workbook.SheetNames[0]
+        }
+
+        const sheet = workbook.Sheets[targetSheetName]
         let sheetData = XLSX.utils.sheet_to_json(sheet, {
           raw: false,
         }) as T[]
 
-        // Convert Excel serial numbers to proper dates
+        // Convert Excel serial date numbers to YYYY-MM-DD strings
         sheetData = sheetData.map((row) => {
           const newRow: Record<string, any> = {}
-
           for (const key in row) {
             if (isExcelDateSerial(row[key], key)) {
               newRow[key] = convertExcelDate(row[key] as number)
@@ -80,15 +95,14 @@ function ExcelFileInput<T extends Record<string, any>>({
               newRow[key] = row[key]
             }
           }
-
           return newRow as T
         })
 
-        console.log('Parsed Excel Data:', sheetData)
+        console.log(`Parsed sheet "${targetSheetName}":`, sheetData)
         setData(sheetData)
         onDataParsed(sheetData)
         setMessage(
-          `Successfully loaded ${sheetData.length} records from Excel file.`
+          `Successfully loaded ${sheetData.length} records from "${targetSheetName}".`
         )
       } catch (error) {
         console.error('Error parsing Excel file:', error)
@@ -105,8 +119,8 @@ function ExcelFileInput<T extends Record<string, any>>({
     reader.readAsBinaryString(file)
   }
 
-  // Handle data submission
   const handleSubmit = async () => {
+    console.log('ExcelFileInput handleSubmit called, data:', data)
     if (!data || data.length === 0) {
       setMessage('No data to submit. Please upload an Excel file first.')
       return
@@ -120,7 +134,6 @@ function ExcelFileInput<T extends Record<string, any>>({
 
       setMessage('Data submitted successfully!')
 
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -137,7 +150,6 @@ function ExcelFileInput<T extends Record<string, any>>({
 
   return (
     <div className="space-y-4">
-      {/* File Upload */}
       <div className="flex items-center gap-4">
         <input
           ref={fileInputRef}
@@ -155,7 +167,6 @@ function ExcelFileInput<T extends Record<string, any>>({
         </Button>
       </div>
 
-      {/* Submission Status Message */}
       {message && (
         <div
           className={`p-3 rounded-md ${
@@ -168,7 +179,6 @@ function ExcelFileInput<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Display Imported Data */}
       {Array.isArray(data) && data.length > 0 && (
         <div className="mt-4">
           <h2 className="text-lg font-semibold mb-2">
