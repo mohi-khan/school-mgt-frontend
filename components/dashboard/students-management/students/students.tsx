@@ -256,6 +256,7 @@ const Students = () => {
   const queryClient = useQueryClient()
   const [token] = useAtom(tokenAtom)
   const { data: studentsData, isLoading } = useGetAllStudents()
+  console.log('🚀 ~ Students ~ studentsData:', studentsData)
   const { data: bankAccounts } = useGetBankAccounts()
   const { data: mfsData } = useGetMfss()
 
@@ -269,6 +270,7 @@ const Students = () => {
   const [deletingStudentId, setDeletingStudentId] = useState<number | null>(
     null
   )
+  const [paidAmounts, setPaidAmounts] = useState<Record<number, string>>({})
 
   const [isFeeCollectionOpen, setIsFeeCollectionOpen] = useState(false)
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
@@ -335,6 +337,7 @@ const Students = () => {
     setRemarks('')
     setSelectedFees([])
     setShowAllFees(false)
+    setPaidAmounts({}) // ← add this
   }, [])
 
   const closePopup = useCallback(() => {
@@ -456,11 +459,16 @@ const Students = () => {
       const fee = studentFees?.data?.find(
         (f: any) => f.studentFeesId === studentFeesId
       )
+      const customAmount = paidAmounts[studentFeesId]
+      const paidAmount =
+        customAmount && Number(customAmount) > 0
+          ? Number(customAmount)
+          : fee?.remainingAmount || 0
       return {
         studentFeesId,
         studentId: selectedStudentIdForFees,
         method: paymentMethod as 'bank' | 'bkash' | 'nagad' | 'rocket' | 'cash',
-        paidAmount: fee?.remainingAmount || 0,
+        paidAmount, // ← now uses custom input
         bankAccountId:
           paymentMethod === 'bank' && bankAccountId
             ? Number(bankAccountId.id)
@@ -519,31 +527,58 @@ const Students = () => {
     }, 100)
   }
 
+  // ── Place this OUTSIDE the component (or as a module-level function) ────────
+  function columnIndexToLetter(col: number): string {
+    let letter = ''
+    while (col > 0) {
+      const remainder = (col - 1) % 26
+      letter = String.fromCharCode(65 + remainder) + letter
+      col = Math.floor((col - 1) / 26)
+    }
+    return letter
+  }
+
   // -------------------------------------------------------------------
   // Download Excel template with dropdowns (uses exceljs)
   // Fetches fees per student at download time using the same API that
   // powers the fee collection popup, so feesTypeName is always present.
   // -------------------------------------------------------------------
+  // ── Replace your existing downloadTemplate with this ────────────────────────
   const downloadTemplate = async () => {
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
 
-    // ── Collect student names and fee labels ────────────────────────
-    const studentNames: string[] = []
-    const feeLabels: string[] = []
-
     const students: any[] = studentsData?.data || []
 
-    // Fetch fees for every student using the exact same queryKey and
-    // fetcher as useGetStudentFeesById so results are also cached.
+    type StudentEntry = {
+      displayLabel: string
+      safeName: string
+      feeLabels: string[]
+    }
+    const studentEntries: StudentEntry[] = []
+    const studentDisplayLabels: string[] = []
+
     for (const s of students) {
       const fullName = `${s.studentDetails.firstName} ${s.studentDetails.lastName}`
-      const studentId = s.studentDetails.studentId
-      // Student Name label embeds studentId so handleExcelSubmit can parse it back.
-      // Format: "Full Name | <studentId>"
-      studentNames.push(`${fullName} | ${studentId}`)
+      const studentId: number = s.studentDetails.studentId
 
-      if (!studentId || !token) continue
+      const displayLabel = `${fullName} | ${studentId}`
+      studentDisplayLabels.push(displayLabel)
+
+      const safeName =
+        'S_' +
+        fullName
+          .replace(/[^a-zA-Z0-9]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '')
+          .slice(0, 200) +
+        '_' +
+        studentId
+
+      if (!studentId || !token) {
+        studentEntries.push({ displayLabel, safeName, feeLabels: [] })
+        continue
+      }
 
       try {
         const result = await queryClient.fetchQuery({
@@ -552,44 +587,64 @@ const Students = () => {
           staleTime: 5 * 60 * 1000,
         })
 
-        const fees: any[] = Array.isArray(result) ? result : result?.data || []
+        const fees: any[] = Array.isArray(result)
+          ? result
+          : (result?.data ?? [])
 
-        fees.forEach((fee: any) => {
-          const feeTypeName = fee.feesTypeName || ''
-          const studentFeesId = fee.studentFeesId
-          const remainingAmount = fee.remainingAmount ?? 0
-          if (feeTypeName && studentFeesId !== undefined) {
-            // Fee Type label embeds both studentFeesId and remainingAmount.
-            // Format: "Full Name | Fee Type Name | <studentFeesId> | <remainingAmount>"
-            feeLabels.push(
-              `${fullName} | ${feeTypeName} | ${studentFeesId} | ${remainingAmount}`
-            )
-          }
-        })
+        const feeLabels = fees
+          .filter(
+            (fee: any) => fee.feesTypeName && fee.studentFeesId !== undefined
+          )
+          .map(
+            (fee: any) =>
+              `${fullName} | ${fee.feesTypeName} | ${fee.studentFeesId} | ${fee.remainingAmount ?? 0}`
+          )
+
+        studentEntries.push({ displayLabel, safeName, feeLabels })
       } catch (e) {
         console.warn(`Could not fetch fees for student ${studentId}:`, e)
+        studentEntries.push({ displayLabel, safeName, feeLabels: [] })
       }
     }
 
-    // ── Main data-entry sheet FIRST so SheetNames[0] is always "Fee Collection"
-    // ExcelFileInput reads SheetNames[0], so this sheet must come first.
-    const sheet = workbook.addWorksheet('Fee Collection')
-
-    // ── Hidden lookup sheet SECOND ──────────────────────────────────
-    // Cross-sheet formula references work regardless of sheet order.
+    // ── Hidden Lookup sheet ──────────────────────────────────────────────────
+    // Col A = displayLabel  (StudentList named range)
+    // Col B = safeName      (looked up by VLOOKUP in helper col H)
+    // Col C+ = per-student fee labels (each col = one named range)
     const lookupSheet = workbook.addWorksheet('Lookup')
     lookupSheet.state = 'veryHidden'
 
-    studentNames.forEach((name, i) => {
-      lookupSheet.getCell(`A${i + 1}`).value = name
+    studentEntries.forEach(({ displayLabel, safeName, feeLabels }, idx) => {
+      const row = idx + 1
+      lookupSheet.getCell(`A${row}`).value = displayLabel
+      lookupSheet.getCell(`B${row}`).value = safeName
+
+      const feeColLetter = columnIndexToLetter(idx + 3) // C, D, E …
+
+      feeLabels.forEach((label, feeIdx) => {
+        lookupSheet.getCell(`${feeColLetter}${feeIdx + 1}`).value = label
+      })
+
+      if (feeLabels.length > 0) {
+        workbook.definedNames.add(
+          `Lookup!$${feeColLetter}$1:$${feeColLetter}$${feeLabels.length}`,
+          safeName
+        )
+      }
     })
-    feeLabels.forEach((label, i) => {
-      lookupSheet.getCell(`B${i + 1}`).value = label
-    })
+
+    workbook.definedNames.add(
+      `Lookup!$A$1:$A$${Math.max(studentDisplayLabels.length, 1)}`,
+      'StudentList'
+    )
+
+    // ── Main "Fee Collection" sheet ──────────────────────────────────────────
+    const sheet = workbook.addWorksheet('Fee Collection')
 
     sheet.columns = [
       { header: 'Student Name', key: 'studentName', width: 32 },
-      { header: 'Fee Type', key: 'feeType', width: 40 },
+      { header: 'Fee Type', key: 'feeType', width: 50 },
+      { header: 'Amount', key: 'amount', width: 14 }, // ← ADD THIS
       { header: 'Method', key: 'method', width: 14 },
       { header: 'Bank Account Id', key: 'bankAccountId', width: 16 },
       { header: 'MFS Id', key: 'mfsId', width: 10 },
@@ -597,7 +652,6 @@ const Students = () => {
       { header: 'Remarks', key: 'remarks', width: 24 },
     ]
 
-    // Style the header row
     const headerRow = sheet.getRow(1)
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FF000000' } }
@@ -616,49 +670,38 @@ const Students = () => {
     })
     headerRow.height = 20
 
-    // ── Data validation (dropdowns) for rows 2–200 ─────────────────
-    //
-    // IMPORTANT: Excel requires the formulae string to be wrapped in
-    // the sheet name reference. exceljs writes this correctly when the
-    // worksheet is already added before the validation is set.
-    //
-    // For student names & fee labels we use cross-sheet references
-    // because inline comma-separated lists have a 255-char limit in
-    // Excel, which is easily exceeded with many students.
-
-    const studentRange = `Lookup!$A$1:$A$${Math.max(studentNames.length, 1)}`
-    const feeRange = `Lookup!$B$1:$B$${Math.max(feeLabels.length, 1)}`
-
     for (let row = 2; row <= 200; row++) {
-      // Student Name
+      // Col A: Student Name dropdown
       sheet.getCell(`A${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        // showDropDown: false, // false = show the arrow button (Excel convention)
         showErrorMessage: true,
         errorStyle: 'stop',
         errorTitle: 'Invalid Student',
         error: 'Please select a student from the dropdown.',
-        formulae: [studentRange],
+        formulae: ['StudentList'],
       }
 
-      // Fee Type
+      // Col H (hidden): resolves safeName from selected student label
+      sheet.getCell(`I${row}`).value = {
+        formula: `IFERROR(VLOOKUP(A${row},Lookup!$A:$B,2,0),"")`,
+      }
+
+      // Col B: Fee Type — only shows fees for the student selected in col A
       sheet.getCell(`B${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        // showDropDown: false,
         showErrorMessage: true,
-        errorStyle: 'stop',
-        errorTitle: 'Invalid Fee Type',
-        error: 'Please select a fee type from the dropdown.',
-        formulae: [feeRange],
+        errorStyle: 'warning',
+        errorTitle: 'Select Student First',
+        error: 'Please select a Student Name in column A first.',
+        formulae: [`INDIRECT(I${row})`],
       }
 
-      // Method – short enough for inline list
-      sheet.getCell(`C${row}`).dataValidation = {
+      // Col C: Payment Method
+      sheet.getCell(`D${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        // showDropDown: false,
         showErrorMessage: true,
         errorStyle: 'stop',
         errorTitle: 'Invalid Method',
@@ -667,7 +710,8 @@ const Students = () => {
       }
     }
 
-    // ── Write & save ────────────────────────────────────────────────
+    sheet.getColumn('I').hidden = true
+
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -728,7 +772,25 @@ const Students = () => {
           const feeLabel: string = row[feeKey] || ''
           const feeParts = feeLabel.split(' | ')
           const studentFeesId = Number(feeParts[feeParts.length - 2])
-          const paidAmount = Number(feeParts[feeParts.length - 1])
+          const remainingAmount = Number(feeParts[feeParts.length - 1])
+
+          const amountKey = keys.find((k) => k.trim() === 'Amount')
+          const rawAmount = amountKey ? row[amountKey] : undefined
+          const customAmount =
+            rawAmount !== undefined && rawAmount !== ''
+              ? Number(rawAmount)
+              : null
+          const paidAmount =
+            customAmount !== null && !isNaN(customAmount) && customAmount > 0
+              ? customAmount
+              : remainingAmount
+
+          console.log('Amount debug:', {
+            amountKey,
+            rawAmount,
+            customAmount,
+            paidAmount,
+          })
 
           // ── Normalize payment date ─────────────────────────────────
           let rawDate: string =
@@ -791,6 +853,15 @@ const Students = () => {
   const filteredAndSortedFees = useMemo(() => {
     if (!studentFees?.data) return []
     let fees = studentFees.data
+
+    // Deduplicate by studentFeesId — keep only the first occurrence
+    const seen = new Set()
+    fees = fees.filter((fee: any) => {
+      if (seen.has(fee.studentFeesId)) return false
+      seen.add(fee.studentFeesId)
+      return true
+    })
+
     if (!showAllFees) {
       fees = fees.filter((fee: any) => fee.status !== 'Paid')
     }
@@ -937,14 +1008,28 @@ const Students = () => {
                     (sum: any, fee: any) => sum + (fee.amount || 0),
                     0
                   ) || 0
+
                 const totalPaidAmount =
                   student.studentFees?.reduce(
-                    (sum: any, fee: any) => sum + (fee.paidAmount || 0),
+                    (sum: any, fee: any) =>
+                      sum +
+                      (fee.status === 'Paid'
+                        ? fee.amount || 0
+                        : fee.status === 'Partial'
+                          ? fee.paidAmount || 0
+                          : 0),
                     0
                   ) || 0
+
                 const totalRemainingAmount =
                   student.studentFees?.reduce(
-                    (sum: any, fee: any) => sum + (fee.remainingAmount || 0),
+                    (sum: any, fee: any) =>
+                      sum +
+                      (fee.status === 'Unpaid'
+                        ? fee.amount || 0
+                        : fee.status === 'Partial'
+                          ? fee.remainingAmount || 0
+                          : 0),
                     0
                   ) || 0
 
@@ -1172,7 +1257,13 @@ const Students = () => {
                       const fee = studentFees?.data?.find(
                         (f: any) => f.studentFeesId === feeId
                       )
-                      return sum + (fee?.remainingAmount || 0)
+                      const custom = paidAmounts[feeId]
+                      return (
+                        sum +
+                        (custom && Number(custom) > 0
+                          ? Number(custom)
+                          : fee?.remainingAmount || 0)
+                      )
                     }, 0)
                   )}
                   )
@@ -1229,6 +1320,9 @@ const Students = () => {
                         <TableHead>Amount</TableHead>
                         <TableHead>Due Amount</TableHead>
                         <TableHead>Paid Amount</TableHead>
+                        {selectedFees.length > 0 && (
+                          <TableHead>Pay Amount</TableHead>
+                        )}
                         <TableHead>Due Date</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
@@ -1285,6 +1379,29 @@ const Students = () => {
                                 {formatNumber(fee.paidAmount) || 0}
                               </span>
                             </TableCell>
+                            {selectedFees.length > 0 && (
+                              <TableCell>
+                                {!isPaid &&
+                                  selectedFees.includes(fee.studentFeesId) && (
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      max={fee.remainingAmount}
+                                      placeholder={String(fee.remainingAmount)}
+                                      value={
+                                        paidAmounts[fee.studentFeesId] || ''
+                                      }
+                                      onChange={(e) =>
+                                        setPaidAmounts((prev) => ({
+                                          ...prev,
+                                          [fee.studentFeesId]: e.target.value,
+                                        }))
+                                      }
+                                      className="w-28 h-8 text-sm"
+                                    />
+                                  )}
+                              </TableCell>
+                            )}
                             <TableCell>
                               {formatDate(fee.dueDate) || 'N/A'}
                             </TableCell>
@@ -1402,7 +1519,6 @@ const Students = () => {
                       const workbook = XLSX.read(evt.target?.result as string, {
                         type: 'binary',
                       })
-                      // Always read "Fee Collection" sheet, skip Lookup sheet
                       const sheetName = workbook.SheetNames.includes(
                         'Fee Collection'
                       )
@@ -1411,11 +1527,33 @@ const Students = () => {
                             (n) => n !== 'Lookup' && !n.startsWith('_')
                           ) ?? workbook.SheetNames[0])
                       const sheet = workbook.Sheets[sheetName]
+
+                      // Convert to JSON but only columns A-G (ignore hidden helper col H)
                       const raw = XLSX.utils.sheet_to_json(sheet, {
                         raw: false,
+                        range: 'A1:H200', // ← was G200
                       }) as any[]
-                      console.log('File parsed, rows:', raw.length, raw)
-                      setParsedExcelData(raw)
+
+                      // Filter out rows with no Student Name or Fee Type
+                      const filtered = raw.filter((row: any) => {
+                        const keys = Object.keys(row)
+                        const studentKey = keys.find(
+                          (k) => k.trim() === 'Student Name'
+                        )
+                        const feeKey = keys.find((k) => k.trim() === 'Fee Type')
+                        return (
+                          (studentKey &&
+                            String(row[studentKey] ?? '').trim()) ||
+                          (feeKey && String(row[feeKey] ?? '').trim())
+                        )
+                      })
+
+                      console.log(
+                        'File parsed, rows:',
+                        filtered.length,
+                        filtered
+                      )
+                      setParsedExcelData(filtered)
                     } catch (err) {
                       console.error('Parse error:', err)
                       alert('Failed to parse Excel file. Please try again.')
