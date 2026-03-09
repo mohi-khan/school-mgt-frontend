@@ -26,9 +26,11 @@ import {
   Edit2,
   Trash2,
   DollarSign,
-  Download,
-  Upload,
   Printer,
+  Plus,
+  Minus,
+  Layers,
+  CheckCircle2,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAtom } from 'jotai'
@@ -48,13 +50,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -72,7 +67,6 @@ import Link from 'next/link'
 import { tokenAtom } from '@/utils/user'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import { formatDate, formatNumber } from '@/utils/conversions'
-import { saveAs } from 'file-saver'
 import { Popup } from '@/utils/popup'
 import { useReactToPrint } from 'react-to-print'
 import {
@@ -249,8 +243,199 @@ const MoneyReceipt = React.forwardRef<
 MoneyReceipt.displayName = 'MoneyReceipt'
 
 // -------------------------------------------------------------------
+// BulkFeeRow – a single row in the bulk collect popup
+// -------------------------------------------------------------------
+type BulkFeeRowData = {
+  id: number
+  student: { id: string; name: string } | null
+  feeType: { id: string; name: string } | null
+  amount: string
+  method: string
+  bankAccountId: { id: string; name: string } | null
+  mfsId: { id: string; name: string } | null
+  paymentDate: string
+  remarks: string
+  // internal: loaded fees for the selected student
+  loadedFees: Array<{ id: string; name: string; remainingAmount: number }>
+  isLoadingFees: boolean
+}
+
+type BulkFeeRowProps = {
+  row: BulkFeeRowData
+  studentItems: { id: string; name: string }[]
+  bankAccountItems: { id: string; name: string }[]
+  mfsItems: (method: string) => { id: string; name: string }[]
+  onUpdate: (id: number, patch: Partial<BulkFeeRowData>) => void
+  onRemove: (id: number) => void
+  onStudentChange: (
+    rowId: number,
+    student: { id: string; name: string } | null
+  ) => void
+}
+
+const BulkFeeRow = ({
+  row,
+  studentItems,
+  bankAccountItems,
+  mfsItems,
+  onUpdate,
+  onRemove,
+  onStudentChange,
+}: BulkFeeRowProps) => {
+  const showBank = row.method === 'bank'
+  const showMfs = ['bkash', 'nagad', 'rocket'].includes(row.method)
+
+  return (
+    <div className="grid gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50 relative">
+      <button
+        onClick={() => onRemove(row.id)}
+        className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition-colors"
+        type="button"
+      >
+        <Minus className="h-4 w-4" />
+      </button>
+
+      {/* Row 1: Student + Fee Type */}
+      <div className="grid grid-cols-2 gap-3 pr-6">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Student</Label>
+          <CustomCombobox
+            items={studentItems}
+            value={row.student}
+            onChange={(v) => onStudentChange(row.id, v)}
+            placeholder="Search student..."
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Fee Type</Label>
+          {row.isLoadingFees ? (
+            <div className="h-10 flex items-center px-3 border rounded-md bg-white text-sm text-gray-400">
+              Loading fees...
+            </div>
+          ) : (
+            <CustomCombobox
+              items={row.loadedFees.map((f) => ({ id: f.id, name: f.name }))}
+              value={row.feeType}
+              onChange={(v) => {
+                const fee = row.loadedFees.find((f) => f.id === v?.id)
+                onUpdate(row.id, {
+                  feeType: v,
+                  amount: fee ? String(fee.remainingAmount) : '',
+                })
+              }}
+              placeholder={
+                row.student ? 'Select fee type...' : 'Select student first'
+              }
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: Amount + Method + Bank/MFS + Date */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Amount</Label>
+          <Input
+            type="number"
+            min={1}
+            value={row.amount}
+            onChange={(e) => onUpdate(row.id, { amount: e.target.value })}
+            placeholder="Enter amount"
+            className="h-10 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">Method</Label>
+          <CustomCombobox
+            items={[
+              { id: 'cash', name: 'Cash' },
+              { id: 'bkash', name: 'bKash' },
+              { id: 'nagad', name: 'Nagad' },
+              { id: 'rocket', name: 'Rocket' },
+              { id: 'bank', name: 'Bank' },
+            ]}
+            value={
+              row.method
+                ? {
+                    id: row.method,
+                    name:
+                      row.method.charAt(0).toUpperCase() + row.method.slice(1),
+                  }
+                : null
+            }
+            onChange={(v) =>
+              onUpdate(row.id, {
+                method: v?.id || '',
+                bankAccountId: null,
+                mfsId: null,
+              })
+            }
+            placeholder="Select method"
+          />
+        </div>
+
+        {showBank && (
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-gray-600">
+              Bank Account
+            </Label>
+            <CustomCombobox
+              items={bankAccountItems}
+              value={row.bankAccountId}
+              onChange={(v) => onUpdate(row.id, { bankAccountId: v })}
+              placeholder="Select bank"
+            />
+          </div>
+        )}
+
+        {showMfs && (
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-gray-600">
+              {row.method.charAt(0).toUpperCase() + row.method.slice(1)} Account
+            </Label>
+            <CustomCombobox
+              items={mfsItems(row.method)}
+              value={row.mfsId}
+              onChange={(v) => onUpdate(row.id, { mfsId: v })}
+              placeholder={`Select ${row.method}`}
+            />
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-gray-600">
+            Payment Date
+          </Label>
+          <Input
+            type="date"
+            value={row.paymentDate}
+            onChange={(e) => onUpdate(row.id, { paymentDate: e.target.value })}
+            className="h-10 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Row 3: Remarks */}
+      <div className="space-y-1">
+        <Label className="text-xs font-medium text-gray-600">
+          Remarks (optional)
+        </Label>
+        <Input
+          value={row.remarks}
+          onChange={(e) => onUpdate(row.id, { remarks: e.target.value })}
+          placeholder="Enter remarks..."
+          className="h-10 text-sm"
+        />
+      </div>
+    </div>
+  )
+}
+
+// -------------------------------------------------------------------
 // Students component
 // -------------------------------------------------------------------
+let bulkRowCounter = 1
+
 const Students = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -273,7 +458,7 @@ const Students = () => {
   const [paidAmounts, setPaidAmounts] = useState<Record<number, string>>({})
 
   const [isFeeCollectionOpen, setIsFeeCollectionOpen] = useState(false)
-  const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
+  const [isBulkCollectOpen, setIsBulkCollectOpen] = useState(false)
   const [selectedStudentIdForFees, setSelectedStudentIdForFees] = useState<
     number | null
   >(null)
@@ -290,7 +475,10 @@ const Students = () => {
   const [remarks, setRemarks] = useState<string>('')
   const [selectedFees, setSelectedFees] = useState<number[]>([])
   const [showAllFees, setShowAllFees] = useState(false)
-  const [parsedExcelData, setParsedExcelData] = useState<any[]>([])
+
+  // Bulk collect state
+  const [bulkRows, setBulkRows] = useState<BulkFeeRowData[]>([])
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
@@ -329,6 +517,44 @@ const Students = () => {
       }))
   }, [mfsData, paymentMethod])
 
+  // Derived items for bulk popup
+  const studentItems = useMemo(() => {
+    return (
+      studentsData?.data?.map((s: any) => ({
+        id: String(s.studentDetails.studentId),
+        name: [
+          `${s.studentDetails.firstName} ${s.studentDetails.lastName} - ${s.studentDetails.className} - ${s.studentDetails.sectionName}`,
+          // s.studentDetails.className,
+          // s.studentDetails.sectionName,
+        ]
+          .filter(Boolean)
+          .join('-'),
+      })) || []
+    )
+  }, [studentsData?.data])
+
+  const bankAccountItems = useMemo(() => {
+    return (
+      bankAccounts?.data?.map((b: any) => ({
+        id: b.bankAccountId?.toString() || '0',
+        name: `${b.bankName} - ${b.accountNumber} - ${b.branch}`,
+      })) || []
+    )
+  }, [bankAccounts?.data])
+
+  const getMfsItems = useCallback(
+    (method: string) => {
+      if (!mfsData?.data) return []
+      return mfsData.data
+        .filter((mfs: any) => mfs.mfsType === method)
+        .map((mfs: any) => ({
+          id: mfs.mfsId?.toString() || '0',
+          name: `${mfs.accountName} - ${mfs.mfsNumber}`,
+        }))
+    },
+    [mfsData?.data]
+  )
+
   const resetForm = useCallback(() => {
     setPaymentMethod('')
     setBankAccountId(null)
@@ -337,7 +563,7 @@ const Students = () => {
     setRemarks('')
     setSelectedFees([])
     setShowAllFees(false)
-    setPaidAmounts({}) // ← add this
+    setPaidAmounts({})
   }, [])
 
   const closePopup = useCallback(() => {
@@ -361,6 +587,136 @@ const Students = () => {
     reset: () => setDeletingStudentId(null),
   })
 
+  // -------------------------------------------------------------------
+  // Bulk Collect helpers
+  // -------------------------------------------------------------------
+  const makeEmptyRow = (): BulkFeeRowData => ({
+    id: bulkRowCounter++,
+    student: null,
+    feeType: null,
+    amount: '',
+    method: 'cash',
+    bankAccountId: null,
+    mfsId: null,
+    paymentDate: new Date().toISOString().split('T')[0],
+    remarks: '',
+    loadedFees: [],
+    isLoadingFees: false,
+  })
+
+  const openBulkCollect = () => {
+    setBulkRows([makeEmptyRow()])
+    setIsBulkCollectOpen(true)
+  }
+
+  const addBulkRow = () => setBulkRows((prev) => [...prev, makeEmptyRow()])
+
+  const removeBulkRow = (id: number) => {
+    setBulkRows((prev) => {
+      if (prev.length === 1) return [makeEmptyRow()]
+      return prev.filter((r) => r.id !== id)
+    })
+  }
+
+  const updateBulkRow = (id: number, patch: Partial<BulkFeeRowData>) => {
+    setBulkRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
+    )
+  }
+
+  const handleBulkStudentChange = async (
+    rowId: number,
+    student: { id: string; name: string } | null
+  ) => {
+    // Reset feeType and mark as loading
+    updateBulkRow(rowId, {
+      student,
+      feeType: null,
+      amount: '',
+      loadedFees: [],
+      isLoadingFees: !!student,
+    })
+
+    if (!student || !token) return
+
+    try {
+      const result = await queryClient.fetchQuery({
+        queryKey: ['students', Number(student.id)],
+        queryFn: () => getStudentFeesById(token, Number(student.id)),
+        staleTime: 5 * 60 * 1000,
+      })
+
+      const fees: any[] = Array.isArray(result) ? result : (result?.data ?? [])
+      const unpaidFees = fees.filter(
+        (fee: any) =>
+          fee.status !== 'Paid' &&
+          fee.feesTypeName &&
+          fee.studentFeesId !== undefined
+      )
+
+      const loadedFees = unpaidFees.map((fee: any) => ({
+        id: String(fee.studentFeesId),
+        name: `${fee.feesTypeName} (Due: ${formatNumber(fee.remainingAmount ?? 0)})`,
+        remainingAmount: fee.remainingAmount ?? 0,
+      }))
+
+      updateBulkRow(rowId, { loadedFees, isLoadingFees: false })
+    } catch (e) {
+      console.warn('Could not fetch fees for student:', student.id, e)
+      updateBulkRow(rowId, { isLoadingFees: false })
+    }
+  }
+
+  const handleBulkSubmit = async () => {
+    const validRows = bulkRows.filter((r) => r.student && r.feeType && r.method)
+
+    if (validRows.length === 0) {
+      alert(
+        'Please fill in at least one complete row (Student, Fee Type, Method).'
+      )
+      return
+    }
+
+    const payload: CollectFeesType[] = validRows.map((r) => {
+      const fee = r.loadedFees.find((f) => f.id === r.feeType?.id)
+      const paidAmount =
+        r.amount && Number(r.amount) > 0
+          ? Number(r.amount)
+          : fee?.remainingAmount || 0
+
+      return {
+        studentId: Number(r.student!.id),
+        studentFeesId: Number(r.feeType!.id),
+        paidAmount,
+        method: r.method as CollectFeesType['method'],
+        bankAccountId:
+          r.method === 'bank' && r.bankAccountId
+            ? Number(r.bankAccountId.id)
+            : null,
+        mfsId:
+          ['bkash', 'nagad', 'rocket'].includes(r.method) && r.mfsId
+            ? Number(r.mfsId.id)
+            : null,
+        paymentDate: r.paymentDate,
+        remarks: r.remarks,
+      }
+    })
+
+    setIsBulkSubmitting(true)
+    try {
+      await collectFeesMutation.mutateAsync(payload as any)
+      setIsBulkCollectOpen(false)
+      setBulkRows([])
+    } catch (e) {
+      console.error('Bulk submit error:', e)
+    } finally {
+      setIsBulkSubmitting(false)
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Single fee collection helpers
+  // -------------------------------------------------------------------
   const handleSort = (
     column: keyof GetStudentWithFeesType['studentDetails']
   ) => {
@@ -468,7 +824,7 @@ const Students = () => {
         studentFeesId,
         studentId: selectedStudentIdForFees,
         method: paymentMethod as 'bank' | 'bkash' | 'nagad' | 'rocket' | 'cash',
-        paidAmount, // ← now uses custom input
+        paidAmount,
         bankAccountId:
           paymentMethod === 'bank' && bankAccountId
             ? Number(bankAccountId.id)
@@ -527,334 +883,10 @@ const Students = () => {
     }, 100)
   }
 
-  // ── Place this OUTSIDE the component (or as a module-level function) ────────
-  function columnIndexToLetter(col: number): string {
-    let letter = ''
-    while (col > 0) {
-      const remainder = (col - 1) % 26
-      letter = String.fromCharCode(65 + remainder) + letter
-      col = Math.floor((col - 1) / 26)
-    }
-    return letter
-  }
-
-  // -------------------------------------------------------------------
-  // Download Excel template with dropdowns (uses exceljs)
-  // Fetches fees per student at download time using the same API that
-  // powers the fee collection popup, so feesTypeName is always present.
-  // -------------------------------------------------------------------
-  // ── Replace your existing downloadTemplate with this ────────────────────────
-  const downloadTemplate = async () => {
-    const ExcelJS = (await import('exceljs')).default
-    const workbook = new ExcelJS.Workbook()
-
-    const students: any[] = studentsData?.data || []
-
-    type StudentEntry = {
-      displayLabel: string
-      safeName: string
-      feeLabels: string[]
-    }
-    const studentEntries: StudentEntry[] = []
-    const studentDisplayLabels: string[] = []
-
-    for (const s of students) {
-      const fullName = `${s.studentDetails.firstName} ${s.studentDetails.lastName}`
-      const studentId: number = s.studentDetails.studentId
-
-      const displayLabel = `${fullName} | ${studentId}`
-      studentDisplayLabels.push(displayLabel)
-
-      const safeName =
-        'S_' +
-        fullName
-          .replace(/[^a-zA-Z0-9]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '')
-          .slice(0, 200) +
-        '_' +
-        studentId
-
-      if (!studentId || !token) {
-        studentEntries.push({ displayLabel, safeName, feeLabels: [] })
-        continue
-      }
-
-      try {
-        const result = await queryClient.fetchQuery({
-          queryKey: ['students', studentId],
-          queryFn: () => getStudentFeesById(token, studentId),
-          staleTime: 5 * 60 * 1000,
-        })
-
-        const fees: any[] = Array.isArray(result)
-          ? result
-          : (result?.data ?? [])
-
-        const feeLabels = fees
-          .filter(
-            (fee: any) => fee.feesTypeName && fee.studentFeesId !== undefined
-          )
-          .map(
-            (fee: any) =>
-              `${fullName} | ${fee.feesTypeName} | ${fee.studentFeesId} | ${fee.remainingAmount ?? 0}`
-          )
-
-        studentEntries.push({ displayLabel, safeName, feeLabels })
-      } catch (e) {
-        console.warn(`Could not fetch fees for student ${studentId}:`, e)
-        studentEntries.push({ displayLabel, safeName, feeLabels: [] })
-      }
-    }
-
-    // ── Hidden Lookup sheet ──────────────────────────────────────────────────
-    // Col A = displayLabel  (StudentList named range)
-    // Col B = safeName      (looked up by VLOOKUP in helper col H)
-    // Col C+ = per-student fee labels (each col = one named range)
-    const lookupSheet = workbook.addWorksheet('Lookup')
-    lookupSheet.state = 'veryHidden'
-
-    studentEntries.forEach(({ displayLabel, safeName, feeLabels }, idx) => {
-      const row = idx + 1
-      lookupSheet.getCell(`A${row}`).value = displayLabel
-      lookupSheet.getCell(`B${row}`).value = safeName
-
-      const feeColLetter = columnIndexToLetter(idx + 3) // C, D, E …
-
-      feeLabels.forEach((label, feeIdx) => {
-        lookupSheet.getCell(`${feeColLetter}${feeIdx + 1}`).value = label
-      })
-
-      if (feeLabels.length > 0) {
-        workbook.definedNames.add(
-          `Lookup!$${feeColLetter}$1:$${feeColLetter}$${feeLabels.length}`,
-          safeName
-        )
-      }
-    })
-
-    workbook.definedNames.add(
-      `Lookup!$A$1:$A$${Math.max(studentDisplayLabels.length, 1)}`,
-      'StudentList'
-    )
-
-    // ── Main "Fee Collection" sheet ──────────────────────────────────────────
-    const sheet = workbook.addWorksheet('Fee Collection')
-
-    sheet.columns = [
-      { header: 'Student Name', key: 'studentName', width: 32 },
-      { header: 'Fee Type', key: 'feeType', width: 50 },
-      { header: 'Amount', key: 'amount', width: 14 }, // ← ADD THIS
-      { header: 'Method', key: 'method', width: 14 },
-      { header: 'Bank Account Id', key: 'bankAccountId', width: 16 },
-      { header: 'MFS Id', key: 'mfsId', width: 10 },
-      { header: 'Payment Date', key: 'paymentDate', width: 16 },
-      { header: 'Remarks', key: 'remarks', width: 24 },
-    ]
-
-    const headerRow = sheet.getRow(1)
-    headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FF000000' } }
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFBBF24' },
-      }
-      cell.alignment = { vertical: 'middle', horizontal: 'center' }
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
-      }
-    })
-    headerRow.height = 20
-
-    for (let row = 2; row <= 200; row++) {
-      // Col A: Student Name dropdown
-      sheet.getCell(`A${row}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        showErrorMessage: true,
-        errorStyle: 'stop',
-        errorTitle: 'Invalid Student',
-        error: 'Please select a student from the dropdown.',
-        formulae: ['StudentList'],
-      }
-
-      // Col H (hidden): resolves safeName from selected student label
-      sheet.getCell(`I${row}`).value = {
-        formula: `IFERROR(VLOOKUP(A${row},Lookup!$A:$B,2,0),"")`,
-      }
-
-      // Col B: Fee Type — only shows fees for the student selected in col A
-      sheet.getCell(`B${row}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        showErrorMessage: true,
-        errorStyle: 'warning',
-        errorTitle: 'Select Student First',
-        error: 'Please select a Student Name in column A first.',
-        formulae: [`INDIRECT(I${row})`],
-      }
-
-      // Col C: Payment Method
-      sheet.getCell(`D${row}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        showErrorMessage: true,
-        errorStyle: 'stop',
-        errorTitle: 'Invalid Method',
-        error: 'Choose: cash, bkash, nagad, rocket, or bank.',
-        formulae: ['"cash,bkash,nagad,rocket,bank"'],
-      }
-    }
-
-    sheet.getColumn('I').hidden = true
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    saveAs(blob, 'fee-collection-template.xlsx')
-  }
-
-  // -------------------------------------------------------------------
-  // Handle parsed Excel data (preview only – no change needed)
-  // -------------------------------------------------------------------
-  // -------------------------------------------------------------------
-  // Handle Excel data submission – maps names → IDs before sending
-  // -------------------------------------------------------------------
-  const handleExcelSubmit = async (submittedData: any[]) => {
-    try {
-      const data = submittedData
-      console.log('handleExcelSubmit data:', data)
-      console.log(
-        'First row keys:',
-        data[0]
-          ? Object.keys(data[0]).map((k) => `"${k}" (len:${k.length})`)
-          : 'no data'
-      )
-      const feeCollections: CollectFeesType[] = data
-        .filter((row) => {
-          const keys = Object.keys(row)
-          const studentKey = keys.find((k) => k.trim() === 'Student Name')
-          const feeKey = keys.find((k) => k.trim() === 'Fee Type')
-          console.log('Keys found:', { studentKey, feeKey, allKeys: keys })
-          return row[studentKey || 'Student Name'] && row[feeKey || 'Fee Type']
-        })
-        .map((row) => {
-          // Use trimmed key matching to handle any whitespace differences
-          const keys = Object.keys(row)
-          const studentKey =
-            keys.find((k) => k.trim() === 'Student Name') || 'Student Name'
-          const feeKey = keys.find((k) => k.trim() === 'Fee Type') || 'Fee Type'
-          const methodKey = keys.find((k) => k.trim() === 'Method') || 'Method'
-          const dateKey =
-            keys.find((k) => k.trim() === 'Payment Date') || 'Payment Date'
-          const bankKey =
-            keys.find((k) => k.trim() === 'Bank Account Id') ||
-            'Bank Account Id'
-          const mfsKey = keys.find((k) => k.trim() === 'MFS Id') || 'MFS Id'
-          const remarksKey =
-            keys.find((k) => k.trim() === 'Remarks') || 'Remarks'
-
-          // ── Parse Student Name label ───────────────────────────────
-          // Format: "Full Name | <studentId>"
-          // e.g.  "Fatima Siraj Sizdah | 140"
-          const studentLabel: string = row[studentKey] || ''
-          const studentParts = studentLabel.split(' | ')
-          const studentId = Number(studentParts[studentParts.length - 1])
-
-          // ── Parse Fee Type label ───────────────────────────────────
-          // Format: "Full Name | Fee Type Name | <studentFeesId> | <remainingAmount>"
-          // e.g.  "Fatima Siraj Sizdah | January Fees | 1820 | 2000"
-          const feeLabel: string = row[feeKey] || ''
-          const feeParts = feeLabel.split(' | ')
-          const studentFeesId = Number(feeParts[feeParts.length - 2])
-          const remainingAmount = Number(feeParts[feeParts.length - 1])
-
-          const amountKey = keys.find((k) => k.trim() === 'Amount')
-          const rawAmount = amountKey ? row[amountKey] : undefined
-          const customAmount =
-            rawAmount !== undefined && rawAmount !== ''
-              ? Number(rawAmount)
-              : null
-          const paidAmount =
-            customAmount !== null && !isNaN(customAmount) && customAmount > 0
-              ? customAmount
-              : remainingAmount
-
-          console.log('Amount debug:', {
-            amountKey,
-            rawAmount,
-            customAmount,
-            paidAmount,
-          })
-
-          // ── Normalize payment date ─────────────────────────────────
-          let rawDate: string =
-            row[dateKey] || new Date().toISOString().split('T')[0]
-          if (rawDate && !rawDate.includes('-')) {
-            const d = new Date(rawDate)
-            rawDate = !isNaN(d.getTime())
-              ? d.toISOString().split('T')[0]
-              : rawDate
-          }
-
-          const result = {
-            studentId,
-            studentFeesId,
-            paidAmount,
-            method: (row[methodKey] || 'cash') as CollectFeesType['method'],
-            bankAccountId: row[bankKey] ? Number(row[bankKey]) : null,
-            mfsId: row[mfsKey] ? Number(row[mfsKey]) : null,
-            paymentDate: rawDate,
-            remarks: row[remarksKey] || '',
-          }
-          console.log('Parsed row:', result)
-          return result
-        })
-
-      const unresolved = feeCollections.filter(
-        (r) =>
-          isNaN(r.studentId) || isNaN(r.studentFeesId) || r.studentFeesId === 0
-      )
-      if (unresolved.length > 0) {
-        const proceed = window.confirm(
-          `${unresolved.length} row(s) have missing student or fee data and will be skipped. Continue?`
-        )
-        if (!proceed) return
-      }
-
-      const validCollections = feeCollections.filter(
-        (r) =>
-          !isNaN(r.studentId) &&
-          !isNaN(r.studentFeesId) &&
-          r.studentFeesId !== 0
-      )
-
-      if (validCollections.length === 0) {
-        alert(
-          'No valid rows to import. Please download a fresh template and try again.'
-        )
-        return
-      }
-
-      await collectFeesMutation.mutateAsync(validCollections as any)
-      setIsImportPopupOpen(false)
-      setParsedExcelData([])
-    } catch (error) {
-      console.error('Error importing fee collections:', error)
-      throw error
-    }
-  }
-
   const filteredAndSortedFees = useMemo(() => {
     if (!studentFees?.data) return []
     let fees = studentFees.data
 
-    // Deduplicate by studentFeesId — keep only the first occurrence
     const seen = new Set()
     fees = fees.filter((fee: any) => {
       if (seen.has(fee.studentFeesId)) return false
@@ -897,26 +929,17 @@ const Students = () => {
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                className="gap-2 bg-transparent"
-                onClick={downloadTemplate}
-                disabled={!studentsData?.data}
+                className="gap-2 bg-transparent border-amber-500 text-amber-700 hover:bg-amber-50"
+                onClick={openBulkCollect}
               >
-                <Download className="h-4 w-4" />
-                Template
+                <Layers className="h-4 w-4" />
+                Bulk Collect Fees
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Download Excel template with student &amp; fee dropdowns
+              Collect fees for multiple students at once
             </TooltipContent>
           </Tooltip>
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={() => setIsImportPopupOpen(true)}
-          >
-            <Upload className="h-4 w-4" />
-            Import
-          </Button>
         </div>
       </div>
 
@@ -1168,7 +1191,124 @@ const Students = () => {
         </div>
       )}
 
-      {/* Fee Collection Dialog */}
+      {/* ================================================================
+          Bulk Collect Fees Popup
+      ================================================================ */}
+      <Dialog open={isBulkCollectOpen} onOpenChange={setIsBulkCollectOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              <Layers className="h-5 w-5 text-amber-600" />
+              Bulk Collect Fees
+            </DialogTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Add multiple students and collect their fees in one submission.
+              Search students by name or admission number.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {bulkRows.map((row, idx) => (
+              <div key={idx}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    Entry #{idx + 1}
+                  </span>
+                  {row.student && row.feeType && row.method && (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                  )}
+                </div>
+                <BulkFeeRow
+                  row={row}
+                  studentItems={studentItems}
+                  bankAccountItems={bankAccountItems}
+                  mfsItems={getMfsItems}
+                  onUpdate={updateBulkRow}
+                  onRemove={removeBulkRow}
+                  onStudentChange={handleBulkStudentChange}
+                />
+              </div>
+            ))}
+
+            {/* Add row button */}
+            <button
+              onClick={addBulkRow}
+              type="button"
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-amber-300 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors text-sm font-medium"
+            >
+              <Plus className="h-4 w-4" />
+              Add Another Entry
+            </button>
+          </div>
+
+          {/* Summary bar */}
+          {bulkRows.some((r) => r.student && r.feeType) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between text-sm">
+              <span className="text-amber-800 font-medium">
+                {
+                  bulkRows.filter((r) => r.student && r.feeType && r.method)
+                    .length
+                }{' '}
+                of {bulkRows.length} entries ready to submit
+              </span>
+              <span className="text-amber-700 font-semibold">
+                Total:{' '}
+                {formatNumber(
+                  bulkRows
+                    .filter((r) => r.student && r.feeType)
+                    .reduce((sum, r) => {
+                      const fee = r.loadedFees.find(
+                        (f) => f.id === r.feeType?.id
+                      )
+                      return (
+                        sum +
+                        (r.amount && Number(r.amount) > 0
+                          ? Number(r.amount)
+                          : fee?.remainingAmount || 0)
+                      )
+                    }, 0)
+                )}
+              </span>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsBulkCollectOpen(false)
+                setBulkRows([])
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkSubmit}
+              disabled={
+                isBulkSubmitting ||
+                !bulkRows.some((r) => r.student && r.feeType && r.method)
+              }
+              className="bg-amber-600 hover:bg-amber-700 gap-2"
+            >
+              {isBulkSubmitting ? (
+                'Submitting...'
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Submit{' '}
+                  {bulkRows.filter((r) => r.student && r.feeType && r.method)
+                    .length > 0
+                    ? `(${bulkRows.filter((r) => r.student && r.feeType && r.method).length})`
+                    : ''}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fee Collection Dialog (single student) */}
       <Dialog open={isFeeCollectionOpen} onOpenChange={setIsFeeCollectionOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
@@ -1178,34 +1318,37 @@ const Students = () => {
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Form Section */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bkash">bKash</SelectItem>
-                    <SelectItem value="nagad">Nagad</SelectItem>
-                    <SelectItem value="rocket">Rocket</SelectItem>
-                    <SelectItem value="bank">Bank</SelectItem>
-                  </SelectContent>
-                </Select>
+                <CustomCombobox
+                  items={[
+                    { id: 'cash', name: 'Cash' },
+                    { id: 'bkash', name: 'bKash' },
+                    { id: 'nagad', name: 'Nagad' },
+                    { id: 'rocket', name: 'Rocket' },
+                    { id: 'bank', name: 'Bank' },
+                  ]}
+                  value={
+                    paymentMethod
+                      ? {
+                          id: paymentMethod,
+                          name:
+                            paymentMethod.charAt(0).toUpperCase() +
+                            paymentMethod.slice(1),
+                        }
+                      : null
+                  }
+                  onChange={(v) => setPaymentMethod(v?.id || '')}
+                  placeholder="Select method"
+                />
               </div>
 
               {paymentMethod === 'bank' && (
                 <div className="space-y-2">
                   <Label htmlFor="bankAccount">Bank Account</Label>
                   <CustomCombobox
-                    items={
-                      bankAccounts?.data?.map((b) => ({
-                        id: b.bankAccountId?.toString() || '0',
-                        name: `${b.bankName} - ${b.accountNumber} - ${b.branch}`,
-                      })) || []
-                    }
+                    items={bankAccountItems}
                     value={bankAccountId}
                     onChange={(v) => setBankAccountId(v)}
                     placeholder="Select bank account"
@@ -1247,7 +1390,6 @@ const Students = () => {
               </div>
             </div>
 
-            {/* Student Fees Section */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">
@@ -1329,9 +1471,41 @@ const Students = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredAndSortedFees?.map((fee: any) => {
-                        const isDueDatePassed =
-                          new Date(fee.dueDate) < new Date()
+                        const today = new Date()
+                        const dueDate = new Date(fee.dueDate)
+                        const lastPaymentDate = fee.lastPaymentDate
+                          ? new Date(fee.lastPaymentDate)
+                          : null
+
+                        // remove time
+                        today.setHours(0, 0, 0, 0)
+                        dueDate.setHours(0, 0, 0, 0)
+                        if (lastPaymentDate)
+                          lastPaymentDate.setHours(0, 0, 0, 0)
+
                         const isPaid = fee.status === 'Paid'
+                        const isPartial = fee.status === 'Partial'
+                        const isUnpaid = fee.status === 'Unpaid'
+
+                        let colorClass = 'text-green-600'
+
+                        if (isPaid) {
+                          // 🔵 paid on time, 🔴 paid late (default blue if no lastPaymentDate)
+                          colorClass =
+                            lastPaymentDate && lastPaymentDate >= dueDate
+                              ? 'text-red-600'
+                              : 'text-blue-600'
+                        } else if (today > dueDate) {
+                          // 🔴 overdue, unpaid
+                          colorClass = 'text-red-600'
+                        } else if (isPartial) {
+                          // 🟡 partial, still within due date
+                          colorClass = 'text-yellow-600'
+                        } else {
+                          // 🟢 unpaid, not yet overdue
+                          colorClass = 'text-green-600'
+                        }
+
                         return (
                           <TableRow key={fee.studentFeesId}>
                             <TableCell>
@@ -1345,40 +1519,27 @@ const Students = () => {
                                 disabled={isPaid}
                               />
                             </TableCell>
+
                             <TableCell>{fee.feesTypeName || 'N/A'}</TableCell>
+
                             <TableCell>
-                              <span
-                                className={
-                                  isDueDatePassed
-                                    ? 'text-red-600'
-                                    : 'text-green-600'
-                                }
-                              >
+                              <span className={colorClass}>
                                 {formatNumber(fee.amount) || 0}
                               </span>
                             </TableCell>
+
                             <TableCell>
-                              <span
-                                className={
-                                  isDueDatePassed
-                                    ? 'text-red-600'
-                                    : 'text-green-600'
-                                }
-                              >
+                              <span className={colorClass}>
                                 {formatNumber(fee.remainingAmount) || 0}
                               </span>
                             </TableCell>
+
                             <TableCell>
-                              <span
-                                className={
-                                  isDueDatePassed
-                                    ? 'text-red-600'
-                                    : 'text-green-600'
-                                }
-                              >
+                              <span className={colorClass}>
                                 {formatNumber(fee.paidAmount) || 0}
                               </span>
                             </TableCell>
+
                             {selectedFees.length > 0 && (
                               <TableCell>
                                 {!isPaid &&
@@ -1402,9 +1563,11 @@ const Students = () => {
                                   )}
                               </TableCell>
                             )}
+
                             <TableCell>
                               {formatDate(fee.dueDate) || 'N/A'}
                             </TableCell>
+
                             <TableCell>
                               <span
                                 className={`text-xs badge px-2 py-1 rounded ${
@@ -1429,7 +1592,6 @@ const Students = () => {
               )}
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button variant="outline" onClick={closePopup}>
                 Cancel
@@ -1471,124 +1633,6 @@ const Students = () => {
           )}
         </div>
       </div>
-
-      {/* Import Popup */}
-      <Popup
-        isOpen={isImportPopupOpen}
-        onClose={() => {
-          setIsImportPopupOpen(false)
-          setParsedExcelData([])
-        }}
-        title="Import Fee Collections from Excel"
-        size="sm:max-w-3xl"
-      >
-        <div className="py-4 space-y-4">
-          <div className="p-4 bg-amber-50 rounded-md text-sm text-gray-700 space-y-1">
-            <p className="font-semibold">How to use:</p>
-            <p>
-              1. Click <strong>Template</strong> (top of page) to download the
-              Excel file with dropdowns.
-            </p>
-            <p>
-              2. Select <strong>Student Name</strong> and{' '}
-              <strong>Fee Type</strong> from the dropdowns in each row.
-            </p>
-            <p>
-              3. Fill in <strong>Method</strong>, <strong>Payment Date</strong>,
-              and optional fields.
-            </p>
-            <p>
-              4. Upload the file below and click <strong>Import</strong>.
-            </p>
-          </div>
-
-          {/* Self-contained file picker — no ExcelFileInput dependency */}
-          <div className="space-y-3">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                setParsedExcelData([])
-
-                import('xlsx').then((XLSX) => {
-                  const reader = new FileReader()
-                  reader.onload = (evt) => {
-                    try {
-                      const workbook = XLSX.read(evt.target?.result as string, {
-                        type: 'binary',
-                      })
-                      const sheetName = workbook.SheetNames.includes(
-                        'Fee Collection'
-                      )
-                        ? 'Fee Collection'
-                        : (workbook.SheetNames.find(
-                            (n) => n !== 'Lookup' && !n.startsWith('_')
-                          ) ?? workbook.SheetNames[0])
-                      const sheet = workbook.Sheets[sheetName]
-
-                      // Convert to JSON but only columns A-G (ignore hidden helper col H)
-                      const raw = XLSX.utils.sheet_to_json(sheet, {
-                        raw: false,
-                        range: 'A1:H200', // ← was G200
-                      }) as any[]
-
-                      // Filter out rows with no Student Name or Fee Type
-                      const filtered = raw.filter((row: any) => {
-                        const keys = Object.keys(row)
-                        const studentKey = keys.find(
-                          (k) => k.trim() === 'Student Name'
-                        )
-                        const feeKey = keys.find((k) => k.trim() === 'Fee Type')
-                        return (
-                          (studentKey &&
-                            String(row[studentKey] ?? '').trim()) ||
-                          (feeKey && String(row[feeKey] ?? '').trim())
-                        )
-                      })
-
-                      console.log(
-                        'File parsed, rows:',
-                        filtered.length,
-                        filtered
-                      )
-                      setParsedExcelData(filtered)
-                    } catch (err) {
-                      console.error('Parse error:', err)
-                      alert('Failed to parse Excel file. Please try again.')
-                    }
-                  }
-                  reader.readAsBinaryString(file)
-                })
-              }}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700"
-            />
-
-            {parsedExcelData.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm text-green-700 font-medium">
-                  ✓ {parsedExcelData.length} row(s) ready to import
-                </p>
-                <div className="bg-gray-50 rounded-md p-3 max-h-48 overflow-auto">
-                  <pre className="text-xs">
-                    {JSON.stringify(parsedExcelData, null, 2)}
-                  </pre>
-                </div>
-                <Button
-                  onClick={() => handleExcelSubmit(parsedExcelData)}
-                  className="bg-amber-600 hover:bg-amber-700 w-full"
-                  disabled={collectFeesMutation.isPending}
-                >
-                  {collectFeesMutation.isPending
-                    ? 'Importing...'
-                    : `Import ${parsedExcelData.length} Record(s)`}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </Popup>
 
       {/* Delete Dialog */}
       <AlertDialog
