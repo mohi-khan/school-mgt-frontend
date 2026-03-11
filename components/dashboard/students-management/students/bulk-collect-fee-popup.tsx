@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Search,
 } from 'lucide-react'
 import type { CollectFeesType } from '@/utils/type'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -195,6 +196,7 @@ const GroupAccordion = React.memo(
     isSubmitting?: boolean
   }) => {
     const [expanded, setExpanded] = useState(false)
+    const [studentSearch, setStudentSearch] = useState('')
 
     const [method, setMethod] = useState('cash')
     const [bankAccountId, setBankAccountId] = useState<{
@@ -222,6 +224,18 @@ const GroupAccordion = React.memo(
           name: `${m.accountName} - ${m.mfsNumber}`,
         }))
     }, [mfsData, method])
+
+    const filteredStudents = useMemo(() => {
+      if (!studentSearch.trim()) return group.students
+      const lower = studentSearch.toLowerCase()
+      return group.students.filter(
+        (s) =>
+          s.studentName.toLowerCase().includes(lower) ||
+          s.admissionNo.toLowerCase().includes(lower) ||
+          s.className.toLowerCase().includes(lower) ||
+          s.sectionName.toLowerCase().includes(lower)
+      )
+    }, [group.students, studentSearch])
 
     const totalStudents = group.students.length
     const paidFull = group.students.filter((s) => s.status === 'Paid').length
@@ -483,6 +497,25 @@ const GroupAccordion = React.memo(
               </div>
             </div>
 
+            {/* Student Search */}
+            <div className="px-4 py-3 border-b border-gray-100 bg-white">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <Input
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  placeholder="Search by name, admission no, class..."
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+              {studentSearch && (
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Showing {filteredStudents.length} of {group.students.length}{' '}
+                  students
+                </p>
+              )}
+            </div>
+
             {/* Students Table */}
             <div className="overflow-x-auto">
               <Table>
@@ -505,78 +538,90 @@ const GroupAccordion = React.memo(
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {group.students.map((student, i) => {
-                    const isPaid = student.status === 'Paid'
-                    const isPartial = student.status === 'Partial'
-                    const isSelected = selected[i] === true
-                    const customAmount = amounts[i] ?? ''
+                  {filteredStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={9}
+                        className="text-center py-6 text-gray-400 text-sm"
+                      >
+                        No students match your search.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredStudents.map((student) => {
+                      const i = group.students.indexOf(student)
+                      const isPaid = student.status === 'Paid'
+                      const isPartial = student.status === 'Partial'
+                      const isSelected = selected[i] === true
+                      const customAmount = amounts[i] ?? ''
 
-                    const rowBg = isPaid
-                      ? 'bg-green-50'
-                      : isPartial
-                        ? 'bg-yellow-50'
-                        : isSelected
-                          ? 'bg-amber-50'
-                          : ''
+                      const rowBg = isPaid
+                        ? 'bg-green-50'
+                        : isPartial
+                          ? 'bg-yellow-50'
+                          : isSelected
+                            ? 'bg-amber-50'
+                            : ''
 
-                    return (
-                      <TableRow key={i} className={rowBg}>
-                        <TableCell>
-                          <Checkbox
-                            checked={isSelected}
-                            disabled={isPaid}
-                            onCheckedChange={(c) => toggleOne(i, !!c)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-gray-800">
-                          {student.studentName}
-                        </TableCell>
-                        <TableCell className="text-gray-600 text-sm">
-                          {student.admissionNo}
-                        </TableCell>
-                        <TableCell className="text-gray-600 text-sm">
-                          {student.className} / {student.sectionName}
-                        </TableCell>
-                        <TableCell className="text-gray-700">
-                          {formatNumber(student.amount)}
-                        </TableCell>
-                        <TableCell className="text-green-600">
-                          {formatNumber(student.paidAmount)}
-                        </TableCell>
-                        <TableCell className="text-red-600 font-medium">
-                          {formatNumber(student.remainingAmount)}
-                        </TableCell>
-                        <TableCell>
-                          {!isPaid && isSelected ? (
-                            <Input
-                              type="number"
-                              min={1}
-                              max={student.remainingAmount}
-                              value={customAmount}
-                              placeholder={String(student.remainingAmount)}
-                              onChange={(e) => setAmount(i, e.target.value)}
-                              className="h-7 text-sm w-24"
+                      return (
+                        <TableRow key={i} className={rowBg}>
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              disabled={isPaid}
+                              onCheckedChange={(c) => toggleOne(i, !!c)}
                             />
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              student.status === 'Paid'
-                                ? 'bg-green-100 text-green-700'
-                                : student.status === 'Partial'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-red-100 text-red-700'
-                            }`}
-                          >
-                            {student.status}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-800">
+                            {student.studentName}
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm">
+                            {student.admissionNo}
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm">
+                            {student.className} / {student.sectionName}
+                          </TableCell>
+                          <TableCell className="text-gray-700">
+                            {formatNumber(student.amount)}
+                          </TableCell>
+                          <TableCell className="text-green-600">
+                            {formatNumber(student.paidAmount)}
+                          </TableCell>
+                          <TableCell className="text-red-600 font-medium">
+                            {formatNumber(student.remainingAmount)}
+                          </TableCell>
+                          <TableCell>
+                            {!isPaid && isSelected ? (
+                              <Input
+                                type="number"
+                                min={1}
+                                max={student.remainingAmount}
+                                value={customAmount}
+                                placeholder={String(student.remainingAmount)}
+                                onChange={(e) => setAmount(i, e.target.value)}
+                                className="h-7 text-sm w-24"
+                              />
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                student.status === 'Paid'
+                                  ? 'bg-green-100 text-green-700'
+                                  : student.status === 'Partial'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {student.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
             </div>
