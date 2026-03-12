@@ -498,6 +498,7 @@ export const paymentReportSchema = z.object({
   mfsNumber: z.string().nullable().optional(),
   mfsType: z.string().nullable().optional(),
   paidAmount: z.number(),
+  reference: z.string().nullable().optional(),
 })
 export type GetPaymentReportType = z.infer<typeof paymentReportSchema>
 

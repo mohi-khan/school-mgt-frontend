@@ -187,9 +187,9 @@ const GroupAccordion = React.memo(
           bankAccountId: { id: string; name: string } | null
           mfsId: { id: string; name: string } | null
           date: string
-          remarks: string
           selectedIndices: number[]
           amounts: string[]
+          studentRemarks: string[]
         }
       ) => void
     >
@@ -198,6 +198,7 @@ const GroupAccordion = React.memo(
     const [expanded, setExpanded] = useState(false)
     const [studentSearch, setStudentSearch] = useState('')
 
+    // Default method is 'cash'
     const [method, setMethod] = useState('cash')
     const [bankAccountId, setBankAccountId] = useState<{
       id: string
@@ -207,13 +208,16 @@ const GroupAccordion = React.memo(
       null
     )
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-    const [remarks, setRemarks] = useState('')
 
     const n = group.students.length
     const [selected, setSelected] = useState<boolean[]>(() =>
       Array(n).fill(false)
     )
     const [amounts, setAmounts] = useState<string[]>(() => Array(n).fill(''))
+    // Per-student remarks
+    const [studentRemarks, setStudentRemarks] = useState<string[]>(() =>
+      Array(n).fill('')
+    )
 
     const mfsItems = useMemo(() => {
       if (!mfsData?.data || !MFS_METHODS.includes(method)) return []
@@ -294,36 +298,29 @@ const GroupAccordion = React.memo(
       })
     }
 
+    const setStudentRemark = (i: number, value: string) => {
+      setStudentRemarks((prev) => {
+        const next = [...prev]
+        next[i] = value
+        return next
+      })
+    }
+
     const handleCollect = () => {
       console.log('[GroupAccordion handleCollect] group:', group.feesTypeName)
       console.log(
         '[GroupAccordion handleCollect] selectedIndices:',
         selectedIndices
       )
-      selectedIndices.forEach((i) => {
-        const student = group.students[i]
-        console.log(
-          '[GroupAccordion handleCollect] student index',
-          i,
-          '| studentId:',
-          student.studentId,
-          '| studentFeesId:',
-          student.studentFeesId,
-          '| studentName:',
-          student.studentName,
-          '| customAmount:',
-          amounts[i]
-        )
-      })
 
       onCollectGroup.current(group, {
         method,
         bankAccountId,
         mfsId,
         date,
-        remarks,
         selectedIndices,
         amounts,
+        studentRemarks,
       })
       setSelected((prev) => {
         const next = [...prev]
@@ -333,6 +330,13 @@ const GroupAccordion = React.memo(
         return next
       })
       setAmounts((prev) => {
+        const next = [...prev]
+        selectedIndices.forEach((i) => {
+          next[i] = ''
+        })
+        return next
+      })
+      setStudentRemarks((prev) => {
         const next = [...prev]
         selectedIndices.forEach((i) => {
           next[i] = ''
@@ -423,7 +427,7 @@ const GroupAccordion = React.memo(
         {/* Body */}
         {expanded && (
           <div className="bg-white border-t border-amber-200">
-            {/* Payment Controls */}
+            {/* Payment Controls — no group-level remarks */}
             <div className="p-4 bg-gray-50 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Payment Settings — applies to all selected students in this
@@ -485,15 +489,6 @@ const GroupAccordion = React.memo(
                     />
                   </div>
                 )}
-                <div className="space-y-1 flex-1 min-w-36">
-                  <Label className="text-xs">Remarks (optional)</Label>
-                  <Input
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Remarks..."
-                    className="h-8 text-sm"
-                  />
-                </div>
               </div>
             </div>
 
@@ -533,7 +528,12 @@ const GroupAccordion = React.memo(
                     <TableHead>Total</TableHead>
                     <TableHead>Paid</TableHead>
                     <TableHead>Due</TableHead>
-                    <TableHead className="w-28">Pay Amount</TableHead>
+                    {someSelected && (
+                      <TableHead className="w-28">Pay Amount</TableHead>
+                    )}
+                    {someSelected && (
+                      <TableHead className="w-36">Reference</TableHead>
+                    )}
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -541,7 +541,7 @@ const GroupAccordion = React.memo(
                   {filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={9}
+                        colSpan={someSelected ? 10 : 8}
                         className="text-center py-6 text-gray-400 text-sm"
                       >
                         No students match your search.
@@ -554,6 +554,7 @@ const GroupAccordion = React.memo(
                       const isPartial = student.status === 'Partial'
                       const isSelected = selected[i] === true
                       const customAmount = amounts[i] ?? ''
+                      const customRemark = studentRemarks[i] ?? ''
 
                       const rowBg = isPaid
                         ? 'bg-green-50'
@@ -590,21 +591,40 @@ const GroupAccordion = React.memo(
                           <TableCell className="text-red-600 font-medium">
                             {formatNumber(student.remainingAmount)}
                           </TableCell>
-                          <TableCell>
-                            {!isPaid && isSelected ? (
-                              <Input
-                                type="number"
-                                min={1}
-                                max={student.remainingAmount}
-                                value={customAmount}
-                                placeholder={String(student.remainingAmount)}
-                                onChange={(e) => setAmount(i, e.target.value)}
-                                className="h-7 text-sm w-24"
-                              />
-                            ) : (
-                              <span className="text-gray-400 text-xs">—</span>
-                            )}
-                          </TableCell>
+                          {someSelected && (
+                            <TableCell>
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={student.remainingAmount}
+                                  value={customAmount}
+                                  placeholder={String(student.remainingAmount)}
+                                  onChange={(e) => setAmount(i, e.target.value)}
+                                  className="h-7 text-sm w-24"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {someSelected && (
+                            <TableCell>
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="text"
+                                  value={customRemark}
+                                  placeholder="Reference..."
+                                  onChange={(e) =>
+                                    setStudentRemark(i, e.target.value)
+                                  }
+                                  className="h-7 text-sm w-32"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell>
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -662,40 +682,17 @@ const BulkCollectFeesDialog = ({
         bankAccountId: { id: string; name: string } | null
         mfsId: { id: string; name: string } | null
         date: string
-        remarks: string
         selectedIndices: number[]
         amounts: string[]
+        studentRemarks: string[]
       }
     ) => void
   >(null as any)
 
   collectRef.current = async (group, payload) => {
-    console.log('[BulkCollectFeesDialog collectRef] group:', group.feesTypeName)
-    console.log(
-      '[BulkCollectFeesDialog collectRef] selectedIndices:',
-      payload.selectedIndices
-    )
-    console.log(
-      '[BulkCollectFeesDialog collectRef] group.students:',
-      group.students
-    )
-
     const collectPayload: CollectFeesType[] = payload.selectedIndices.map(
       (i) => {
         const student = group.students[i]
-
-        console.log(
-          '[BulkCollectFeesDialog collectRef] building payload for index',
-          i,
-          '| studentId:',
-          student.studentId,
-          '| studentFeesId:',
-          student.studentFeesId,
-          '| studentName:',
-          student.studentName,
-          '| raw student object:',
-          JSON.stringify(student)
-        )
 
         const amt = payload.amounts[i]
         const paidAmount =
@@ -715,31 +712,12 @@ const BulkCollectFeesDialog = ({
               ? Number(payload.mfsId.id)
               : null,
           paymentDate: payload.date,
-          remarks: payload.remarks,
-        }
-
-        console.log(
-          '[BulkCollectFeesDialog collectRef] final entry:',
-          JSON.stringify(entry)
-        )
-
-        if (!entry.studentFeesId || isNaN(entry.studentFeesId)) {
-          console.error(
-            '[BulkCollectFeesDialog collectRef] ❌ studentFeesId is invalid!',
-            'student.studentFeesId was:',
-            student.studentFeesId,
-            '| Number() result:',
-            Number(student.studentFeesId)
-          )
+          // Each student gets their own remarks
+          remarks: payload.studentRemarks[i] || '',
         }
 
         return entry
       }
-    )
-
-    console.log(
-      '[BulkCollectFeesDialog collectRef] final collectPayload:',
-      JSON.stringify(collectPayload, null, 2)
     )
 
     if (collectPayload.length === 0) return
