@@ -433,82 +433,83 @@ const GroupAccordion = React.memo(
                 Payment Settings — applies to all selected students in this
                 group
               </p>
-              <div className="flex flex-wrap gap-3 items-end">
-                <div className="space-y-1">
-                  <Label className="text-xs">Date</Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="h-8 text-sm w-36"
-                  />
-                </div>
-                <div className="space-y-1 w-36">
-                  <Label className="text-xs">Method</Label>
-                  <Select
-                    value={method}
-                    onValueChange={(v) => {
-                      setMethod(v)
-                      setBankAccountId(null)
-                      setMfsId(null)
-                    }}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="Method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {METHOD_OPTIONS.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {showBank && (
-                  <div className="space-y-1 w-56">
-                    <Label className="text-xs">Bank Account</Label>
-                    <CustomCombobox
-                      items={bankAccountItems}
-                      value={bankAccountId}
-                      onChange={setBankAccountId}
-                      placeholder="Select bank"
+              <div className='flex justify-between items-end'>
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Date</Label>
+                    <Input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="h-[2.4rem] text-sm w-36 py-4"
                     />
                   </div>
-                )}
-                {showMfs && (
-                  <div className="space-y-1 w-56">
-                    <Label className="text-xs capitalize">
-                      {method} Account
-                    </Label>
-                    <CustomCombobox
-                      items={mfsItems}
-                      value={mfsId}
-                      onChange={setMfsId}
-                      placeholder={`Select ${method}`}
+                  <div className="space-y-1 w-36">
+                    <Label className="text-xs">Method</Label>
+                    <Select
+                      value={method}
+                      onValueChange={(v) => {
+                        setMethod(v)
+                        setBankAccountId(null)
+                        setMfsId(null)
+                      }}
+                    >
+                      <SelectTrigger className="h-[2.4rem] text-sm">
+                        <SelectValue placeholder="Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METHOD_OPTIONS.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {showBank && (
+                    <div className="space-y-1 w-56">
+                      <Label className="text-xs">Bank Account</Label>
+                      <CustomCombobox
+                        items={bankAccountItems}
+                        value={bankAccountId}
+                        onChange={setBankAccountId}
+                        placeholder="Select bank"
+                      />
+                    </div>
+                  )}
+                  {showMfs && (
+                    <div className="space-y-1 w-56">
+                      <Label className="text-xs capitalize">
+                        {method} Account
+                      </Label>
+                      <CustomCombobox
+                        items={mfsItems}
+                        value={mfsId}
+                        onChange={setMfsId}
+                        placeholder={`Select ${method}`}
+                      />
+                    </div>
+                  )}
+                </div>
+                {/* Student Search */}
+                <div className="">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <Input
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      placeholder="Search by name, admission no, class..."
+                      className="pl-8 h-[2.4rem] text-sm"
                     />
                   </div>
-                )}
+                  {studentSearch && (
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Showing {filteredStudents.length} of{' '}
+                      {group.students.length} students
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-
-            {/* Student Search */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-white">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <Input
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="Search by name, admission no, class..."
-                  className="pl-8 h-8 text-sm"
-                />
-              </div>
-              {studentSearch && (
-                <p className="text-xs text-gray-400 mt-1.5">
-                  Showing {filteredStudents.length} of {group.students.length}{' '}
-                  students
-                </p>
-              )}
             </div>
 
             {/* Students Table */}

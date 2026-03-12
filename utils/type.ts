@@ -202,7 +202,7 @@ export const studentFeesSchema = z.object({
   feesTypeId: z.number().positive().nullable().optional(),
   feesTypeName: z.string().optional(),
   amount: z.number().positive().optional(),
-  dueDate: z.string(),
+  dueDate: z.string().optional(),
   status: z.enum(['Paid', 'Unpaid', 'Partial']).optional(),
   percentageFineAmount: z.number().optional().nullable(),
 })
