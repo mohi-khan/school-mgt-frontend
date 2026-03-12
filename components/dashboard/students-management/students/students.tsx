@@ -83,6 +83,8 @@ const Students = () => {
     null
   )
   const [paidAmounts, setPaidAmounts] = useState<Record<number, string>>({})
+  // Per-fee remarks for single collect
+  const [feeRemarks, setFeeRemarks] = useState<Record<number, string>>({})
 
   const [isFeeCollectionOpen, setIsFeeCollectionOpen] = useState(false)
   const [isBulkCollectOpen, setIsBulkCollectOpen] = useState(false)
@@ -90,7 +92,8 @@ const Students = () => {
     number | null
   >(null)
 
-  const [paymentMethod, setPaymentMethod] = useState<string>('')
+  // Default payment method is 'cash'
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash')
   const [bankAccountId, setBankAccountId] = useState<{
     id: string
     name: string
@@ -156,7 +159,7 @@ const Students = () => {
   // ── Single fee collect ────────────────────────────────────────────────────
 
   const resetForm = useCallback(() => {
-    setPaymentMethod('')
+    setPaymentMethod('cash') // reset back to cash default
     setBankAccountId(null)
     setMfsId(null)
     setPaymentDate(new Date().toISOString().split('T')[0])
@@ -164,6 +167,7 @@ const Students = () => {
     setSelectedFees([])
     setShowAllFees(false)
     setPaidAmounts({})
+    setFeeRemarks({})
   }, [])
 
   const closePopup = useCallback(() => {
@@ -296,7 +300,8 @@ const Students = () => {
             ? Number(mfsId.id)
             : null,
         paymentDate,
-        remarks,
+        // Use per-fee remark; fallback to global remarks if any
+        remarks: feeRemarks[studentFeesId] || remarks || '',
       }
     })
     collectFeesMutation.mutate(feeData as any)
@@ -491,7 +496,9 @@ const Students = () => {
                       </Link>
                     </TableCell>
                     <TableCell>{student.studentDetails.admissionNo}</TableCell>
-                    <TableCell>{student.studentDetails.rollNo || '-'}</TableCell>
+                    <TableCell>
+                      {student.studentDetails.rollNo || '-'}
+                    </TableCell>
                     <TableCell>
                       {student.studentDetails.className || '-'}
                     </TableCell>
@@ -659,6 +666,8 @@ const Students = () => {
         setShowAllFees={setShowAllFees}
         paidAmounts={paidAmounts}
         setPaidAmounts={setPaidAmounts}
+        feeRemarks={feeRemarks}
+        setFeeRemarks={setFeeRemarks}
         bankAccountItems={bankAccountItems}
         filteredMfsAccounts={filteredMfsAccounts}
         selectedStudentIdForFees={selectedStudentIdForFees}

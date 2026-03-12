@@ -16,7 +16,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Printer } from 'lucide-react'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -44,6 +43,9 @@ type SingleCollectFeesDialogProps = {
   setShowAllFees: (v: boolean) => void
   paidAmounts: Record<number, string>
   setPaidAmounts: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  // NEW: per-fee remarks
+  feeRemarks: Record<number, string>
+  setFeeRemarks: React.Dispatch<React.SetStateAction<Record<number, string>>>
   bankAccountItems: { id: string; name: string }[]
   filteredMfsAccounts: { id: string; name: string }[]
   selectedStudentIdForFees: number | null
@@ -73,6 +75,8 @@ const SingleCollectFeesDialog = ({
   setShowAllFees,
   paidAmounts,
   setPaidAmounts,
+  feeRemarks,
+  setFeeRemarks,
   bankAccountItems,
   filteredMfsAccounts,
   selectedStudentIdForFees,
@@ -135,9 +139,11 @@ const SingleCollectFeesDialog = ({
     (paymentMethod === 'bank' && !bankAccountId) ||
     (MFS_METHODS.includes(paymentMethod) && !mfsId)
 
+  const hasSelectedFees = selectedFees.length > 0
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             Collect Fees
@@ -188,16 +194,6 @@ const SingleCollectFeesDialog = ({
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="remarks">Remarks</Label>
-              <Textarea
-                id="remarks"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Enter remarks"
-                rows={3}
               />
             </div>
           </div>
@@ -259,9 +255,8 @@ const SingleCollectFeesDialog = ({
                       <TableHead>Amount</TableHead>
                       <TableHead>Due Amount</TableHead>
                       <TableHead>Paid Amount</TableHead>
-                      {selectedFees.length > 0 && (
-                        <TableHead>Pay Amount</TableHead>
-                      )}
+                      {hasSelectedFees && <TableHead>Pay Amount</TableHead>}
+                      {hasSelectedFees && <TableHead>Reference</TableHead>}
                       <TableHead>Due Date</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -279,6 +274,9 @@ const SingleCollectFeesDialog = ({
 
                       const isPaid = fee.status === 'Paid'
                       const isPartial = fee.status === 'Partial'
+                      const isSelected = selectedFees.includes(
+                        fee.studentFeesId
+                      )
 
                       let colorClass = 'text-green-600'
                       if (isPaid) {
@@ -296,7 +294,7 @@ const SingleCollectFeesDialog = ({
                         <TableRow key={fee.studentFeesId}>
                           <TableCell>
                             <Checkbox
-                              checked={selectedFees.includes(fee.studentFeesId)}
+                              checked={isSelected}
                               onCheckedChange={() =>
                                 handleFeeToggle(fee.studentFeesId)
                               }
@@ -319,25 +317,46 @@ const SingleCollectFeesDialog = ({
                               {formatNumber(fee.paidAmount) || 0}
                             </span>
                           </TableCell>
-                          {selectedFees.length > 0 && (
+                          {hasSelectedFees && (
                             <TableCell>
-                              {!isPaid &&
-                                selectedFees.includes(fee.studentFeesId) && (
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={fee.remainingAmount}
-                                    placeholder={String(fee.remainingAmount)}
-                                    value={paidAmounts[fee.studentFeesId] || ''}
-                                    onChange={(e) =>
-                                      setPaidAmounts((prev) => ({
-                                        ...prev,
-                                        [fee.studentFeesId]: e.target.value,
-                                      }))
-                                    }
-                                    className="w-28 h-8 text-sm"
-                                  />
-                                )}
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={fee.remainingAmount}
+                                  placeholder={String(fee.remainingAmount)}
+                                  value={paidAmounts[fee.studentFeesId] || ''}
+                                  onChange={(e) =>
+                                    setPaidAmounts((prev) => ({
+                                      ...prev,
+                                      [fee.studentFeesId]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-28 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {hasSelectedFees && (
+                            <TableCell>
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="text"
+                                  placeholder="Reference..."
+                                  value={feeRemarks[fee.studentFeesId] || ''}
+                                  onChange={(e) =>
+                                    setFeeRemarks((prev) => ({
+                                      ...prev,
+                                      [fee.studentFeesId]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-36 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
                             </TableCell>
                           )}
                           <TableCell>

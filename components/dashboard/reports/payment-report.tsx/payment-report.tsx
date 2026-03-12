@@ -71,6 +71,7 @@ const PaymentReport = () => {
         ? `${report.mfsName} - ${report.mfsNumber} - ${report.mfsType}`
         : 'N/A',
       'Paid Amount': formatNumber(Number(report.paidAmount)),
+      Reference: report.reference || 'N/A',
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
@@ -326,6 +327,7 @@ const PaymentReport = () => {
                       <TableHead className="font-bold">Bank Info</TableHead>
                       <TableHead className="font-bold">MFS Info</TableHead>
                       <TableHead className="font-bold">Paid Amount</TableHead>
+                      <TableHead className="font-bold">Reference</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -356,6 +358,7 @@ const PaymentReport = () => {
                         <TableCell className="text-green-600">
                           {formatNumber(Number(report.paidAmount))}
                         </TableCell>
+                        <TableCell>{report.reference || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
