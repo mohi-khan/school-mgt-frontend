@@ -350,19 +350,19 @@ const BankAccounts = () => {
           <TableBody>
             {!bankAccounts || bankAccounts.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   Loading bank accounts...
                 </TableCell>
               </TableRow>
             ) : !bankAccounts.data || bankAccounts.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No bank accounts found
                 </TableCell>
               </TableRow>
             ) : paginatedBankAccounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No bank accounts match your search
                 </TableCell>
               </TableRow>

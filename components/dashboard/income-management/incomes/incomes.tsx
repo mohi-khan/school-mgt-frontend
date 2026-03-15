@@ -402,19 +402,19 @@ const Incomes = () => {
           <TableBody>
             {!incomes?.data ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={9} className="text-center py-4">
                   Loading incomes...
                 </TableCell>
               </TableRow>
             ) : incomes.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={9} className="text-center py-4">
                   No incomes found
                 </TableCell>
               </TableRow>
             ) : paginatedIncomes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={9} className="text-center py-4">
                   No incomes match your search
                 </TableCell>
               </TableRow>
