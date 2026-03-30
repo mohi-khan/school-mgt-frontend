@@ -387,7 +387,7 @@ const GroupAccordion = React.memo(
               />
               <StatBadge
                 icon={DollarSign}
-                label="Total Owed"
+                label="Total Due"
                 value={formatNumber(totalOwed)}
                 color="bg-red-50 border-red-200 text-red-700"
               />
