@@ -1,4 +1,4 @@
-import ResultReport from '@/components/dashboard/reports/result-report/result-report';
+import ResultReport from '@/components/dashboard/report/result-report/result-report';
 import React from 'react';
 
 const ResultReportPage = () => {

@@ -1,4 +1,4 @@
-import CashPaymentReport from '@/components/dashboard/reports/cash-payment-report/cash-payment-report';
+import CashPaymentReport from '@/components/dashboard/report/cash-payment-report/cash-payment-report';
 import React from 'react';
 
 const CashPaymentReportPage = () => {
