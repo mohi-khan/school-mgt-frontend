@@ -111,6 +111,20 @@ export const classSchema = z.object({
 export type CreateClassType = z.infer<typeof classSchema>
 export type GetClassType = z.infer<typeof classSchema>
 
+export const divisionSchema = z.object({
+  divisionId: z.number().optional(),
+  divisionName: z.string(),
+  divisionCode: z.string(),
+  description: z.string().optional().nullable(),
+  isActive: z.boolean(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateDivisionType = z.infer<typeof divisionSchema>
+export type GetDivisionType = z.infer<typeof divisionSchema>
+
 export const feesGroupSchema = z.object({
   feesGroupId: z.number().optional(),
   groupName: z.string().max(100),
