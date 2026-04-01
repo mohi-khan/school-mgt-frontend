@@ -7,6 +7,7 @@ import {
   createBankAccount,
   createBankMfsCash,
   createClass,
+  createDivision,
   createExam,
   createExamGroup,
   createExamResult,
@@ -24,6 +25,7 @@ import {
   deleteBankAccount,
   deleteBankMfsCash,
   deleteClass,
+  deleteDivision,
   deleteExam,
   deleteExamGroup,
   deleteExamResult,
@@ -40,6 +42,7 @@ import {
   editBankAccount,
   editBankMfsCash,
   editClass,
+  editDivision,
   editExam,
   editExamGroup,
   editExamResult,
@@ -56,6 +59,7 @@ import {
   getAllBankAccounts,
   getAllBankMfsCash,
   getAllClasses,
+  getAllDivisions,
   getAllExamGroups,
   getAllExamResults,
   getAllExams,
@@ -93,6 +97,7 @@ import {
   CreateBankAccountsType,
   CreateBankMfsCashType,
   CreateClassType,
+  CreateDivisionType,
   CreateExamGroupType,
   CreateExamResultsType,
   CreateExamsType,
@@ -264,6 +269,127 @@ export const useDeleteClass = ({
         description: 'class is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['classes'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//division
+export const useGetDivisions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['divisions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllDivisions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: CreateDivisionType) => {
+      return createDivision(data, token)
+    },
+    onSuccess: (data) => {
+      console.log('division added successfully:', data)
+
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
+
+      // Reset form fields after success
+      reset()
+
+      // Close the form modal
+      onClose()
+    },
+    onError: (error) => {
+      // Handle error
+      console.error('Error adding division:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateDivisionType }) => {
+      return editDivision(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'division edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing division:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteDivision(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'division is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
 
       reset()
       onClose()

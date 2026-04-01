@@ -1,4 +1,4 @@
-import ExpenseReport from '@/components/dashboard/reports/expense-report/expense-report';
+import ExpenseReport from '@/components/dashboard/report/expense-report/expense-report';
 import React from 'react';
 
 const ExpenseReportPage = () => {

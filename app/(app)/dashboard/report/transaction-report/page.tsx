@@ -1,4 +1,4 @@
-import TransactionReport from '@/components/dashboard/reports/transaction-report/transaction-report';
+import TransactionReport from '@/components/dashboard/report/transaction-report/transaction-report';
 import React from 'react';
 
 const TransactionReportPage = () => {

@@ -53,6 +53,8 @@ import {
   GetExpenseSummaryType,
   GetOpeningBalancesType,
   CreateOpeningBalancesType,
+  GetDivisionType,
+  CreateDivisionType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -126,6 +128,60 @@ export async function editClass(id: number, data: GetClassType, token: string) {
 export async function deleteClass(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/classes/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//divisions APIs
+export async function getAllDivisions(token: string) {
+  return fetchApi<GetDivisionType[]>({
+    url: 'api/divisions/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createDivision(
+  data: CreateDivisionType,
+  token: string
+) {
+  return fetchApi<CreateDivisionType>({
+    url: 'api/divisions/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editDivision(
+  id: number,
+  data: CreateDivisionType,
+  token: string
+) {
+  return fetchApi<CreateDivisionType>({
+    url: `api/divisions/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteDivision(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/divisions/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

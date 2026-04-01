@@ -59,6 +59,10 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/classes',
         },
         {
+          title: 'Divisions',
+          href: '/dashboard/setup/divisions',
+        },
+        {
           title: 'Opening Balances',
           href: '/dashboard/setup/opening-balances',
         },
