@@ -49,7 +49,6 @@ import {
 } from '@/hooks/use-api'
 import type { GetStudentWithFeesType } from '@/utils/type'
 import Link from 'next/link'
-import { tokenAtom } from '@/utils/user'
 import { formatNumber } from '@/utils/conversions'
 import { useReactToPrint } from 'react-to-print'
 import {
@@ -112,6 +111,7 @@ const Students = () => {
   const [selectedReceiptData, setSelectedReceiptData] = useState<{
     studentName: string
     className: string
+    divisionName: string
     sectionName: string
     admissionNo: string
     phoneNumber: string
@@ -218,6 +218,9 @@ const Students = () => {
           .includes(searchLower) ||
         String(student.studentDetails.phoneNumber).includes(searchLower) ||
         String(student.studentDetails.className)
+          .toLowerCase()
+          .includes(searchLower) ||
+        String(student.studentDetails.divisionName)
           .toLowerCase()
           .includes(searchLower)
       )
@@ -331,6 +334,7 @@ const Students = () => {
     setSelectedReceiptData({
       studentName: `${student.studentDetails.firstName} ${student.studentDetails.lastName}`,
       className: student.studentDetails.className || 'N/A',
+      divisionName: student.studentDetails.divisionName || 'N/A',
       sectionName: student.studentDetails.sectionName || 'N/A',
       admissionNo: student.studentDetails.admissionNo?.toString() || 'N/A',
       phoneNumber: student.studentDetails.phoneNumber || 'N/A',
@@ -411,6 +415,12 @@ const Students = () => {
                 className="cursor-pointer"
               >
                 Class <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('divisionName')}
+                className="cursor-pointer"
+              >
+                Division <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('sectionName')}
@@ -501,6 +511,9 @@ const Students = () => {
                     </TableCell>
                     <TableCell>
                       {student.studentDetails.className || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {student.studentDetails.divisionName || '-'}
                     </TableCell>
                     <TableCell>
                       {student.studentDetails.sectionName || '-'}

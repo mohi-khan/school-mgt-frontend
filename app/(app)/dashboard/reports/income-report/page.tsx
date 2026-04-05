@@ -1,4 +1,4 @@
-import IncomeReport from '@/components/dashboard/report/income-report/income-report';
+import IncomeReport from '@/components/dashboard/reports/income-report/income-report';
 import React from 'react';
 
 const IncomeReportPage = () => {
