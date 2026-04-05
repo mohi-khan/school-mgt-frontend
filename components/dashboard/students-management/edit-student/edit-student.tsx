@@ -13,15 +13,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DollarSign } from 'lucide-react'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useParams, useRouter } from 'next/navigation'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useGetClasses,
-  useGetSectionsByClassId,
+  useGetSections,
   useGetFeesMasters,
   useGetSessions,
+  useGetDivisions,
   useGetStudentById,
   useUpdateStudentWithFees,
 } from '@/hooks/use-api'
@@ -46,15 +47,15 @@ import { toast } from '@/hooks/use-toast'
 const EditStudent = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
-  const [token] = useAtom(tokenAtom)
   const { studentId } = useParams()
   const router = useRouter()
 
   const { data: student, isLoading: studentLoading } = useGetStudentById(
     Number(studentId)
   )
-  console.log('🚀 ~ EditStudent ~ student:', student)
   const { data: classes } = useGetClasses()
+  const { data: divisions } = useGetDivisions()
+  const { data: sections } = useGetSections()
   const { data: sessions } = useGetSessions()
   const { data: feesMasters } = useGetFeesMasters()
 
@@ -73,6 +74,7 @@ const EditStudent = () => {
       admissionNo: 0,
       rollNo: 0,
       classId: null,
+      divisionId: null,
       sectionId: null,
       sessionId: null,
       firstName: '',
@@ -103,10 +105,6 @@ const EditStudent = () => {
     studentFees: [],
   })
 
-  const { data: sections } = useGetSectionsByClassId(
-    formData.studentDetails.classId || 0
-  )
-
   // Populate form with student data
   useEffect(() => {
     if (student?.data) {
@@ -116,6 +114,7 @@ const EditStudent = () => {
       const populatedData = {
         studentDetails: {
           ...studentData.studentDetails,
+          divisionId: studentData.studentDetails.divisionId ?? null,
           dateOfBirth: studentData.studentDetails.dateOfBirth
             ? new Date(studentData.studentDetails.dateOfBirth)
                 .toISOString()
@@ -126,7 +125,6 @@ const EditStudent = () => {
                 .toISOString()
                 .split('T')[0]
             : new Date().toISOString().split('T')[0],
-          // Add these two lines:
           gender: (genderValue === 'female' ? 'female' : 'male') as
             | 'male'
             | 'female',
@@ -136,10 +134,8 @@ const EditStudent = () => {
       }
 
       setFormData(populatedData)
-      console.log('🚀 ~ EditStudent ~ populatedData:', populatedData)
       setInitialFormData(populatedData)
 
-      // Set selected fees masters
       const feesMasterIds =
         studentData.studentFees
           ?.map((fee) => fee.feesMasterId)
@@ -175,23 +171,17 @@ const EditStudent = () => {
 
   const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setStudentPhotoFile(file)
-    }
+    if (file) setStudentPhotoFile(file)
   }
 
   const handleFatherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setFatherPhotoFile(file)
-    }
+    if (file) setFatherPhotoFile(file)
   }
 
   const handleMotherPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setMotherPhotoFile(file)
-    }
+    if (file) setMotherPhotoFile(file)
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -215,13 +205,11 @@ const EditStudent = () => {
   }
 
   const toggleFeesMaster = (feesMasterId: number) => {
-    setSelectedFeesMasters((prev) => {
-      if (prev.includes(feesMasterId)) {
-        return prev.filter((id) => id !== feesMasterId)
-      } else {
-        return [...prev, feesMasterId]
-      }
-    })
+    setSelectedFeesMasters((prev) =>
+      prev.includes(feesMasterId)
+        ? prev.filter((id) => id !== feesMasterId)
+        : [...prev, feesMasterId]
+    )
   }
 
   const closePopup = useCallback(() => {
@@ -237,7 +225,6 @@ const EditStudent = () => {
       setMotherPhotoFile(null)
       setError(null)
 
-      // Reset selected fees masters to initial state
       const feesMasterIds =
         initialFormData.studentFees
           ?.map((fee) => fee.feesMasterId)
@@ -255,98 +242,59 @@ const EditStudent = () => {
     e.preventDefault()
     setError(null)
     const { studentDetails } = formData
-    console.log('=== FORM SUBMISSION START ===')
-    console.log('📋 Student Details:', studentDetails)
-    console.log('💰 Selected Fees Masters:', selectedFeesMasters)
 
-    // Validations
     if (!studentDetails.firstName.trim())
       return setError('Please enter first name')
     if (!studentDetails.lastName.trim())
       return setError('Please enter last name')
     if (!studentDetails.admissionNo || studentDetails.admissionNo <= 0)
       return setError('Please enter valid admission number')
+    if (!studentDetails.divisionId) return setError('Please select a division')
     if (!studentDetails.phoneNumber.trim())
       return setError('Please enter phone number')
     if (!studentDetails.fatherPhone.trim())
       return setError('Please enter father phone')
 
-    // Prepare student fees
     const studentFees = selectedFeesMasters.map((feesMasterId) => ({
       feesMasterId,
       studentId: Number(studentId),
     }))
-    console.log('💵 Prepared Student Fees:', studentFees)
 
     const form = new FormData()
 
-    // Add student details - preserve existing photo URLs if no new files
     const studentDetailsPayload = {
       ...studentDetails,
-      // Only set photoUrl to null if a new file is being uploaded
       photoUrl: studentPhotoFile ? null : studentDetails.photoUrl,
       fatherPhotoUrl: fatherPhotoFile ? null : studentDetails.fatherPhotoUrl,
       motherPhotoUrl: motherPhotoFile ? null : studentDetails.motherPhotoUrl,
     }
-    console.log('📦 Student Details Payload:', studentDetailsPayload)
-
-    const payloadData: CreateStudentWithFeesType = {
-      studentDetails: studentDetailsPayload,
-      studentFees: studentFees,
-    }
-    console.log('🚀 ~ handleSubmit ~ payloadData2222222:', payloadData)
 
     form.append('studentDetails', JSON.stringify(studentDetailsPayload))
     form.append('studentFees', JSON.stringify(studentFees))
 
-    // Append photos only if new files are selected
-    if (studentPhotoFile) {
-      form.append('photoUrl', studentPhotoFile)
-      console.log(`✅ Appended new photoUrl to FormData`)
-    }
-    if (fatherPhotoFile) {
-      form.append('fatherPhotoUrl', fatherPhotoFile)
-      console.log(`✅ Appended new fatherPhotoUrl to FormData`)
-    }
-    if (motherPhotoFile) {
-      form.append('motherPhotoUrl', motherPhotoFile)
-      console.log(`✅ Appended new motherPhotoUrl to FormData`)
-    }
-
-    console.log('📤 FormData contents:')
-    for (const pair of form.entries()) {
-      if (pair[1] instanceof File) {
-        console.log(
-          `  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`
-        )
-      } else {
-        console.log(`  ${pair[0]}: ${pair[1]}`)
-      }
-    }
-    console.log('=== FORM SUBMISSION END ===')
+    if (studentPhotoFile) form.append('photoUrl', studentPhotoFile)
+    if (fatherPhotoFile) form.append('fatherPhotoUrl', fatherPhotoFile)
+    if (motherPhotoFile) form.append('motherPhotoUrl', motherPhotoFile)
 
     try {
       await updateMutation.mutateAsync({
         id: Number(studentId),
         data: form,
       })
-      console.log('🚀 ~ handleSubmit ~ form:', form)
-      console.log('🚀 ~ handleSubmit ~ payloadData:', payloadData)
-      console.log('✅ Student updated successfully!')
       toast({
         title: 'Success!',
         description: 'Student updated successfully.',
       })
     } catch (err) {
       setError('Failed to update student')
-      console.error('❌ Error updating student:', err)
+      console.error('Error updating student:', err)
     }
   }
 
   useEffect(() => {
     if (updateMutation.error) {
       setError('Error updating student')
-      console.error('❌ Mutation error:', updateMutation.error)
+      console.error('Mutation error:', updateMutation.error)
     }
   }, [updateMutation.error])
 
@@ -393,6 +341,7 @@ const EditStudent = () => {
           <h2 className="text-lg font-semibold">Edit Student</h2>
         </div>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
         {/* Student Information Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
@@ -451,7 +400,7 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Class */}
+            {/* Class (optional) */}
             <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
               <CustomCombobox
@@ -477,10 +426,44 @@ const EditStudent = () => {
                 onChange={(value) =>
                   handleSelectChange('classId', value ? String(value.id) : '0')
                 }
-                placeholder="Select class"
+                placeholder="Select class (optional)"
               />
             </div>
-            {/* Section */}
+            {/* Division (required) */}
+            <div className="space-y-2">
+              <Label htmlFor="divisionId">
+                Division <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  (divisions?.data as any[])?.map((div: any) => ({
+                    id: div?.divisionId?.toString() || '0',
+                    name: div.divisionName || 'Unnamed division',
+                  })) || []
+                }
+                value={
+                  formData.studentDetails.divisionId
+                    ? {
+                        id: formData.studentDetails.divisionId.toString(),
+                        name:
+                          (divisions?.data as any[])?.find(
+                            (d: any) =>
+                              d.divisionId ===
+                              formData.studentDetails.divisionId
+                          )?.divisionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'divisionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select division"
+              />
+            </div>
+            {/* Section (independent of class) */}
             <div className="space-y-2">
               <Label htmlFor="sectionId">Section</Label>
               <CustomCombobox
@@ -511,8 +494,7 @@ const EditStudent = () => {
                 placeholder="Select section"
               />
             </div>
-
-            {/* session */}
+            {/* Session */}
             <div className="space-y-2">
               <Label htmlFor="sessionId">Session</Label>
               <CustomCombobox
@@ -587,7 +569,6 @@ const EditStudent = () => {
                 type="date"
                 value={formData.studentDetails.admissionDate}
                 onChange={handleInputChange}
-                required
               />
             </div>
             {/* Phone Number */}
@@ -718,7 +699,6 @@ const EditStudent = () => {
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Father Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Father Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherName">
                 Father Name <span className="text-red-500">*</span>
@@ -732,7 +712,6 @@ const EditStudent = () => {
                 required
               />
             </div>
-            {/* Father Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherPhone">
                 Father Phone <span className="text-red-500">*</span>
@@ -746,7 +725,6 @@ const EditStudent = () => {
                 required
               />
             </div>
-            {/* Father Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherEmail">Father Email</Label>
               <Input
@@ -757,7 +735,6 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Father Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.fatherOccupation">
                 Father Occupation
@@ -770,7 +747,6 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Father Photo */}
             <div className="space-y-2">
               <Label htmlFor="fatherPhoto" className="text-sm">
                 Father Photo{' '}
@@ -802,7 +778,6 @@ const EditStudent = () => {
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Mother Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Mother Name */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherName">
                 Mother Name <span className="text-red-500">*</span>
@@ -816,7 +791,6 @@ const EditStudent = () => {
                 required
               />
             </div>
-            {/* Mother Phone */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherPhone">Mother Phone</Label>
               <Input
@@ -827,7 +801,6 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Mother Email */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherEmail">Mother Email</Label>
               <Input
@@ -838,7 +811,6 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Mother Occupation */}
             <div className="space-y-2">
               <Label htmlFor="studentDetails.motherOccupation">
                 Mother Occupation
@@ -851,7 +823,6 @@ const EditStudent = () => {
                 onChange={handleInputChange}
               />
             </div>
-            {/* Mother Photo */}
             <div className="space-y-2">
               <Label htmlFor="motherPhoto" className="text-sm">
                 Mother Photo{' '}
@@ -882,14 +853,12 @@ const EditStudent = () => {
         {/* Student Fees Section */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">Student Fees</h3>
-
           <Accordion type="multiple" className="w-full">
             {Object.entries(grouped ?? {}).map(([groupName, groupFees]) => {
               const groupFeeIds = groupFees.map((f) => f.feesMasterId || 0)
               const isGroupSelected = groupFeeIds.every((id) =>
                 selectedFeesMasters.includes(id)
               )
-
               return (
                 <AccordionItem key={groupName} value={groupName}>
                   <div className="flex items-center gap-2 px-2">
@@ -908,12 +877,10 @@ const EditStudent = () => {
                         }
                       }}
                     />
-
                     <AccordionTrigger className="flex-1 text-sm font-medium">
                       {groupName}
                     </AccordionTrigger>
                   </div>
-
                   <AccordionContent>
                     <div className="border rounded-md overflow-hidden bg-white">
                       <Table>
@@ -924,18 +891,15 @@ const EditStudent = () => {
                             <TableHead>Amount (BDT)</TableHead>
                           </TableRow>
                         </TableHeader>
-
                         <TableBody>
                           {groupFees.map((fee) => (
                             <TableRow key={fee.feesMasterId}>
                               <TableCell className="text-sm">
                                 {fee.feesTypeName}
                               </TableCell>
-
                               <TableCell className="text-sm">
                                 {formatDate(new Date(fee.dueDate))}
                               </TableCell>
-
                               <TableCell className="text-sm font-medium">
                                 {formatNumber(fee.amount)}
                               </TableCell>

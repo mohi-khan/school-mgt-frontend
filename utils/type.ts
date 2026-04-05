@@ -176,6 +176,7 @@ export const studentSchema = z.object({
   admissionNo: z.number().positive(),
   rollNo: z.number().positive(),
   classId: z.number().nullable().optional(),
+  divisionId: z.number().nullable().optional(),
   sectionId: z.number().nullable().optional(),
   sessionId: z.number().nullable().optional(),
   firstName: z.string().min(1).max(50),
@@ -224,6 +225,7 @@ export const studentFeesSchema = z.object({
 export const studnentWithFeesSchema = z.object({
   studentDetails: studentSchema.extend({
     className: z.string().optional(),
+    divisionName: z.string().optional(),
     sectionName: z.string().optional(),
   }),
   studentFees: z.array(studentFeesSchema),
@@ -238,7 +240,9 @@ export type GetStudentFeesType = z.infer<typeof studentFeesSchema> & {
   studentName?: string
   photoUrl?: string
   classId?: number
+  divisionId?: number
   className?: string
+  divisionName?: string
   sectionName?: string
   sessionName?: string
   phoneNumber?: string
