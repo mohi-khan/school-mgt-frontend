@@ -3,22 +3,19 @@
 import React from 'react'
 import type { GetExamResultsType } from '@/utils/type'
 
-const SubjectReportCard = React.forwardRef<
-  HTMLDivElement,
-  {
-    subjectName: string
-    className: string
-    sectionName: string
-    examGroupName: string
-    sessionName: string
-    results: GetExamResultsType[]
-  }
->(
+type SubjectReportCardProps = {
+  subjectName: string
+  divisionName: string
+  examGroupName: string
+  sessionName: string
+  results: GetExamResultsType[]
+}
+
+const SubjectReportCard = React.forwardRef<HTMLDivElement, SubjectReportCardProps>(
   (
     {
       subjectName,
-      className,
-      sectionName,
+      divisionName,
       examGroupName,
       results,
       sessionName,
@@ -58,15 +55,9 @@ const SubjectReportCard = React.forwardRef<
 
             <div className="flex justify-between gap-6">
               <div className="flex gap-2 flex-1">
-                <span className="text-gray-600">Class:</span>
+                <span className="text-gray-600">Division:</span>
                 <p className="font-semibold border-b border-gray-400 flex-1">
-                  {className}
-                </p>
-              </div>
-              <div className="flex gap-2 flex-1">
-                <span className="text-gray-600">Section:</span>
-                <p className="font-semibold border-b border-gray-400 flex-1">
-                  {sectionName}
+                  {divisionName}
                 </p>
               </div>
               <div className="flex gap-2 flex-1">
@@ -122,7 +113,6 @@ const SubjectReportCard = React.forwardRef<
               </p>
             </div>
           </div>
-
           <p className="text-center mt-6">
             Generated on {new Date().toLocaleDateString()}
           </p>

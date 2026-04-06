@@ -127,10 +127,10 @@ export function DashboardSidebar() {
           title: 'Exam Subjects',
           href: '/dashboard/exams-management/exam-subjects',
         },
-        {
-          title: 'Exams',
-          href: '/dashboard/exams-management/exams',
-        },
+        // {
+        //   title: 'Exams',
+        //   href: '/dashboard/exams-management/exams',
+        // },
         {
           title: 'Result Entry',
           href: '/dashboard/exams-management/exam-results',

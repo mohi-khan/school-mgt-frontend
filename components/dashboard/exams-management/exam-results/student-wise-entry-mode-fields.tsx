@@ -12,20 +12,16 @@ interface StudentResultEntry {
 }
 
 interface StudentWiseEntryModeFieldsProps {
-  formData: CreateExamResultsType & {
-    classId?: number | null
-    sectionId?: number | null
-  }
+  formData: CreateExamResultsType
   handleSelectChange: (name: string, value: string) => void
   studentWiseResults: StudentResultEntry[]
   setStudentWiseResults: Dispatch<SetStateAction<StudentResultEntry[]>>
   students: any
   sessions: any
-  classes: any
-  sections: any
+  divisions: any
   examGroups: any
-  filteredSubjectsByClass: any
-  examResults: any // Add this to check existing results
+  filteredSubjectsByDivision: any[]
+  examResults: any
 }
 
 export const StudentWiseEntryModeFields: React.FC<
@@ -37,17 +33,14 @@ export const StudentWiseEntryModeFields: React.FC<
   setStudentWiseResults,
   students = { data: [] },
   sessions = { data: [] },
-  classes = { data: [] },
-  sections = { data: [] },
+  divisions = { data: [] },
   examGroups = { data: [] },
-  filteredSubjectsByClass = [],
+  filteredSubjectsByDivision = [],
   examResults = { data: [] },
 }) => {
-  // Helper function to check if result already exists in database
   const getExistingResult = (subjectId: number) => {
     if (!formData.studentId || !formData.examGroupsId || !formData.sessionId)
       return null
-
     return (examResults?.data || []).find(
       (result: any) =>
         result.studentId === formData.studentId &&
@@ -57,42 +50,59 @@ export const StudentWiseEntryModeFields: React.FC<
     )
   }
 
-  // Helper function to get or create marks for a subject
   const getMarksForSubject = (subjectId: number): number => {
-    // First check if it exists in database
     const existingResult = getExistingResult(subjectId)
-    if (existingResult) {
-      return existingResult.gainedMarks
-    }
-
-    // Then check in current form data
+    if (existingResult) return existingResult.gainedMarks
     const entry = studentWiseResults.find((e) => e.examSubjectId === subjectId)
     return entry ? entry.gainedMarks : 0
   }
 
-  // Helper function to update marks for a subject
   const handleMarksChange = (subjectId: number, marks: number) => {
     setStudentWiseResults((prev) => {
       const existingIndex = prev.findIndex((e) => e.examSubjectId === subjectId)
-
       if (existingIndex !== -1) {
-        // Update existing entry
         const updated = [...prev]
         updated[existingIndex] = {
           ...updated[existingIndex],
           gainedMarks: marks,
         }
         return updated
-      } else {
-        // Add new entry
-        return [...prev, { examSubjectId: subjectId, gainedMarks: marks }]
       }
+      return [...prev, { examSubjectId: subjectId, gainedMarks: marks }]
     })
   }
 
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="examGroupsId">
+            Exam Group <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              examGroups?.data?.map((group: any) => ({
+                id: group?.examGroupsId?.toString() || '0',
+                name: group.examGroupName || 'Unnamed group',
+              })) || []
+            }
+            value={
+              formData.examGroupsId
+                ? {
+                    id: formData.examGroupsId.toString(),
+                    name:
+                      examGroups?.data?.find(
+                        (g: any) => g.examGroupsId === formData.examGroupsId
+                      )?.examGroupName || '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('examGroupsId', value ? String(value.id) : '')
+            }
+            placeholder="Select exam group"
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="studentId">
             Student <span className="text-red-500">*</span>
@@ -102,7 +112,7 @@ export const StudentWiseEntryModeFields: React.FC<
               (students?.data || [])?.map((student: any) => ({
                 id: student?.studentDetails?.studentId?.toString() || '0',
                 name:
-                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.className || ''} - ${student?.studentDetails?.sectionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
+                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.divisionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
                   'Unnamed student',
               })) || []
             }
@@ -110,32 +120,15 @@ export const StudentWiseEntryModeFields: React.FC<
               formData.studentId
                 ? {
                     id: formData.studentId.toString(),
-                    name: `${
-                      (students?.data || [])?.find(
+                    name: (() => {
+                      const found = (students?.data || [])?.find(
                         (s: any) =>
                           s?.studentDetails?.studentId === formData.studentId
-                      )?.studentDetails?.firstName || ''
-                    } ${
-                      (students?.data || [])?.find(
-                        (s: any) =>
-                          s?.studentDetails?.studentId === formData.studentId
-                      )?.studentDetails?.lastName || ''
-                    } - ${
-                      (students?.data || [])?.find(
-                        (s: any) =>
-                          s?.studentDetails?.studentId === formData.studentId
-                      )?.studentDetails?.className || ''
-                    } - ${
-                      (students?.data || [])?.find(
-                        (s: any) =>
-                          s?.studentDetails?.studentId === formData.studentId
-                      )?.studentDetails?.sectionName || ''
-                    } - ${
-                      (students?.data || [])?.find(
-                        (s: any) =>
-                          s?.studentDetails?.studentId === formData.studentId
-                      )?.studentDetails?.rollNo || ''
-                    }`.trim(),
+                      )
+                      return found
+                        ? `${found?.studentDetails?.firstName || ''} ${found?.studentDetails?.lastName || ''} - ${found?.studentDetails?.divisionName || ''} - ${found?.studentDetails?.rollNo || ''}`.trim()
+                        : ''
+                    })(),
                   }
                 : null
             }
@@ -175,55 +168,27 @@ export const StudentWiseEntryModeFields: React.FC<
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="classId">Class</Label>
+          <Label htmlFor="divisionId">Division</Label>
           <CustomCombobox
             items={
-              (classes?.data || [])?.map((cls: any) => ({
-                id: cls?.classData?.classId?.toString() || '0',
-                name: cls?.classData?.className || 'Unnamed class',
+              (divisions?.data || [])?.map((division: any) => ({
+                id: division?.divisionId?.toString() || '0',
+                name: division?.divisionName || 'Unnamed division',
               })) || []
             }
             value={
-              formData.classId
+              formData.divisionId
                 ? {
-                    id: formData.classId.toString(),
+                    id: formData.divisionId.toString(),
                     name:
-                      (classes?.data || [])?.find(
-                        (c: any) => c?.classData?.classId === formData.classId
-                      )?.classData?.className || '',
+                      (divisions?.data || [])?.find(
+                        (d: any) => d?.divisionId === formData.divisionId
+                      )?.divisionName || '',
                   }
                 : null
             }
             onChange={(value) =>
-              handleSelectChange('classId', value ? String(value.id) : '')
-            }
-            placeholder="Auto-selected from student"
-            disabled={!!formData.studentId}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="sectionId">Section</Label>
-          <CustomCombobox
-            items={
-              (sections?.data || [])?.map((section: any) => ({
-                id: section?.sectionId?.toString() || '0',
-                name: section?.sectionName || 'Unnamed section',
-              })) || []
-            }
-            value={
-              formData.sectionId
-                ? {
-                    id: formData.sectionId.toString(),
-                    name:
-                      (sections?.data || [])?.find(
-                        (s: any) => s?.sectionId === formData.sectionId
-                      )?.sectionName || '',
-                  }
-                : null
-            }
-            onChange={(value) =>
-              handleSelectChange('sectionId', value ? String(value.id) : '')
+              handleSelectChange('divisionId', value ? String(value.id) : '')
             }
             placeholder="Auto-selected from student"
             disabled={!!formData.studentId}
@@ -237,18 +202,21 @@ export const StudentWiseEntryModeFields: React.FC<
         </div>
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {filteredSubjectsByClass && filteredSubjectsByClass.length > 0 ? (
+          {filteredSubjectsByDivision &&
+          filteredSubjectsByDivision.length > 0 ? (
             <>
               <div className="grid grid-cols-12 gap-4 items-center px-3 py-2 bg-gray-50 rounded-md font-medium text-sm">
                 <div className="col-span-8">Subject Name</div>
                 <div className="col-span-4">Gained Marks</div>
               </div>
-              {filteredSubjectsByClass.map((subject: any, index: number) => {
+              {filteredSubjectsByDivision.map((subject: any, index: number) => {
                 const subjectId = subject.examSubjectId
                 const currentMarks = getMarksForSubject(subjectId)
                 const existingResult = getExistingResult(subjectId)
                 const isDisabled =
-                  !formData.studentId || !formData.classId || !!existingResult
+                  !formData.studentId ||
+                  !formData.divisionId ||
+                  !!existingResult
 
                 return (
                   <div
@@ -291,9 +259,9 @@ export const StudentWiseEntryModeFields: React.FC<
             </>
           ) : (
             <div className="text-center py-8 text-gray-500 text-sm border rounded-md">
-              {!formData.studentId || !formData.classId
+              {!formData.studentId || !formData.divisionId
                 ? 'Please select a student first to view subjects'
-                : 'No subjects available for this class'}
+                : 'No subjects available for this division'}
             </div>
           )}
         </div>
