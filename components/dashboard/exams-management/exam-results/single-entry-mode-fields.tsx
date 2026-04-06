@@ -7,18 +7,14 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 import type { CreateExamResultsType } from '@/utils/type'
 
 interface SingleEntryModeFieldsProps {
-  formData: CreateExamResultsType & {
-    classId?: number | null
-    sectionId?: number | null
-  }
+  formData: CreateExamResultsType
   handleSelectChange: (name: string, value: string) => void
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void
   students: any
   sessions: any
-  classes: any
-  sections: any
+  divisions: any
   examGroups: any
   subjects: any
 }
@@ -29,8 +25,7 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
   handleInputChange,
   students = { data: [] },
   sessions = { data: [] },
-  classes = { data: [] },
-  sections = { data: [] },
+  divisions = { data: [] },
   examGroups = { data: [] },
   subjects = { data: [] },
 }) => {
@@ -47,7 +42,7 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
               (students?.data || [])?.map((student: any) => ({
                 id: student?.studentDetails?.studentId?.toString() || '0',
                 name:
-                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.className || ''} - ${student?.studentDetails?.sectionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
+                  `${student?.studentDetails?.firstName || ''} ${student?.studentDetails?.lastName || ''} - ${student?.studentDetails?.divisionName || ''} - ${student?.studentDetails?.rollNo || ''}`.trim() ||
                   'Unnamed student',
               })) || []
             }
@@ -56,12 +51,12 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
                 ? {
                     id: formData.studentId.toString(),
                     name: (() => {
-                      const foundStudent = (students?.data || [])?.find(
+                      const found = (students?.data || [])?.find(
                         (s: any) =>
                           s?.studentDetails?.studentId === formData.studentId
                       )
-                      return foundStudent
-                        ? `${foundStudent?.studentDetails?.firstName || ''} ${foundStudent?.studentDetails?.lastName || ''} - ${foundStudent?.studentDetails?.className || ''} - ${foundStudent?.studentDetails?.sectionName || ''} - ${foundStudent?.studentDetails?.rollNo || ''}`.trim()
+                      return found
+                        ? `${found?.studentDetails?.firstName || ''} ${found?.studentDetails?.lastName || ''} - ${found?.studentDetails?.divisionName || ''} - ${found?.studentDetails?.rollNo || ''}`.trim()
                         : ''
                     })(),
                   }
@@ -98,7 +93,6 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
                 : null
             }
             onChange={(value) => {
-              // Don't allow manual changes when auto-selected
               if (!formData.studentId) {
                 handleSelectChange('sessionId', value ? String(value.id) : '')
               }
@@ -108,65 +102,32 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
           />
         </div>
 
+        {/* Division */}
         <div className="space-y-2">
-          <Label htmlFor="classId">
-            Class <span className="text-red-500">*</span>
+          <Label htmlFor="divisionId">
+            Division <span className="text-red-500">*</span>
           </Label>
           <CustomCombobox
             items={
-              (classes?.data || [])?.map((cls: any) => ({
-                id: cls?.classData?.classId?.toString() || '0',
-                name: cls?.classData?.className || 'Unnamed class',
+              (divisions?.data || [])?.map((division: any) => ({
+                id: division?.divisionId?.toString() || '0',
+                name: division?.divisionName || 'Unnamed division',
               })) || []
             }
             value={
-              formData.classId
+              formData.divisionId
                 ? {
-                    id: formData.classId.toString(),
+                    id: formData.divisionId.toString(),
                     name:
-                      (classes?.data || [])?.find(
-                        (c: any) => c?.classData?.classId === formData.classId
-                      )?.classData?.className || '',
+                      (divisions?.data || [])?.find(
+                        (d: any) => d?.divisionId === formData.divisionId
+                      )?.divisionName || '',
                   }
                 : null
             }
             onChange={(value) => {
-              // Don't allow manual changes when auto-selected
               if (!formData.studentId) {
-                handleSelectChange('classId', value ? String(value.id) : '')
-              }
-            }}
-            placeholder="Auto-selected from student"
-            disabled={!!formData.studentId}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="sectionId">
-            Section <span className="text-red-500">*</span>
-          </Label>
-          <CustomCombobox
-            items={
-              (sections?.data || [])?.map((section: any) => ({
-                id: section?.sectionId?.toString() || '0',
-                name: section?.sectionName || 'Unnamed section',
-              })) || []
-            }
-            value={
-              formData.sectionId
-                ? {
-                    id: formData.sectionId.toString(),
-                    name:
-                      (sections?.data || [])?.find(
-                        (s: any) => s?.sectionId === formData.sectionId
-                      )?.sectionName || '',
-                  }
-                : null
-            }
-            onChange={(value) => {
-              // Don't allow manual changes when auto-selected
-              if (!formData.studentId) {
-                handleSelectChange('sectionId', value ? String(value.id) : '')
+                handleSelectChange('divisionId', value ? String(value.id) : '')
               }
             }}
             placeholder="Auto-selected from student"

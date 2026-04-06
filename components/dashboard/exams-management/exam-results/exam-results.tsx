@@ -48,9 +48,7 @@ import {
   useGetSessions,
   useGetAllStudents,
   useGetExamSubjects,
-  useGetClasses,
-  useGetSections,
-  useGetSectionsByClassId,
+  useGetDivisions,
   useGetExamGroups,
 } from '@/hooks/use-api'
 import {
@@ -86,88 +84,50 @@ const ExamResults = (): ReactElement => {
   const { data: sessions } = useGetSessions()
   const { data: examGroups } = useGetExamGroups()
   const { data: students } = useGetAllStudents()
-  const { data: classes } = useGetClasses()
-  const { data: sections } = useGetSections()
+  const { data: divisions } = useGetDivisions()
+  const { data: subjects } = useGetExamSubjects()
 
   const [error, setError] = useState<string | null>(null)
-
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-
   const [searchTerm, setSearchTerm] = useState('')
-
-  // Toggle between student-wise and subject-wise grouping
-  const [groupingMode, setGroupingMode] = useState<'student' | 'subject'>(
-    'student'
-  )
-  const [expandedParentGroups, setExpandedParentGroups] = useState<Set<string>>(
-    new Set()
-  )
-  const [expandedChildGroups, setExpandedChildGroups] = useState<Set<string>>(
-    new Set()
-  )
-
+  const [groupingMode, setGroupingMode] = useState<'student' | 'subject'>('student')
+  const [expandedParentGroups, setExpandedParentGroups] = useState<Set<string>>(new Set())
+  const [expandedChildGroups, setExpandedChildGroups] = useState<Set<string>>(new Set())
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingExamResultId, setEditingExamResultId] = useState<number | null>(
-    null
-  )
-
+  const [editingExamResultId, setEditingExamResultId] = useState<number | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamResultId, setDeletingExamResultId] = useState<
-    number | null
-  >(null)
-
+  const [deletingExamResultId, setDeletingExamResultId] = useState<number | null>(null)
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
+  const [entryMode, setEntryMode] = useState<'single' | 'student-wise' | 'subject-wise'>('single')
 
-  // Entry mode: 'single', 'student-wise', 'subject-wise'
-  const [entryMode, setEntryMode] = useState<
-    'single' | 'student-wise' | 'subject-wise'
-  >('single')
-
-  const [formData, setFormData] = useState<
-    CreateExamResultsType & {
-      classId?: number | null
-      sectionId?: number | null
-    }
-  >({
+  const [formData, setFormData] = useState<CreateExamResultsType>({
     sessionId: null,
     examGroupsId: null,
     studentId: null,
     examSubjectId: null,
+    divisionId: 0,
     gainedMarks: 0,
     createdBy: userData?.userId || 0,
     updatedBy: null,
-    classId: null,
-    sectionId: null,
   })
-  // Dynamic sections based on selected class for subject-wise entry
-  const { data: sectionsByClass } = useGetSectionsByClassId(
-    formData.classId || 0
-  )
 
-  const { data: subjects } = useGetExamSubjects()
-
-  // Filtered subjects by classId for student-wise entry
-  const filteredSubjectsByClass = useMemo(() => {
-    if (!subjects?.data || !formData.classId) return []
+  const filteredSubjectsByDivision = useMemo(() => {
+    if (!subjects?.data || !formData.divisionId) return []
     return subjects.data.filter(
-      (subject) => subject.classId === formData.classId
+      (subject: any) => subject.divisionId === formData.divisionId
     )
-  }, [subjects?.data, formData.classId])
+  }, [subjects?.data, formData.divisionId])
 
-  // For student-wise entry
-  const [studentWiseResults, setStudentWiseResults] = useState<
-    StudentResultEntry[]
-  >([])
-
-  // For subject-wise entry
+  const [studentWiseResults, setStudentWiseResults] = useState<StudentResultEntry[]>([])
   const [subjectWiseStudents, setSubjectWiseStudents] = useState<
     { studentId: number | null; gainedMarks: number }[]
   >([])
 
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
+
   const [selectedGroupForPrint, setSelectedGroupForPrint] = useState<{
     type: 'student' | 'subject'
     studentName?: string
@@ -175,8 +135,7 @@ const ExamResults = (): ReactElement => {
     examGroupsId: number
     examGroupName: string
     sessionName: string
-    className: string
-    sectionName: string
+    divisionName: string
     results: GetExamResultsType[]
   } | null>(null)
 
@@ -193,14 +152,13 @@ const ExamResults = (): ReactElement => {
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'studentId') {
       const selectedStudent = students?.data?.find(
-        (s) => s.studentDetails.studentId === Number(value)
+        (s: any) => s.studentDetails.studentId === Number(value)
       )
       if (selectedStudent) {
         setFormData((prev) => ({
           ...prev,
-          [name]: value ? Number(value) : null,
-          classId: selectedStudent.studentDetails.classId || null,
-          sectionId: selectedStudent.studentDetails.sectionId || null,
+          studentId: value ? Number(value) : null,
+          divisionId: selectedStudent.studentDetails.divisionId || 0,
           sessionId: selectedStudent.studentDetails.sessionId || null,
         }))
       }
@@ -218,11 +176,10 @@ const ExamResults = (): ReactElement => {
       examGroupsId: null,
       studentId: null,
       examSubjectId: null,
+      divisionId: 0,
       gainedMarks: 0,
       createdBy: userData?.userId || 0,
       updatedBy: null,
-      classId: null,
-      sectionId: null,
     })
     setStudentWiseResults([])
     setSubjectWiseStudents([])
@@ -238,18 +195,9 @@ const ExamResults = (): ReactElement => {
     setError(null)
   }, [])
 
-  const addMutation = useAddExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-  const updateMutation = useUpdateExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-  const deleteMutation = useDeleteExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
+  const addMutation = useAddExamResult({ onClose: closePopup, reset: resetForm })
+  const updateMutation = useUpdateExamResult({ onClose: closePopup, reset: resetForm })
+  const deleteMutation = useDeleteExamResult({ onClose: closePopup, reset: resetForm })
 
   const filteredExamResults = useMemo(() => {
     if (!examResults?.data) return []
@@ -266,7 +214,6 @@ const ExamResults = (): ReactElement => {
 
   const groupedExamResults = useMemo(() => {
     if (groupingMode === 'student') {
-      // Group by exam group first (parent), then by student (child)
       const parentGroups = new Map<
         string,
         {
@@ -279,8 +226,7 @@ const ExamResults = (): ReactElement => {
             {
               studentId: number
               studentName: string
-              className: string
-              sectionName: string
+              divisionName: string
               results: GetExamResultsType[]
             }
           >
@@ -288,7 +234,6 @@ const ExamResults = (): ReactElement => {
         }
       >()
 
-      // Sort by createdAt (latest first)
       const sortedResults = [...filteredExamResults].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
@@ -305,9 +250,7 @@ const ExamResults = (): ReactElement => {
             examGroupName: result.examGroupName || 'Unassigned',
             sessionName: result.sessionName || 'Unassigned',
             studentGroups: new Map(),
-            latestCreatedAt: result.createdAt
-              ? new Date(result.createdAt)
-              : new Date(0),
+            latestCreatedAt: result.createdAt ? new Date(result.createdAt) : new Date(0),
           })
         }
 
@@ -318,15 +261,13 @@ const ExamResults = (): ReactElement => {
           parentGroup.studentGroups.set(studentKey, {
             studentId: result.studentId || 0,
             studentName: result.studentName || 'Unassigned',
-            className: result.className || 'Unassigned',
-            sectionName: result.sectionName || 'Unassigned',
+            divisionName: result.divisionName || 'Unassigned',
             results: [],
           })
         }
 
         parentGroup.studentGroups.get(studentKey)!.results.push(result)
 
-        // Update latest createdAt
         if (result.createdAt) {
           const resultDate = new Date(result.createdAt)
           if (resultDate > parentGroup.latestCreatedAt) {
@@ -335,18 +276,14 @@ const ExamResults = (): ReactElement => {
         }
       })
 
-      // Convert to array and sort by latestCreatedAt (latest first)
       return Array.from(parentGroups.values())
         .map((parentGroup) => ({
           type: 'student' as const,
           ...parentGroup,
           studentGroups: Array.from(parentGroup.studentGroups.values()),
         }))
-        .sort(
-          (a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime()
-        )
+        .sort((a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime())
     } else {
-      // Group by exam group first (parent), then by subject (child)
       const parentGroups = new Map<
         string,
         {
@@ -359,8 +296,7 @@ const ExamResults = (): ReactElement => {
             {
               examSubjectId: number
               subjectName: string
-              className: string
-              sectionName: string
+              divisionName: string
               results: GetExamResultsType[]
             }
           >
@@ -368,7 +304,6 @@ const ExamResults = (): ReactElement => {
         }
       >()
 
-      // Sort by createdAt (latest first)
       const sortedResults = [...filteredExamResults].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
@@ -385,9 +320,7 @@ const ExamResults = (): ReactElement => {
             examGroupName: result.examGroupName || 'Unassigned',
             sessionName: result.sessionName || 'Unassigned',
             subjectGroups: new Map(),
-            latestCreatedAt: result.createdAt
-              ? new Date(result.createdAt)
-              : new Date(0),
+            latestCreatedAt: result.createdAt ? new Date(result.createdAt) : new Date(0),
           })
         }
 
@@ -398,15 +331,13 @@ const ExamResults = (): ReactElement => {
           parentGroup.subjectGroups.set(subjectId, {
             examSubjectId: subjectId,
             subjectName: result.examSubjectName || 'Unassigned',
-            className: result.className || 'Unassigned',
-            sectionName: result.sectionName || 'Unassigned',
+            divisionName: result.divisionName || 'Unassigned',
             results: [],
           })
         }
 
         parentGroup.subjectGroups.get(subjectId)!.results.push(result)
 
-        // Update latest createdAt
         if (result.createdAt) {
           const resultDate = new Date(result.createdAt)
           if (resultDate > parentGroup.latestCreatedAt) {
@@ -415,16 +346,13 @@ const ExamResults = (): ReactElement => {
         }
       })
 
-      // Convert to array and sort by latestCreatedAt (latest first)
       return Array.from(parentGroups.values())
         .map((parentGroup) => ({
           type: 'subject' as const,
           ...parentGroup,
           subjectGroups: Array.from(parentGroup.subjectGroups.values()),
         }))
-        .sort(
-          (a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime()
-        )
+        .sort((a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime())
     }
   }, [filteredExamResults, groupingMode])
 
@@ -440,44 +368,18 @@ const ExamResults = (): ReactElement => {
     setError(null)
 
     if (entryMode === 'single') {
-      // Single entry mode
-      if (!formData.sessionId) {
-        setError('Please select a session')
-        return
-      }
-      if (!formData.classId) {
-        setError('Please select a class')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Please select a section')
-        return
-      }
-      if (!formData.studentId) {
-        setError('Please select a student')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (!formData.examSubjectId) {
-        setError('Please select a subject')
-        return
-      }
-      if (formData.gainedMarks < 0) {
-        setError('Please enter valid gained marks')
-        return
-      }
+      if (!formData.sessionId) { setError('Please select a session'); return }
+      if (!formData.divisionId) { setError('Please select a division'); return }
+      if (!formData.studentId) { setError('Please select a student'); return }
+      if (!formData.examGroupsId) { setError('Please select an exam group'); return }
+      if (!formData.examSubjectId) { setError('Please select a subject'); return }
+      if (formData.gainedMarks < 0) { setError('Please enter valid gained marks'); return }
 
       try {
         if (isEditMode && editingExamResultId) {
           updateMutation.mutate({
             id: editingExamResultId,
-            data: {
-              ...formData,
-              updatedBy: userData?.userId || 0,
-            },
+            data: { ...formData, updatedBy: userData?.userId || 0 },
           })
         } else {
           addMutation.mutate(formData)
@@ -487,49 +389,26 @@ const ExamResults = (): ReactElement => {
         console.error(err)
       }
     } else if (entryMode === 'student-wise') {
-      // Student-wise entry: one student, multiple subjects
-      if (!formData.studentId) {
-        setError('Please select a student')
-        return
-      }
-      if (!formData.sessionId) {
-        setError('Session not found for selected student')
-        return
-      }
-      if (!formData.classId) {
-        setError('Class not found for selected student')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Section not found for selected student')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (studentWiseResults.length === 0) {
-        setError('Please add at least one subject result')
-        return
-      }
+      if (!formData.studentId) { setError('Please select a student'); return }
+      if (!formData.sessionId) { setError('Session not found for selected student'); return }
+      if (!formData.divisionId) { setError('Division not found for selected student'); return }
+      if (!formData.examGroupsId) { setError('Please select an exam group'); return }
+      if (studentWiseResults.length === 0) { setError('Please add at least one subject result'); return }
 
       try {
         const promises = studentWiseResults.map((entry) => {
           const resultData: CreateExamResultsType = {
             sessionId: formData.sessionId,
             examGroupsId: formData.examGroupsId,
-            classId: formData.classId,
-            sectionId: formData.sectionId,
+            divisionId: formData.divisionId,
             studentId: formData.studentId,
             examSubjectId: entry.examSubjectId,
             gainedMarks: entry.gainedMarks,
             createdBy: userData?.userId || 0,
             updatedBy: null,
           }
-          console.log('[v0] Student-wise result data:', resultData)
           return addMutation.mutateAsync(resultData)
         })
-
         await Promise.all(promises)
         resetForm()
       } catch (err) {
@@ -537,49 +416,26 @@ const ExamResults = (): ReactElement => {
         console.error(err)
       }
     } else if (entryMode === 'subject-wise') {
-      // Subject-wise entry: one subject, multiple students
-      if (!formData.classId) {
-        setError('Please select a class')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Please select a section')
-        return
-      }
-      if (!formData.sessionId) {
-        setError('Please select a session')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (!formData.examSubjectId) {
-        setError('Please select a subject')
-        return
-      }
-      if (subjectWiseStudents.length === 0) {
-        setError('Please add at least one student result')
-        return
-      }
+      if (!formData.divisionId) { setError('Please select a division'); return }
+      if (!formData.sessionId) { setError('Please select a session'); return }
+      if (!formData.examGroupsId) { setError('Please select an exam group'); return }
+      if (!formData.examSubjectId) { setError('Please select a subject'); return }
+      if (subjectWiseStudents.length === 0) { setError('Please add at least one student result'); return }
 
       try {
         const promises = subjectWiseStudents.map((entry) => {
           const resultData: CreateExamResultsType = {
             sessionId: formData.sessionId,
             examGroupsId: formData.examGroupsId,
-            classId: formData.classId,
-            sectionId: formData.sectionId,
+            divisionId: formData.divisionId,
             studentId: entry.studentId,
             examSubjectId: formData.examSubjectId,
             gainedMarks: entry.gainedMarks,
             createdBy: userData?.userId || 0,
             updatedBy: null,
           }
-          console.log('[v0] Subject-wise result data:', resultData)
           return addMutation.mutateAsync(resultData)
         })
-
         await Promise.all(promises)
         resetForm()
       } catch (err) {
@@ -601,11 +457,10 @@ const ExamResults = (): ReactElement => {
       examGroupsId: result.examGroupsId ?? null,
       studentId: result.studentId ?? null,
       examSubjectId: result.examSubjectId ?? null,
+      divisionId: result.divisionId ?? 0,
       gainedMarks: result.gainedMarks,
       createdBy: result.createdBy,
       updatedBy: userData?.userId || 0,
-      classId: (result as any)?.classId ?? null,
-      sectionId: (result as any)?.sectionId ?? null,
     })
     setEditingExamResultId(result.examResultId || null)
     setIsEditMode(true)
@@ -623,22 +478,20 @@ const ExamResults = (): ReactElement => {
       setSelectedGroupForPrint({
         type: 'student',
         studentName: group.studentName,
-        examGroupsId: group.examGroupsId,
+        examGroupsId: group.examGroupId,
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
-        className: group.className,
-        sectionName: group.sectionName,
+        divisionName: group.divisionName,
         results: group.results,
       })
     } else {
       setSelectedGroupForPrint({
         type: 'subject',
         subjectName: group.subjectName,
-        examGroupsId: group.examGroupsId,
+        examGroupsId: group.examGroupId,
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
-        className: group.className,
-        sectionName: group.sectionName,
+        divisionName: group.divisionName,
         results: group.results,
       })
     }
@@ -650,11 +503,8 @@ const ExamResults = (): ReactElement => {
   const toggleParentGroupExpanded = (groupKey: string) => {
     setExpandedParentGroups((prev) => {
       const newSet = new Set(prev)
-      if (newSet.has(groupKey)) {
-        newSet.delete(groupKey)
-      } else {
-        newSet.add(groupKey)
-      }
+      if (newSet.has(groupKey)) newSet.delete(groupKey)
+      else newSet.add(groupKey)
       return newSet
     })
   }
@@ -662,11 +512,8 @@ const ExamResults = (): ReactElement => {
   const toggleChildGroupExpanded = (groupKey: string) => {
     setExpandedChildGroups((prev) => {
       const newSet = new Set(prev)
-      if (newSet.has(groupKey)) {
-        newSet.delete(groupKey)
-      } else {
-        newSet.add(groupKey)
-      }
+      if (newSet.has(groupKey)) newSet.delete(groupKey)
+      else newSet.add(groupKey)
       return newSet
     })
   }
@@ -676,40 +523,28 @@ const ExamResults = (): ReactElement => {
       alert('No data to export')
       return
     }
-
-    const flatData = (examResults?.data || []).map((result) => ({
+    const flatData = (examResults?.data || []).map((result: GetExamResultsType) => ({
       'Session Id': result.sessionId || '',
       'Exam Group Id': result.examGroupsId || '',
       'Student Id': result.studentId || '',
-      'Class Id': result?.classId || '',
-      'Section Id': result?.sectionId || '',
+      'Division Id': result.divisionId || '',
       'Exam Subject Id': result.examSubjectId || '',
       'Gained Marks': result.gainedMarks || 0,
-      // Optional: Include names for reference
       'Session Name (No need while inserting data)': result.sessionName || '',
       'Exam Name (No need while inserting data)': result.examGroupName || '',
       'Student Name (No need while inserting data)': result.studentName || '',
-      'Subject Name (No need while inserting data)':
-        result.examSubjectName || '',
+      'Subject Name (No need while inserting data)': result.examSubjectName || '',
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
     const workbook = XLSX.utils.book_new()
-
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results')
-
     const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
     const fileName = `result-report-${timestamp}.xlsx`
-
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array',
-    })
-
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([excelBuffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
     })
-
     saveAs(blob, fileName)
   }
 
@@ -720,82 +555,24 @@ const ExamResults = (): ReactElement => {
   const handleExcelSubmit = async (data: any[]) => {
     try {
       const promises = data.map(async (row) => {
-        const examResultData: CreateExamResultsType & {
-          classId?: number | null
-          sectionId?: number | null
-        } = {
+        const examResultData: CreateExamResultsType = {
           sessionId: row['Session Id'] ? Number(row['Session Id']) : null,
-          examGroupsId: row['Exam Group Id']
-            ? Number(row['Exam Group Id'])
-            : null,
+          examGroupsId: row['Exam Group Id'] ? Number(row['Exam Group Id']) : null,
           studentId: row['Student Id'] ? Number(row['Student Id']) : null,
-          examSubjectId: row['Exam Subject Id']
-            ? Number(row['Exam Subject Id'])
-            : null,
+          examSubjectId: row['Exam Subject Id'] ? Number(row['Exam Subject Id']) : null,
+          divisionId: row['Division Id'] ? Number(row['Division Id']) : 0,
           gainedMarks: row['Gained Marks'] ? Number(row['Gained Marks']) : 0,
           createdBy: userData?.userId || 0,
           updatedBy: null,
-          classId: row['Class Id'] ? Number(row['Class Id']) : null,
-          sectionId: row['Section Id'] ? Number(row['Section Id']) : null,
         }
-
         return addMutation.mutateAsync(examResultData)
       })
-
       await Promise.all(promises)
       setIsImportPopupOpen(false)
     } catch (error) {
       console.error('Error importing exam results:', error)
       throw error
     }
-  }
-
-  // Add subject result entry for student-wise mode
-  const addSubjectEntry = () => {
-    setStudentWiseResults([
-      ...studentWiseResults,
-      { examSubjectId: null, gainedMarks: 0 },
-    ])
-  }
-
-  // Remove subject entry for student-wise mode
-  const removeSubjectEntry = (index: number) => {
-    setStudentWiseResults(studentWiseResults.filter((_, i) => i !== index))
-  }
-
-  // Update subject entry
-  const updateSubjectEntry = (
-    index: number,
-    field: 'examSubjectId' | 'gainedMarks',
-    value: number | null
-  ) => {
-    const updated = [...studentWiseResults]
-    updated[index] = { ...updated[index], [field]: value }
-    setStudentWiseResults(updated)
-  }
-
-  // Add student entry for subject-wise mode
-  const addStudentEntry = () => {
-    setSubjectWiseStudents([
-      ...subjectWiseStudents,
-      { studentId: null, gainedMarks: 0 },
-    ])
-  }
-
-  // Remove student entry for subject-wise mode
-  const removeStudentEntry = (index: number) => {
-    setSubjectWiseStudents(subjectWiseStudents.filter((_, i) => i !== index))
-  }
-
-  // Update student entry
-  const updateStudentEntry = (
-    index: number,
-    field: 'studentId' | 'gainedMarks',
-    value: number | null
-  ) => {
-    const updated = [...subjectWiseStudents]
-    updated[index] = { ...updated[index], [field]: value }
-    setSubjectWiseStudents(updated)
   }
 
   return (
@@ -821,16 +598,10 @@ const ExamResults = (): ReactElement => {
           <Button
             variant="outline"
             className="gap-2 bg-transparent"
-            onClick={() =>
-              setGroupingMode(
-                groupingMode === 'student' ? 'subject' : 'student'
-              )
-            }
+            onClick={() => setGroupingMode(groupingMode === 'student' ? 'subject' : 'student')}
           >
             <ArrowUpDown className="h-4 w-4" />
-            {groupingMode === 'student'
-              ? 'Group by Subject'
-              : 'Group by Student'}
+            {groupingMode === 'student' ? 'Group by Subject' : 'Group by Student'}
           </Button>
           <Button
             variant="outline"
@@ -877,17 +648,11 @@ const ExamResults = (): ReactElement => {
       {/* Hierarchical Grouped Table */}
       <div className="space-y-4">
         {!examResults?.data ? (
-          <div className="text-center py-8 text-gray-600">
-            Loading exam results...
-          </div>
+          <div className="text-center py-8 text-gray-600">Loading exam results...</div>
         ) : examResults.data.length === 0 ? (
-          <div className="text-center py-8 text-gray-600">
-            No exam results found
-          </div>
+          <div className="text-center py-8 text-gray-600">No exam results found</div>
         ) : paginatedGroups.length === 0 ? (
-          <div className="text-center py-8 text-gray-600">
-            No exam results match your search
-          </div>
+          <div className="text-center py-8 text-gray-600">No exam results match your search</div>
         ) : (
           <>
             {paginatedGroups.map((parentGroup: any) => {
@@ -899,17 +664,15 @@ const ExamResults = (): ReactElement => {
                   key={parentKey}
                   className="rounded-lg border-2 border-amber-300 overflow-hidden shadow-md"
                 >
-                  {/* Parent Group Header (Exam Group + Session) */}
+                  {/* Parent Group Header */}
                   <div
                     className="bg-gradient-to-r from-amber-100 to-amber-50 p-4 flex items-center gap-4 cursor-pointer"
                     onClick={() => toggleParentGroupExpanded(parentKey)}
                   >
                     <button className="p-1 hover:bg-amber-200 rounded-md transition-colors">
-                      {isParentExpanded ? (
-                        <ChevronUp className="h-6 w-6 text-amber-700" />
-                      ) : (
-                        <ChevronDown className="h-6 w-6 text-amber-700" />
-                      )}
+                      {isParentExpanded
+                        ? <ChevronUp className="h-6 w-6 text-amber-700" />
+                        : <ChevronDown className="h-6 w-6 text-amber-700" />}
                     </button>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 text-lg">
@@ -918,10 +681,7 @@ const ExamResults = (): ReactElement => {
                       <div className="text-sm text-gray-700 mt-1 flex gap-4">
                         <span className="inline-flex items-center gap-1">
                           <span className="text-gray-600">
-                            {groupingMode === 'student'
-                              ? 'Students'
-                              : 'Subjects'}
-                            :
+                            {groupingMode === 'student' ? 'Students' : 'Subjects'}:
                           </span>
                           <span className="font-medium text-amber-700">
                             {groupingMode === 'student'
@@ -934,14 +694,10 @@ const ExamResults = (): ReactElement => {
                           <span className="font-medium text-amber-700">
                             {groupingMode === 'student'
                               ? parentGroup.studentGroups?.reduce(
-                                  (sum: number, sg: any) =>
-                                    sum + sg.results.length,
-                                  0
+                                  (sum: number, sg: any) => sum + sg.results.length, 0
                                 ) || 0
                               : parentGroup.subjectGroups?.reduce(
-                                  (sum: number, sg: any) =>
-                                    sum + sg.results.length,
-                                  0
+                                  (sum: number, sg: any) => sum + sg.results.length, 0
                                 ) || 0}
                           </span>
                         </span>
@@ -949,301 +705,222 @@ const ExamResults = (): ReactElement => {
                     </div>
                   </div>
 
-                  {/* Child Groups (Student or Subject) */}
+                  {/* Child Groups */}
                   {isParentExpanded && (
                     <div className="bg-white p-4 space-y-3">
                       {groupingMode === 'student'
-                        ? // Student groups
-                          parentGroup.studentGroups?.map(
-                            (studentGroup: any) => {
-                              const childKey = `${parentKey}-${studentGroup.studentId}`
-                              const isChildExpanded =
-                                expandedChildGroups.has(childKey)
-
-                              return (
-                                <div
-                                  key={childKey}
-                                  className="rounded-lg border border-gray-300 overflow-hidden"
-                                >
-                                  {/* Student Group Header */}
-                                  <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
-                                    <div
-                                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                                      onClick={() =>
-                                        toggleChildGroupExpanded(childKey)
-                                      }
-                                    >
-                                      <button className="p-1 hover:bg-white rounded-md transition-colors">
-                                        {isChildExpanded ? (
-                                          <ChevronUp className="h-5 w-5 text-gray-700" />
-                                        ) : (
-                                          <ChevronDown className="h-5 w-5 text-gray-700" />
-                                        )}
-                                      </button>
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-gray-800">
-                                          {studentGroup.studentName}
-                                        </div>
-                                        <div className="text-sm text-gray-600 mt-0.5 space-x-4">
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Class:</span>
-                                            <span className="font-medium">
-                                              {studentGroup.className}
-                                            </span>
+                        ? parentGroup.studentGroups?.map((studentGroup: any) => {
+                            const childKey = `${parentKey}-${studentGroup.studentId}`
+                            const isChildExpanded = expandedChildGroups.has(childKey)
+                            return (
+                              <div
+                                key={childKey}
+                                className="rounded-lg border border-gray-300 overflow-hidden"
+                              >
+                                <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                                  <div
+                                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                                    onClick={() => toggleChildGroupExpanded(childKey)}
+                                  >
+                                    <button className="p-1 hover:bg-white rounded-md transition-colors">
+                                      {isChildExpanded
+                                        ? <ChevronUp className="h-5 w-5 text-gray-700" />
+                                        : <ChevronDown className="h-5 w-5 text-gray-700" />}
+                                    </button>
+                                    <div className="flex-1">
+                                      <div className="font-semibold text-gray-800">
+                                        {studentGroup.studentName}
+                                      </div>
+                                      <div className="text-sm text-gray-600 mt-0.5 space-x-4">
+                                        <span className="inline-flex items-center gap-1">
+                                          <span>Division:</span>
+                                          <span className="font-medium">{studentGroup.divisionName}</span>
+                                        </span>
+                                        <span className="inline-flex items-center gap-1">
+                                          <span>Subjects:</span>
+                                          <span className="font-medium text-amber-600">
+                                            {studentGroup.results.length}
                                           </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Section:</span>
-                                            <span className="font-medium">
-                                              {studentGroup.sectionName}
-                                            </span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Subjects:</span>
-                                            <span className="font-medium text-amber-600">
-                                              {studentGroup.results.length}
-                                            </span>
-                                          </span>
-                                        </div>
+                                        </span>
                                       </div>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="gap-2 border bg-amber-50 text-amber-600 whitespace-nowrap"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handlePrintGroup({
-                                          type: 'student',
-                                          studentName: studentGroup.studentName,
-                                          examGroupsId: parentGroup.examGroupId,
-                                          examGroupName:
-                                            parentGroup.examGroupName,
-                                          sessionName: parentGroup.sessionName,
-                                          className: studentGroup.className,
-                                          sectionName: studentGroup.sectionName,
-                                          results: studentGroup.results,
-                                        })
-                                      }}
-                                    >
-                                      <Printer className="h-4 w-4" />
-                                      Download Report
-                                    </Button>
                                   </div>
-
-                                  {/* Results Table */}
-                                  {isChildExpanded && (
-                                    <div className="bg-white border-t border-gray-200 p-3">
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow className="bg-gray-50 hover:bg-gray-50">
-                                            <TableHead className="text-gray-700 font-semibold">
-                                              Subject
-                                            </TableHead>
-                                            <TableHead className="text-gray-700 font-semibold text-right">
-                                              Gained Marks
-                                            </TableHead>
-                                            <TableHead className="text-gray-700 font-semibold text-right">
-                                              Actions
-                                            </TableHead>
-                                          </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                          {studentGroup.results.map(
-                                            (result: any) => (
-                                              <TableRow
-                                                key={result.examResultId}
-                                                className="hover:bg-amber-50"
-                                              >
-                                                <TableCell className="capitalize font-medium text-gray-800">
-                                                  {result.examSubjectName ||
-                                                    '-'}
-                                                </TableCell>
-                                                <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="flex justify-end gap-2">
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="sm"
-                                                      className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                                      onClick={() =>
-                                                        handleEditClick(result)
-                                                      }
-                                                    >
-                                                      <Edit2 className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="sm"
-                                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                      onClick={() =>
-                                                        handleDeleteClick(
-                                                          result.examResultId ||
-                                                            0
-                                                        )
-                                                      }
-                                                    >
-                                                      <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                  </div>
-                                                </TableCell>
-                                              </TableRow>
-                                            )
-                                          )}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
-                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-2 border bg-amber-50 text-amber-600 whitespace-nowrap"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handlePrintGroup({
+                                        type: 'student',
+                                        studentName: studentGroup.studentName,
+                                        examGroupId: parentGroup.examGroupId,
+                                        examGroupName: parentGroup.examGroupName,
+                                        sessionName: parentGroup.sessionName,
+                                        divisionName: studentGroup.divisionName,
+                                        results: studentGroup.results,
+                                      })
+                                    }}
+                                  >
+                                    <Printer className="h-4 w-4" />
+                                    Download Report
+                                  </Button>
                                 </div>
-                              )
-                            }
-                          )
-                        : // Subject groups
-                          parentGroup.subjectGroups?.map(
-                            (subjectGroup: any) => {
-                              const childKey = `${parentKey}-${subjectGroup.examSubjectId}`
-                              const isChildExpanded =
-                                expandedChildGroups.has(childKey)
 
-                              return (
-                                <div
-                                  key={childKey}
-                                  className="rounded-lg border border-gray-300 overflow-hidden"
-                                >
-                                  {/* Subject Group Header */}
-                                  <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
-                                    <div
-                                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                                      onClick={() =>
-                                        toggleChildGroupExpanded(childKey)
-                                      }
-                                    >
-                                      <button className="p-1 hover:bg-white rounded-md transition-colors">
-                                        {isChildExpanded ? (
-                                          <ChevronUp className="h-5 w-5 text-gray-700" />
-                                        ) : (
-                                          <ChevronDown className="h-5 w-5 text-gray-700" />
-                                        )}
-                                      </button>
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-gray-800">
-                                          {subjectGroup.subjectName}
-                                        </div>
-                                        <div className="text-sm text-gray-600 mt-0.5 space-x-4">
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Class:</span>
-                                            <span className="font-medium">
-                                              {subjectGroup.className}
-                                            </span>
+                                {isChildExpanded && (
+                                  <div className="bg-white border-t border-gray-200 p-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                                          <TableHead className="text-gray-700 font-semibold">Subject</TableHead>
+                                          <TableHead className="text-gray-700 font-semibold text-right">Gained Marks</TableHead>
+                                          <TableHead className="text-gray-700 font-semibold text-right">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {studentGroup.results.map((result: any) => (
+                                          <TableRow key={result.examResultId} className="hover:bg-amber-50">
+                                            <TableCell className="capitalize font-medium text-gray-800">
+                                              {result.examSubjectName || '-'}
+                                            </TableCell>
+                                            <TableCell className="font-semibold text-gray-800 text-right text-base">
+                                              {result.gainedMarks}
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex justify-end gap-2">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                  onClick={() => handleEditClick(result)}
+                                                >
+                                                  <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                  onClick={() => handleDeleteClick(result.examResultId || 0)}
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })
+                        : parentGroup.subjectGroups?.map((subjectGroup: any) => {
+                            const childKey = `${parentKey}-${subjectGroup.examSubjectId}`
+                            const isChildExpanded = expandedChildGroups.has(childKey)
+                            return (
+                              <div
+                                key={childKey}
+                                className="rounded-lg border border-gray-300 overflow-hidden"
+                              >
+                                <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                                  <div
+                                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                                    onClick={() => toggleChildGroupExpanded(childKey)}
+                                  >
+                                    <button className="p-1 hover:bg-white rounded-md transition-colors">
+                                      {isChildExpanded
+                                        ? <ChevronUp className="h-5 w-5 text-gray-700" />
+                                        : <ChevronDown className="h-5 w-5 text-gray-700" />}
+                                    </button>
+                                    <div className="flex-1">
+                                      <div className="font-semibold text-gray-800">
+                                        {subjectGroup.subjectName}
+                                      </div>
+                                      <div className="text-sm text-gray-600 mt-0.5 space-x-4">
+                                        <span className="inline-flex items-center gap-1">
+                                          <span>Division:</span>
+                                          <span className="font-medium">{subjectGroup.divisionName}</span>
+                                        </span>
+                                        <span className="inline-flex items-center gap-1">
+                                          <span>Students:</span>
+                                          <span className="font-medium text-amber-600">
+                                            {subjectGroup.results.length}
                                           </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Section:</span>
-                                            <span className="font-medium">
-                                              {subjectGroup.sectionName}
-                                            </span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Students:</span>
-                                            <span className="font-medium text-amber-600">
-                                              {subjectGroup.results.length}
-                                            </span>
-                                          </span>
-                                        </div>
+                                        </span>
                                       </div>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="gap-2 border bg-amber-50 text-amber-600 whitespace-nowrap"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handlePrintGroup({
-                                          type: 'subject',
-                                          subjectName: subjectGroup.subjectName,
-                                          examGroupsId: parentGroup.examGroupId,
-                                          examGroupName:
-                                            parentGroup.examGroupName,
-                                          sessionName: parentGroup.sessionName,
-                                          className: subjectGroup.className,
-                                          sectionName: subjectGroup.sectionName,
-                                          results: subjectGroup.results,
-                                        })
-                                      }}
-                                    >
-                                      <Printer className="h-4 w-4" />
-                                      Download Report
-                                    </Button>
                                   </div>
-
-                                  {/* Results Table */}
-                                  {isChildExpanded && (
-                                    <div className="bg-white border-t border-gray-200 p-3">
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow className="bg-gray-50 hover:bg-gray-50">
-                                            <TableHead className="text-gray-700 font-semibold">
-                                              Student Name
-                                            </TableHead>
-                                            <TableHead className="text-gray-700 font-semibold text-right">
-                                              Gained Marks
-                                            </TableHead>
-                                            <TableHead className="text-gray-700 font-semibold text-right">
-                                              Actions
-                                            </TableHead>
-                                          </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                          {subjectGroup.results.map(
-                                            (result: any) => (
-                                              <TableRow
-                                                key={result.examResultId}
-                                                className="hover:bg-amber-50"
-                                              >
-                                                <TableCell className="capitalize font-medium text-gray-800">
-                                                  {result.studentName || '-'}
-                                                </TableCell>
-                                                <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="flex justify-end gap-2">
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="sm"
-                                                      className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                                      onClick={() =>
-                                                        handleEditClick(result)
-                                                      }
-                                                    >
-                                                      <Edit2 className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="sm"
-                                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                      onClick={() =>
-                                                        handleDeleteClick(
-                                                          result.examResultId ||
-                                                            0
-                                                        )
-                                                      }
-                                                    >
-                                                      <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                  </div>
-                                                </TableCell>
-                                              </TableRow>
-                                            )
-                                          )}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
-                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-2 border bg-amber-50 text-amber-600 whitespace-nowrap"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handlePrintGroup({
+                                        type: 'subject',
+                                        subjectName: subjectGroup.subjectName,
+                                        examGroupId: parentGroup.examGroupId,
+                                        examGroupName: parentGroup.examGroupName,
+                                        sessionName: parentGroup.sessionName,
+                                        divisionName: subjectGroup.divisionName,
+                                        results: subjectGroup.results,
+                                      })
+                                    }}
+                                  >
+                                    <Printer className="h-4 w-4" />
+                                    Download Report
+                                  </Button>
                                 </div>
-                              )
-                            }
-                          )}
+
+                                {isChildExpanded && (
+                                  <div className="bg-white border-t border-gray-200 p-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                                          <TableHead className="text-gray-700 font-semibold">Student Name</TableHead>
+                                          <TableHead className="text-gray-700 font-semibold text-right">Gained Marks</TableHead>
+                                          <TableHead className="text-gray-700 font-semibold text-right">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {subjectGroup.results.map((result: any) => (
+                                          <TableRow key={result.examResultId} className="hover:bg-amber-50">
+                                            <TableCell className="capitalize font-medium text-gray-800">
+                                              {result.studentName || '-'}
+                                            </TableCell>
+                                            <TableCell className="font-semibold text-gray-800 text-right text-base">
+                                              {result.gainedMarks}
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex justify-end gap-2">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                  onClick={() => handleEditClick(result)}
+                                                >
+                                                  <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                  onClick={() => handleDeleteClick(result.examResultId || 0)}
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                     </div>
                   )}
                 </div>
@@ -1260,15 +937,10 @@ const ExamResults = (): ReactElement => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  className={
-                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -1285,10 +957,7 @@ const ExamResults = (): ReactElement => {
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (
-                  index === currentPage - 3 ||
-                  index === currentPage + 3
-                ) {
+                } else if (index === currentPage - 3 || index === currentPage + 3) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -1297,17 +966,10 @@ const ExamResults = (): ReactElement => {
                 }
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  className={
-                    currentPage === totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                 />
               </PaginationItem>
             </PaginationContent>
@@ -1315,7 +977,7 @@ const ExamResults = (): ReactElement => {
         </div>
       )}
 
-      {/* Add/Edit Exam Result Popup */}
+      {/* Add/Edit Popup */}
       <Popup
         isOpen={isPopupOpen}
         onClose={resetForm}
@@ -1331,16 +993,14 @@ const ExamResults = (): ReactElement => {
         size="sm:max-w-4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Common fields */}
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Exam Group */}
             <div className="space-y-2">
               <Label htmlFor="examGroupsId">
                 Exam Group <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
                 items={
-                  examGroups?.data?.map((group) => ({
+                  examGroups?.data?.map((group: any) => ({
                     id: group?.examGroupsId?.toString() || '0',
                     name: group.examGroupName || 'Unnamed group',
                   })) || []
@@ -1351,58 +1011,49 @@ const ExamResults = (): ReactElement => {
                         id: formData.examGroupsId.toString(),
                         name:
                           examGroups?.data?.find(
-                            (g) => g.examGroupsId === formData.examGroupsId
+                            (g: any) => g.examGroupsId === formData.examGroupsId
                           )?.examGroupName || '',
                       }
                     : null
                 }
                 onChange={(value) =>
-                  handleSelectChange(
-                    'examGroupsId',
-                    value ? String(value.id) : ''
-                  )
+                  handleSelectChange('examGroupsId', value ? String(value.id) : '')
                 }
                 placeholder="Select exam group"
               />
             </div>
           </div>
 
-          {/* Student-wise entry */}
           {entryMode === 'student-wise' && (
             <StudentWiseEntryModeFields
               formData={formData}
               handleSelectChange={handleSelectChange}
               studentWiseResults={studentWiseResults}
-              setStudentWiseResults={setStudentWiseResults} // ← Changed
+              setStudentWiseResults={setStudentWiseResults}
               students={students}
               sessions={sessions}
-              classes={classes}
-              sections={sections}
+              divisions={divisions}
               examGroups={examGroups}
-              filteredSubjectsByClass={filteredSubjectsByClass}
+              filteredSubjectsByDivision={filteredSubjectsByDivision}
               examResults={examResults}
             />
           )}
 
-          {/* Subject-wise entry */}
           {entryMode === 'subject-wise' && (
             <SubjectWiseEntryModeFields
               formData={formData}
               handleSelectChange={handleSelectChange}
               subjectWiseStudents={subjectWiseStudents}
-              setSubjectWiseStudents={setSubjectWiseStudents} // ← Changed
+              setSubjectWiseStudents={setSubjectWiseStudents}
               students={students}
               sessions={sessions}
-              classes={classes}
-              sections={sections}
+              divisions={divisions}
               examGroups={examGroups}
-              sectionsByClass={sectionsByClass}
-              filteredSubjectsByClass={filteredSubjectsByClass}
+              filteredSubjectsByDivision={filteredSubjectsByDivision}
               examResults={examResults}
             />
           )}
 
-          {/* Single entry mode (for editing) */}
           {entryMode === 'single' && (
             <SingleEntryModeFields
               formData={formData}
@@ -1410,17 +1061,14 @@ const ExamResults = (): ReactElement => {
               handleInputChange={handleInputChange}
               students={students}
               sessions={sessions}
-              classes={classes}
-              sections={sections}
+              divisions={divisions}
               examGroups={examGroups}
               subjects={subjects}
             />
           )}
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-              {error}
-            </div>
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>
           )}
 
           <div className="flex justify-end gap-2">
@@ -1431,9 +1079,7 @@ const ExamResults = (): ReactElement => {
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
             >
-              {addMutation.isPending || updateMutation.isPending
-                ? 'Saving...'
-                : 'Save'}
+              {addMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>
@@ -1450,31 +1096,15 @@ const ExamResults = (): ReactElement => {
           <div className="mb-4 p-4 bg-amber-50 rounded-md">
             <h3 className="font-semibold mb-2">Excel Format Requirements:</h3>
             <p className="text-sm text-gray-700 mb-2">
-              Your Excel file should have the following columns with numeric
-              IDs:
+              Your Excel file should have the following columns:
             </p>
             <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
-              <li>
-                <strong>Session Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Exam Group Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Student Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Class Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Section Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Exam Subject Id</strong> - Numeric ID
-              </li>
-              <li>
-                <strong>Gained Marks</strong> - Numeric value
-              </li>
+              <li><strong>Session Id</strong> - Numeric ID</li>
+              <li><strong>Exam Group Id</strong> - Numeric ID</li>
+              <li><strong>Student Id</strong> - Numeric ID</li>
+              <li><strong>Division Id</strong> - Numeric ID</li>
+              <li><strong>Exam Subject Id</strong> - Numeric ID</li>
+              <li><strong>Gained Marks</strong> - Numeric value</li>
             </ul>
           </div>
           <ExcelFileInput
@@ -1486,16 +1116,12 @@ const ExamResults = (): ReactElement => {
       </Popup>
 
       {/* Delete Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Exam Result</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this exam result? This action
-              cannot be undone.
+              Are you sure you want to delete this exam result? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -1517,31 +1143,27 @@ const ExamResults = (): ReactElement => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Print Reference for Report Card */}
+      {/* Print Reference */}
       <div style={{ display: 'none' }}>
         <div ref={contentRef}>
-          {selectedGroupForPrint &&
-            selectedGroupForPrint.type === 'student' && (
-              <ReportCard
-                studentName={selectedGroupForPrint.studentName || ''}
-                className={selectedGroupForPrint.className}
-                sectionName={selectedGroupForPrint.sectionName}
-                examGroupName={selectedGroupForPrint.examGroupName}
-                results={selectedGroupForPrint.results}
-                sessionName={selectedGroupForPrint.sessionName}
-              />
-            )}
-          {selectedGroupForPrint &&
-            selectedGroupForPrint.type === 'subject' && (
-              <SubjectReportCard
-                subjectName={selectedGroupForPrint.subjectName || ''}
-                className={selectedGroupForPrint.className}
-                sectionName={selectedGroupForPrint.sectionName}
-                examGroupName={selectedGroupForPrint.examGroupName}
-                results={selectedGroupForPrint.results}
-                sessionName={selectedGroupForPrint.sessionName}
-              />
-            )}
+          {selectedGroupForPrint?.type === 'student' && (
+            <ReportCard
+              studentName={selectedGroupForPrint.studentName || ''}
+              divisionName={selectedGroupForPrint.divisionName}
+              examGroupName={selectedGroupForPrint.examGroupName}
+              results={selectedGroupForPrint.results}
+              sessionName={selectedGroupForPrint.sessionName}
+            />
+          )}
+          {selectedGroupForPrint?.type === 'subject' && (
+            <SubjectReportCard
+              subjectName={selectedGroupForPrint.subjectName || ''}
+              divisionName={selectedGroupForPrint.divisionName}
+              examGroupName={selectedGroupForPrint.examGroupName}
+              results={selectedGroupForPrint.results}
+              sessionName={selectedGroupForPrint.sessionName}
+            />
+          )}
         </div>
       </div>
     </div>
