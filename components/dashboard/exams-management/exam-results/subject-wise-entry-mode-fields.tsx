@@ -86,6 +86,34 @@ export const SubjectWiseEntryModeFields: React.FC<
     <>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
+          <Label htmlFor="examGroupsId">
+            Exam Group <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              examGroups?.data?.map((group: any) => ({
+                id: group?.examGroupsId?.toString() || '0',
+                name: group.examGroupName || 'Unnamed group',
+              })) || []
+            }
+            value={
+              formData.examGroupsId
+                ? {
+                    id: formData.examGroupsId.toString(),
+                    name:
+                      examGroups?.data?.find(
+                        (g: any) => g.examGroupsId === formData.examGroupsId
+                      )?.examGroupName || '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('examGroupsId', value ? String(value.id) : '')
+            }
+            placeholder="Select exam group"
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="sessionId">
             Session <span className="text-red-500">*</span>
           </Label>
