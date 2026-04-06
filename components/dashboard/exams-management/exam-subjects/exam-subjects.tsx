@@ -44,6 +44,7 @@ import {
   useGetClasses,
   useGetSessions,
   useGetExamGroups,
+  useGetDivisions,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -65,6 +66,7 @@ const ExamSubjects = () => {
   const { data: examSubjects } = useGetExamSubjects()
   const { data: sessions } = useGetSessions()
   const { data: examGroups } = useGetExamGroups()
+  const { data: divisions } = useGetDivisions()
 
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -98,8 +100,8 @@ const ExamSubjects = () => {
     examGroupName: string
     sessionName: string
     classGroups: Array<{
-      classId: number
-      className: string
+      divisionId: number
+      divisionName: string
       subjects: GetExamSubjectsType[]
     }>
   } | null>(null)
@@ -112,8 +114,9 @@ const ExamSubjects = () => {
       startTime: string
       duration: number
       examMarks: number
-      classId: number
-      className: string
+      divisionId: number
+      divisionName: string
+      classId: number | null
     }>
   }>({
     targetSessionId: null,
@@ -128,6 +131,7 @@ const ExamSubjects = () => {
     duration: 60,
     examMarks: 100,
     classId: null,
+    divisionId: null,
     sessionId: null,
     examGroupsId: null,
     createdBy: userData?.userId || 0,
@@ -164,6 +168,7 @@ const ExamSubjects = () => {
       duration: 60,
       examMarks: 100,
       classId: null,
+      divisionId: null,
       sessionId: null,
       examGroupsId: null,
       createdBy: userData?.userId || 0,
@@ -201,12 +206,13 @@ const ExamSubjects = () => {
         exam.subjectCode?.toLowerCase().includes(searchLower) ||
         exam.className?.toLowerCase().includes(searchLower) ||
         exam.sessionName?.toLowerCase().includes(searchLower) ||
-        exam.examGroupName?.toLowerCase().includes(searchLower)
+        exam.examGroupName?.toLowerCase().includes(searchLower) ||
+        exam.divisionName?.toLowerCase().includes(searchLower)
       )
     })
   }, [examSubjects?.data, searchTerm])
 
-  // Two-level grouping: Parent group (examGroup + session), then child groups (class)
+  // Two-level grouping: Parent group (examGroup + session), then child groups (division)
   const hierarchicalGroups = useMemo(() => {
     const parentGroups = new Map<
       string,
@@ -218,8 +224,8 @@ const ExamSubjects = () => {
         classGroups: Map<
           number,
           {
-            classId: number
-            className: string
+            divisionId: number
+            divisionName: string
             subjects: GetExamSubjectsType[]
           }
         >
@@ -251,17 +257,17 @@ const ExamSubjects = () => {
       }
 
       const parentGroup = parentGroups.get(parentKey)!
-      const classId = subject.classId || 0
+      const divisionId = subject.divisionId || 0
 
-      if (!parentGroup.classGroups.has(classId)) {
-        parentGroup.classGroups.set(classId, {
-          classId: classId,
-          className: subject.className || 'Unassigned',
+      if (!parentGroup.classGroups.has(divisionId)) {
+        parentGroup.classGroups.set(divisionId, {
+          divisionId: divisionId,
+          divisionName: subject.divisionName || 'Unassigned',
           subjects: [],
         })
       }
 
-      parentGroup.classGroups.get(classId)!.subjects.push(subject)
+      parentGroup.classGroups.get(divisionId)!.subjects.push(subject)
 
       // Update latest createdAt
       if (subject.createdAt) {
@@ -324,6 +330,11 @@ const ExamSubjects = () => {
       return
     }
 
+    if (!formData.divisionId) {
+      setError('Please select a division')
+      return
+    }
+
     try {
       if (isEditMode && editingExamSubjectId) {
         updateMutation.mutate({
@@ -354,6 +365,7 @@ const ExamSubjects = () => {
       duration: exam.duration,
       examMarks: exam.examMarks,
       classId: exam.classId,
+      divisionId: exam.divisionId,
       sessionId: exam.sessionId,
       examGroupsId: exam.examGroupsId,
       createdBy: exam.createdBy,
@@ -393,7 +405,7 @@ const ExamSubjects = () => {
   }
 
   const handleCopyClick = (group: any) => {
-    // Flatten all subjects from all class groups
+    // Flatten all subjects from all division groups
     const allSubjects = group.classGroups.flatMap((classGroup: any) =>
       classGroup.subjects.map((subject: GetExamSubjectsType) => ({
         subjectName: subject.subjectName,
@@ -402,8 +414,9 @@ const ExamSubjects = () => {
         startTime: '09:00',
         duration: subject.duration,
         examMarks: subject.examMarks,
-        classId: subject.classId || 0,
-        className: subject.className || 'Unassigned',
+        divisionId: subject.divisionId || 0,
+        divisionName: subject.divisionName || 'Unassigned',
+        classId: subject.classId || null,
       }))
     )
 
@@ -451,9 +464,10 @@ const ExamSubjects = () => {
           startTime: subject.startTime,
           duration: subject.duration,
           examMarks: subject.examMarks,
-          classId: subject.classId,
+          divisionId: subject.divisionId,
           sessionId: copyFormData.targetSessionId,
-          examGroupsId: selectedGroupForCopy.examGroupId, // Use parent group's examGroupId
+          examGroupsId: selectedGroupForCopy.examGroupId,
+          classId: subject.classId,
           createdBy: userData?.userId || 0,
         }
         return addMutation.mutateAsync(data)
@@ -547,11 +561,11 @@ const ExamSubjects = () => {
                     </button>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 text-lg">
-                        {parentGroup.examGroupName}  ({parentGroup.sessionName})
+                        {parentGroup.examGroupName} ({parentGroup.sessionName})
                       </div>
                       <div className="text-sm text-gray-700 mt-1 flex gap-4">
                         <span className="inline-flex items-center gap-1">
-                          <span className="text-gray-600">Classes:</span>
+                          <span className="text-gray-600">Divisions:</span>
                           <span className="font-medium text-amber-700">
                             {parentGroup.classGroups.length}
                           </span>
@@ -569,11 +583,11 @@ const ExamSubjects = () => {
                     </div>
                   </div>
 
-                  {/* Class Groups (Child Level) */}
+                  {/* Division Groups (Child Level) */}
                   {isParentExpanded && (
                     <div className="bg-white p-4 space-y-3">
                       {parentGroup.classGroups.map((classGroup) => {
-                        const classKey = `${parentKey}-${classGroup.classId}`
+                        const classKey = `${parentKey}-${classGroup.divisionId}`
                         const isClassExpanded =
                           expandedClassGroups.has(classKey)
 
@@ -582,7 +596,7 @@ const ExamSubjects = () => {
                             key={classKey}
                             className="rounded-lg border border-gray-300 overflow-hidden"
                           >
-                            {/* Class Group Header */}
+                            {/* Division Group Header */}
                             <div className="bg-slate-50 p-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
                               <div
                                 className="flex items-center gap-3 flex-1 cursor-pointer"
@@ -599,7 +613,7 @@ const ExamSubjects = () => {
                                 </button>
                                 <div className="flex-1">
                                   <div className="font-semibold text-gray-800">
-                                    Class: {classGroup.className}
+                                    Division: {classGroup.divisionName}
                                   </div>
                                   <div className="text-sm text-gray-600 mt-0.5">
                                     <span className="inline-flex items-center gap-1">
@@ -859,6 +873,38 @@ const ExamSubjects = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="divisionId">
+                Division <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  divisions?.data?.map((division) => ({
+                    id: division?.divisionId?.toString() || '0',
+                    name: division.divisionName || 'Unnamed division',
+                  })) || []
+                }
+                value={
+                  formData.divisionId
+                    ? {
+                        id: formData.divisionId.toString(),
+                        name:
+                          divisions?.data?.find(
+                            (d) => d.divisionId === formData.divisionId
+                          )?.divisionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'divisionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select division"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
               <CustomCombobox
                 items={
@@ -1098,7 +1144,7 @@ const ExamSubjects = () => {
                   </span>
                   {subject.subjectName} ({subject.subjectCode})
                   <span className="text-sm font-normal text-gray-600 ml-2">
-                    - Class: {subject.className}
+                    - Division: {subject.divisionName}
                   </span>
                 </div>
 
