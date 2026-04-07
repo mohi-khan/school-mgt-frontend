@@ -101,9 +101,8 @@ const ResultReport = (): ReactElement => {
   )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamResultId, setDeletingExamResultId] = useState<
-    number | null
-  >(null)
+  const [deletingExamResultId, setDeletingExamResultId] =
+    useState<number | null>(null)
 
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
 
@@ -114,8 +113,7 @@ const ResultReport = (): ReactElement => {
 
   const [formData, setFormData] = useState<
     CreateExamResultsType & {
-      classId?: number | null
-      sectionId?: number | null
+      divisionId?: number | null
     }
   >({
     sessionId: null,
@@ -125,33 +123,30 @@ const ResultReport = (): ReactElement => {
     gainedMarks: 0,
     createdBy: userData?.userId || 0,
     updatedBy: null,
-    classId: null,
-    sectionId: null,
+    divisionId: null,
   })
-  // Dynamic sections based on selected class for subject-wise entry
+  // Dynamic sections based on selected division for subject-wise entry
   const { data: sectionsByClass } = useGetSectionsByClassId(
-    formData.classId || 0
+    formData.divisionId || 0
   )
 
   const { data: subjects } = useGetExamSubjects()
 
-  // Filtered subjects by classId for student-wise entry
+  // Filtered subjects by divisionId for student-wise entry
   const filteredSubjectsByClass = useMemo(() => {
-    if (!subjects?.data || !formData.classId) return []
+    if (!subjects?.data || !formData.divisionId) return []
     return subjects.data.filter(
-      (subject) => subject.classId === formData.classId
+      (subject) => subject.classId === formData.divisionId
     )
-  }, [subjects?.data, formData.classId])
+  }, [subjects?.data, formData.divisionId])
 
   // For student-wise entry
-  const [studentWiseResults, setStudentWiseResults] = useState<
-    StudentResultEntry[]
-  >([])
+  const [studentWiseResults, setStudentWiseResults] =
+    useState<StudentResultEntry[]>([])
 
   // For subject-wise entry
-  const [subjectWiseStudents, setSubjectWiseStudents] = useState<
-    { studentId: number | null; gainedMarks: number }[]
-  >([])
+  const [subjectWiseStudents, setSubjectWiseStudents] =
+    useState<{ studentId: number | null; gainedMarks: number }[]>([])
 
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
@@ -162,8 +157,7 @@ const ResultReport = (): ReactElement => {
     examGroupsId: number
     examGroupName: string
     sessionName: string
-    className: string
-    sectionName: string
+    divisionName: string
     results: GetExamResultsType[]
   } | null>(null)
 
@@ -186,8 +180,7 @@ const ResultReport = (): ReactElement => {
         setFormData((prev) => ({
           ...prev,
           [name]: value ? Number(value) : null,
-          classId: selectedStudent.studentDetails.classId || null,
-          sectionId: selectedStudent.studentDetails.sectionId || null,
+          divisionId: selectedStudent.studentDetails.divisionId || null,
           sessionId: selectedStudent.studentDetails.sessionId || null,
         }))
       }
@@ -208,8 +201,7 @@ const ResultReport = (): ReactElement => {
       gainedMarks: 0,
       createdBy: userData?.userId || 0,
       updatedBy: null,
-      classId: null,
-      sectionId: null,
+      divisionId: null,
     })
     setStudentWiseResults([])
     setSubjectWiseStudents([])
@@ -266,8 +258,7 @@ const ResultReport = (): ReactElement => {
             {
               studentId: number
               studentName: string
-              className: string
-              sectionName: string
+              divisionName: string
               results: GetExamResultsType[]
             }
           >
@@ -305,8 +296,7 @@ const ResultReport = (): ReactElement => {
           parentGroup.studentGroups.set(studentKey, {
             studentId: result.studentId || 0,
             studentName: result.studentName || 'Unassigned',
-            className: result.className || 'Unassigned',
-            sectionName: result.sectionName || 'Unassigned',
+            divisionName: result.divisionName || 'Unassigned',
             results: [],
           })
         }
@@ -346,8 +336,7 @@ const ResultReport = (): ReactElement => {
             {
               examSubjectId: number
               subjectName: string
-              className: string
-              sectionName: string
+              divisionName: string
               results: GetExamResultsType[]
             }
           >
@@ -385,8 +374,7 @@ const ResultReport = (): ReactElement => {
           parentGroup.subjectGroups.set(subjectId, {
             examSubjectId: subjectId,
             subjectName: result.examSubjectName || 'Unassigned',
-            className: result.className || 'Unassigned',
-            sectionName: result.sectionName || 'Unassigned',
+            divisionName: result.divisionName || 'Unassigned',
             results: [],
           })
         }
@@ -432,12 +420,8 @@ const ResultReport = (): ReactElement => {
         setError('Please select a session')
         return
       }
-      if (!formData.classId) {
-        setError('Please select a class')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Please select a section')
+      if (!formData.divisionId) {
+        setError('Please select a division')
         return
       }
       if (!formData.studentId) {
@@ -483,12 +467,8 @@ const ResultReport = (): ReactElement => {
         setError('Session not found for selected student')
         return
       }
-      if (!formData.classId) {
-        setError('Class not found for selected student')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Section not found for selected student')
+      if (!formData.divisionId) {
+        setError('Division not found for selected student')
         return
       }
       if (!formData.examGroupsId) {
@@ -505,8 +485,7 @@ const ResultReport = (): ReactElement => {
           const resultData: CreateExamResultsType = {
             sessionId: formData.sessionId,
             examGroupsId: formData.examGroupsId,
-            classId: formData.classId,
-            sectionId: formData.sectionId,
+            divisionId: formData.divisionId,
             studentId: formData.studentId,
             examSubjectId: entry.examSubjectId,
             gainedMarks: entry.gainedMarks,
@@ -525,12 +504,8 @@ const ResultReport = (): ReactElement => {
       }
     } else if (entryMode === 'subject-wise') {
       // Subject-wise entry: one subject, multiple students
-      if (!formData.classId) {
-        setError('Please select a class')
-        return
-      }
-      if (!formData.sectionId) {
-        setError('Please select a section')
+      if (!formData.divisionId) {
+        setError('Please select a division')
         return
       }
       if (!formData.sessionId) {
@@ -555,8 +530,7 @@ const ResultReport = (): ReactElement => {
           const resultData: CreateExamResultsType = {
             sessionId: formData.sessionId,
             examGroupsId: formData.examGroupsId,
-            classId: formData.classId,
-            sectionId: formData.sectionId,
+            divisionId: formData.divisionId,
             studentId: entry.studentId,
             examSubjectId: formData.examSubjectId,
             gainedMarks: entry.gainedMarks,
@@ -591,8 +565,7 @@ const ResultReport = (): ReactElement => {
       gainedMarks: result.gainedMarks,
       createdBy: result.createdBy,
       updatedBy: userData?.userId || 0,
-      classId: (result as any)?.classId ?? null,
-      sectionId: (result as any)?.sectionId ?? null,
+      divisionId: (result as any)?.divisionId ?? null,
     })
     setEditingExamResultId(result.examResultId || null)
     setIsEditMode(true)
@@ -613,8 +586,7 @@ const ResultReport = (): ReactElement => {
         examGroupsId: group.examGroupsId,
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
-        className: group.className,
-        sectionName: group.sectionName,
+        divisionName: group.divisionName,
         results: group.results,
       })
     } else {
@@ -624,8 +596,7 @@ const ResultReport = (): ReactElement => {
         examGroupsId: group.examGroupsId,
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
-        className: group.className,
-        sectionName: group.sectionName,
+        divisionName: group.divisionName,
         results: group.results,
       })
     }
@@ -669,8 +640,7 @@ const ResultReport = (): ReactElement => {
         'Session Name': result.sessionName || '',
         'Exam Group Name': result.examGroupName || '',
         'Student Name': result.studentName || '',
-        'Class Name': result.className || '',
-        'Section Name': result.sectionName || '',
+        'Division Name': result.divisionName || '',
         'Subject Name': result.examSubjectName || '',
         'Gained Marks': result.gainedMarks || 0,
       })) || []
@@ -706,8 +676,7 @@ const ResultReport = (): ReactElement => {
             'Session Name': parentGroup.sessionName || '',
             'Exam Group Name': parentGroup.examGroupName || '',
             'Student Name': studentGroup.studentName || '',
-            'Class Name': studentGroup.className || '',
-            'Section Name': studentGroup.sectionName || '',
+            'Division Name': studentGroup.divisionName || '',
             'Subject Name': result.examSubjectName || '',
             'Gained Marks': result.gainedMarks || 0,
           })
@@ -720,8 +689,7 @@ const ResultReport = (): ReactElement => {
             'Session Name': parentGroup.sessionName || '',
             'Exam Group Name': parentGroup.examGroupName || '',
             'Student Name': result.studentName || '',
-            'Class Name': subjectGroup.className || '',
-            'Section Name': subjectGroup.sectionName || '',
+            'Division Name': subjectGroup.divisionName || '',
             'Subject Name': subjectGroup.subjectName || '',
             'Gained Marks': result.gainedMarks || 0,
           })
@@ -930,15 +898,9 @@ const ResultReport = (): ReactElement => {
                                         </div>
                                         <div className="text-sm text-gray-600 mt-0.5 space-x-4">
                                           <span className="inline-flex items-center gap-1">
-                                            <span>Class:</span>
+                                            <span>Division:</span>
                                             <span className="font-medium">
-                                              {studentGroup.className}
-                                            </span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Section:</span>
-                                            <span className="font-medium">
-                                              {studentGroup.sectionName}
+                                              {studentGroup.divisionName}
                                             </span>
                                           </span>
                                           <span className="inline-flex items-center gap-1">
@@ -963,8 +925,8 @@ const ResultReport = (): ReactElement => {
                                           examGroupName:
                                             parentGroup.examGroupName,
                                           sessionName: parentGroup.sessionName,
-                                          className: studentGroup.className,
-                                          sectionName: studentGroup.sectionName,
+                                          divisionName:
+                                            studentGroup.divisionName,
                                           results: studentGroup.results,
                                         })
                                       }}
@@ -1046,15 +1008,9 @@ const ResultReport = (): ReactElement => {
                                         </div>
                                         <div className="text-sm text-gray-600 mt-0.5 space-x-4">
                                           <span className="inline-flex items-center gap-1">
-                                            <span>Class:</span>
+                                            <span>Division:</span>
                                             <span className="font-medium">
-                                              {subjectGroup.className}
-                                            </span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <span>Section:</span>
-                                            <span className="font-medium">
-                                              {subjectGroup.sectionName}
+                                              {subjectGroup.divisionName}
                                             </span>
                                           </span>
                                           <span className="inline-flex items-center gap-1">
@@ -1079,8 +1035,8 @@ const ResultReport = (): ReactElement => {
                                           examGroupName:
                                             parentGroup.examGroupName,
                                           sessionName: parentGroup.sessionName,
-                                          className: subjectGroup.className,
-                                          sectionName: subjectGroup.sectionName,
+                                          divisionName:
+                                            subjectGroup.divisionName,
                                           results: subjectGroup.results,
                                         })
                                       }}
@@ -1206,8 +1162,7 @@ const ResultReport = (): ReactElement => {
             selectedGroupForPrint.type === 'student' && (
               <ReportCard
                 studentName={selectedGroupForPrint.studentName || ''}
-                className={selectedGroupForPrint.className}
-                sectionName={selectedGroupForPrint.sectionName}
+                divisionName={selectedGroupForPrint.divisionName}
                 examGroupName={selectedGroupForPrint.examGroupName}
                 results={selectedGroupForPrint.results}
                 sessionName={selectedGroupForPrint.sessionName}
@@ -1217,8 +1172,7 @@ const ResultReport = (): ReactElement => {
             selectedGroupForPrint.type === 'subject' && (
               <SubjectReportCard
                 subjectName={selectedGroupForPrint.subjectName || ''}
-                className={selectedGroupForPrint.className}
-                sectionName={selectedGroupForPrint.sectionName}
+                divisionName={selectedGroupForPrint.divisionName}
                 examGroupName={selectedGroupForPrint.examGroupName}
                 results={selectedGroupForPrint.results}
                 sessionName={selectedGroupForPrint.sessionName}
