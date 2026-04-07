@@ -368,7 +368,7 @@ export const examResultsSchema = z.object({
   examGroupsId: z.number().nullable(),
   studentId: z.number().nullable(),
   examSubjectId: z.number().nullable(),
-  divisionId: z.number(),
+  divisionId: z.number().nullable(),
   gainedMarks: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
