@@ -152,9 +152,17 @@ const ExamResults = (): ReactElement => {
   const filteredSubjectsByDivision = useMemo(() => {
     if (!subjects?.data || !formData.divisionId) return []
     return subjects.data.filter(
-      (subject: any) => subject.divisionId === formData.divisionId
+      (subject: any) =>
+        subject.divisionId === formData.divisionId &&
+        (!formData.sessionId || subject.sessionId === formData.sessionId) &&
+        (!formData.examGroupsId || subject.examGroupsId === formData.examGroupsId)
     )
-  }, [subjects?.data, formData.divisionId])
+  }, [
+    subjects?.data,
+    formData.divisionId,
+    formData.sessionId,
+    formData.examGroupsId,
+  ])
 
   const [studentWiseResults, setStudentWiseResults] = useState<
     StudentResultEntry[]
@@ -1548,6 +1556,7 @@ const ExamResults = (): ReactElement => {
               students={students}
               sessions={sessions}
               divisions={divisions}
+              classes={classes}
               examGroups={examGroups}
               filteredSubjectsByDivision={filteredSubjectsByDivision}
               examResults={examResults}

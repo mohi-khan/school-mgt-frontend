@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -40,10 +40,34 @@ export const SubjectWiseEntryModeFields: React.FC<
   examResults = { data: [] },
   classes = { data: [] },
 }) => {
-  const filteredStudents = (students?.data || [])?.filter(
-    (student: any) =>
-      student?.studentDetails?.divisionId === formData.divisionId
-  )
+  console.log('🚀 ~ SubjectWiseEntryModeFields ~ classes:', classes)
+  const filteredStudents = formData.examSubjectId
+    ? (students?.data || [])?.filter(
+        (student: any) =>
+          student?.studentDetails?.divisionId === formData.divisionId
+      )
+    : []
+
+  const availableClasses = useMemo(() => {
+    if (!formData.examGroupsId || !formData.sessionId || !formData.divisionId)
+      return []
+
+    // Get unique classIds from subjects filtered by examGroup + session + division
+    const classIdsInSubjects = new Set(
+      (filteredSubjectsByDivision || []).map((subject: any) => subject.classId)
+    )
+
+    // Filter classes prop to only those present in subjects
+    return (classes?.data || []).filter((cls: any) =>
+      classIdsInSubjects.has(cls?.classData?.classId)
+    )
+  }, [
+    filteredSubjectsByDivision,
+    classes?.data,
+    formData.examGroupsId,
+    formData.sessionId,
+    formData.divisionId,
+  ])
 
   const getExistingResult = (studentId: number) => {
     if (
@@ -179,13 +203,16 @@ export const SubjectWiseEntryModeFields: React.FC<
         {/* Class */}
         <div className="space-y-2">
           <Label htmlFor="classId">
-            Class <span className="text-red-500">*</span>
+            Class
           </Label>
           <CustomCombobox
             items={
-              (classes?.data || [])?.map((cls: any) => ({
-                id: cls?.classId?.toString() || '0',
-                name: cls?.className || cls?.classTitle || 'Unnamed class',
+              availableClasses?.map((cls: any) => ({
+                id: cls?.classData?.classId?.toString() || '0',
+                name:
+                  cls?.classData?.className ||
+                  cls?.classTitle ||
+                  'Unnamed class',
               })) || []
             }
             value={
@@ -193,13 +220,9 @@ export const SubjectWiseEntryModeFields: React.FC<
                 ? {
                     id: formData.classId.toString(),
                     name:
-                      (classes?.data || [])?.find(
-                        (c: any) => c?.classId === formData.classId
-                      )?.className ||
-                      (classes?.data || [])?.find(
-                        (c: any) => c?.classId === formData.classId
-                      )?.classTitle ||
-                      '',
+                      availableClasses?.find(
+                        (c: any) => c?.classData?.classId === formData.classId
+                      )?.classData?.className || '',
                   }
                 : null
             }
