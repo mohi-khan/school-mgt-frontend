@@ -1,9 +1,6 @@
 import React from 'react'
 import { formatDate, formatNumber } from '@/utils/conversions'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MoneyReceipt
-// ─────────────────────────────────────────────────────────────────────────────
 const MoneyReceipt = React.forwardRef<
   HTMLDivElement,
   {
@@ -35,6 +32,11 @@ const MoneyReceipt = React.forwardRef<
     ref
   ) => {
     const totalAmount = fees.reduce((sum, fee) => sum + fee.paidAmount, 0)
+
+    const groupedFees = fees.filter(
+      (fee, idx, self) =>
+        idx === self.findIndex((f) => f.feesTypeName === fee.feesTypeName)
+    )
 
     return (
       <div
@@ -108,7 +110,7 @@ const MoneyReceipt = React.forwardRef<
               </tr>
             </thead>
             <tbody>
-              {fees.map((fee, idx) => (
+              {groupedFees.map((fee, idx) => (
                 <tr key={idx}>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
                     {fee.feesTypeName || 'N/A'}
