@@ -17,6 +17,7 @@ interface SingleEntryModeFieldsProps {
   divisions: any
   examGroups: any
   subjects: any
+  classes?: any
 }
 
 export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
@@ -28,6 +29,7 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
   divisions = { data: [] },
   examGroups = { data: [] },
   subjects = { data: [] },
+  classes = { data: [] },
 }) => {
   return (
     <>
@@ -132,6 +134,66 @@ export const SingleEntryModeFields: React.FC<SingleEntryModeFieldsProps> = ({
             }}
             placeholder="Auto-selected from student"
             disabled={!!formData.studentId}
+          />
+        </div>
+
+        {/* Class */}
+        <div className="space-y-2">
+          <Label htmlFor="classId">
+            Class <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              (classes?.data || [])?.map((cls: any) => ({
+                id: cls?.classData?.classId?.toString() || '0',
+                name: cls?.classData?.className || 'Unnamed class',
+              })) || []
+            }
+            value={
+              formData.classId
+                ? {
+                    id: formData.classId.toString(),
+                    name:
+                      (classes?.data || [])?.find(
+                        (c: any) => c?.classData?.classId === formData.classId
+                      )?.classData?.className || '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('classId', value ? String(value.id) : '')
+            }
+            placeholder="Select class"
+          />
+        </div>
+
+        {/* Exam Group */}
+        <div className="space-y-2">
+          <Label htmlFor="examGroupsId">
+            Exam Group <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              (examGroups?.data || [])?.map((group: any) => ({
+                id: group?.examGroupsId?.toString() || '0',
+                name: group?.examGroupName || 'Unnamed group',
+              })) || []
+            }
+            value={
+              formData.examGroupsId
+                ? {
+                    id: formData.examGroupsId.toString(),
+                    name:
+                      (examGroups?.data || [])?.find(
+                        (g: any) => g?.examGroupsId === formData.examGroupsId
+                      )?.examGroupName || '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('examGroupsId', value ? String(value.id) : '')
+            }
+            placeholder="Select exam group"
           />
         </div>
 

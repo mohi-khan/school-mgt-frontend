@@ -6,6 +6,7 @@ import type { GetExamResultsType } from '@/utils/type'
 type ReportCardProps = {
   studentName: string
   divisionName: string
+  className: string
   examGroupName: string
   sessionName: string
   results: GetExamResultsType[]
@@ -16,12 +17,18 @@ const ReportCard = React.forwardRef<HTMLDivElement, ReportCardProps>(
     {
       studentName,
       divisionName,
+      className,
       examGroupName,
       results,
       sessionName,
     },
     ref
   ) => {
+    const totalMarks = results.reduce(
+      (sum, result) => sum + (result.gainedMarks || 0),
+      0
+    )
+
     return (
       <div
         ref={ref}
@@ -57,7 +64,13 @@ const ReportCard = React.forwardRef<HTMLDivElement, ReportCardProps>(
               <div className="flex gap-2 flex-1">
                 <span className="text-gray-600">Division:</span>
                 <p className="font-semibold border-b border-gray-400 flex-1">
-                  {divisionName}
+                  {divisionName || 'N/A'}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Class:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {className || 'N/A'}
                 </p>
               </div>
               <div className="flex gap-2 flex-1">
@@ -94,6 +107,15 @@ const ReportCard = React.forwardRef<HTMLDivElement, ReportCardProps>(
                   </td>
                 </tr>
               ))}
+              {/* Total Row */}
+              <tr className="bg-amber-50">
+                <td className="border border-gray-300 px-4 py-3 text-sm font-bold text-gray-900">
+                  Total
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900 text-base">
+                  {totalMarks}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

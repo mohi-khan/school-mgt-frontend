@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -22,6 +22,7 @@ interface SubjectWiseEntryModeFieldsProps {
   examGroups: any
   filteredSubjectsByDivision: any[]
   examResults: any
+  classes?: any
 }
 
 export const SubjectWiseEntryModeFields: React.FC<
@@ -37,12 +38,36 @@ export const SubjectWiseEntryModeFields: React.FC<
   examGroups = { data: [] },
   filteredSubjectsByDivision = [],
   examResults = { data: [] },
+  classes = { data: [] },
 }) => {
-  // Filter students by selected divisionId
-  const filteredStudents = (students?.data || [])?.filter(
-    (student: any) =>
-      student?.studentDetails?.divisionId === formData.divisionId
-  )
+  console.log('🚀 ~ SubjectWiseEntryModeFields ~ classes:', classes)
+  const filteredStudents = formData.examSubjectId
+    ? (students?.data || [])?.filter(
+        (student: any) =>
+          student?.studentDetails?.divisionId === formData.divisionId
+      )
+    : []
+
+  const availableClasses = useMemo(() => {
+    if (!formData.examGroupsId || !formData.sessionId || !formData.divisionId)
+      return []
+
+    // Get unique classIds from subjects filtered by examGroup + session + division
+    const classIdsInSubjects = new Set(
+      (filteredSubjectsByDivision || []).map((subject: any) => subject.classId)
+    )
+
+    // Filter classes prop to only those present in subjects
+    return (classes?.data || []).filter((cls: any) =>
+      classIdsInSubjects.has(cls?.classData?.classId)
+    )
+  }, [
+    filteredSubjectsByDivision,
+    classes?.data,
+    formData.examGroupsId,
+    formData.sessionId,
+    formData.divisionId,
+  ])
 
   const getExistingResult = (studentId: number) => {
     if (
@@ -85,6 +110,7 @@ export const SubjectWiseEntryModeFields: React.FC<
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Exam Group */}
         <div className="space-y-2">
           <Label htmlFor="examGroupsId">
             Exam Group <span className="text-red-500">*</span>
@@ -113,6 +139,8 @@ export const SubjectWiseEntryModeFields: React.FC<
             placeholder="Select exam group"
           />
         </div>
+
+        {/* Session */}
         <div className="space-y-2">
           <Label htmlFor="sessionId">
             Session <span className="text-red-500">*</span>
@@ -142,6 +170,7 @@ export const SubjectWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Division */}
         <div className="space-y-2">
           <Label htmlFor="divisionId">
             Division <span className="text-red-500">*</span>
@@ -171,7 +200,41 @@ export const SubjectWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Class */}
         <div className="space-y-2">
+          <Label htmlFor="classId">
+            Class
+          </Label>
+          <CustomCombobox
+            items={
+              availableClasses?.map((cls: any) => ({
+                id: cls?.classData?.classId?.toString() || '0',
+                name:
+                  cls?.classData?.className ||
+                  cls?.classTitle ||
+                  'Unnamed class',
+              })) || []
+            }
+            value={
+              formData.classId
+                ? {
+                    id: formData.classId.toString(),
+                    name:
+                      availableClasses?.find(
+                        (c: any) => c?.classData?.classId === formData.classId
+                      )?.classData?.className || '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('classId', value ? String(value.id) : '')
+            }
+            placeholder="Select class"
+          />
+        </div>
+
+        {/* Subject */}
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="examSubjectId">
             Subject <span className="text-red-500">*</span>
           </Label>
