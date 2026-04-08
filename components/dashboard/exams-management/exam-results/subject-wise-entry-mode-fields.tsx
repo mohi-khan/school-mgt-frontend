@@ -22,6 +22,7 @@ interface SubjectWiseEntryModeFieldsProps {
   examGroups: any
   filteredSubjectsByDivision: any[]
   examResults: any
+  classes?: any
 }
 
 export const SubjectWiseEntryModeFields: React.FC<
@@ -37,8 +38,8 @@ export const SubjectWiseEntryModeFields: React.FC<
   examGroups = { data: [] },
   filteredSubjectsByDivision = [],
   examResults = { data: [] },
+  classes = { data: [] },
 }) => {
-  // Filter students by selected divisionId
   const filteredStudents = (students?.data || [])?.filter(
     (student: any) =>
       student?.studentDetails?.divisionId === formData.divisionId
@@ -85,6 +86,7 @@ export const SubjectWiseEntryModeFields: React.FC<
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Exam Group */}
         <div className="space-y-2">
           <Label htmlFor="examGroupsId">
             Exam Group <span className="text-red-500">*</span>
@@ -113,6 +115,8 @@ export const SubjectWiseEntryModeFields: React.FC<
             placeholder="Select exam group"
           />
         </div>
+
+        {/* Session */}
         <div className="space-y-2">
           <Label htmlFor="sessionId">
             Session <span className="text-red-500">*</span>
@@ -142,6 +146,7 @@ export const SubjectWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Division */}
         <div className="space-y-2">
           <Label htmlFor="divisionId">
             Division <span className="text-red-500">*</span>
@@ -171,7 +176,42 @@ export const SubjectWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Class */}
         <div className="space-y-2">
+          <Label htmlFor="classId">
+            Class <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              (classes?.data || [])?.map((cls: any) => ({
+                id: cls?.classId?.toString() || '0',
+                name: cls?.className || cls?.classTitle || 'Unnamed class',
+              })) || []
+            }
+            value={
+              formData.classId
+                ? {
+                    id: formData.classId.toString(),
+                    name:
+                      (classes?.data || [])?.find(
+                        (c: any) => c?.classId === formData.classId
+                      )?.className ||
+                      (classes?.data || [])?.find(
+                        (c: any) => c?.classId === formData.classId
+                      )?.classTitle ||
+                      '',
+                  }
+                : null
+            }
+            onChange={(value) =>
+              handleSelectChange('classId', value ? String(value.id) : '')
+            }
+            placeholder="Select class"
+          />
+        </div>
+
+        {/* Subject */}
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="examSubjectId">
             Subject <span className="text-red-500">*</span>
           </Label>

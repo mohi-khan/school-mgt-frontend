@@ -6,22 +6,32 @@ import type { GetExamResultsType } from '@/utils/type'
 type SubjectReportCardProps = {
   subjectName: string
   divisionName: string
+  className: string
   examGroupName: string
   sessionName: string
   results: GetExamResultsType[]
 }
 
-const SubjectReportCard = React.forwardRef<HTMLDivElement, SubjectReportCardProps>(
+const SubjectReportCard = React.forwardRef<
+  HTMLDivElement,
+  SubjectReportCardProps
+>(
   (
     {
       subjectName,
       divisionName,
+      className,
       examGroupName,
       results,
       sessionName,
     },
     ref
   ) => {
+    const totalMarks = results.reduce(
+      (sum, result) => sum + (result.gainedMarks || 0),
+      0
+    )
+
     return (
       <div
         ref={ref}
@@ -57,7 +67,13 @@ const SubjectReportCard = React.forwardRef<HTMLDivElement, SubjectReportCardProp
               <div className="flex gap-2 flex-1">
                 <span className="text-gray-600">Division:</span>
                 <p className="font-semibold border-b border-gray-400 flex-1">
-                  {divisionName}
+                  {divisionName || 'N/A'}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-1">
+                <span className="text-gray-600">Class:</span>
+                <p className="font-semibold border-b border-gray-400 flex-1">
+                  {className || 'N/A'}
                 </p>
               </div>
               <div className="flex gap-2 flex-1">
@@ -94,6 +110,15 @@ const SubjectReportCard = React.forwardRef<HTMLDivElement, SubjectReportCardProp
                   </td>
                 </tr>
               ))}
+              {/* Total Row */}
+              <tr className="bg-amber-50">
+                <td className="border border-gray-300 px-4 py-3 text-sm font-bold text-gray-900">
+                  Total
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900 text-base">
+                  {totalMarks}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

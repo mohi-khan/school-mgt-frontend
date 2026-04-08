@@ -75,6 +75,7 @@ const ResultReport = (): ReactElement => {
   const { data: students } = useGetAllStudents()
   const { data: classes } = useGetClasses()
   const { data: sections } = useGetSections()
+  const { data: subjects } = useGetExamSubjects()
 
   const [error, setError] = useState<string | null>(null)
 
@@ -101,8 +102,9 @@ const ResultReport = (): ReactElement => {
   )
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamResultId, setDeletingExamResultId] =
-    useState<number | null>(null)
+  const [deletingExamResultId, setDeletingExamResultId] = useState<
+    number | null
+  >(null)
 
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
 
@@ -114,6 +116,7 @@ const ResultReport = (): ReactElement => {
   const [formData, setFormData] = useState<
     CreateExamResultsType & {
       divisionId?: number | null
+      className?: string
     }
   >({
     sessionId: null,
@@ -124,13 +127,12 @@ const ResultReport = (): ReactElement => {
     createdBy: userData?.userId || 0,
     updatedBy: null,
     divisionId: null,
+    classId: null,
   })
   // Dynamic sections based on selected division for subject-wise entry
   const { data: sectionsByClass } = useGetSectionsByClassId(
     formData.divisionId || 0
   )
-
-  const { data: subjects } = useGetExamSubjects()
 
   // Filtered subjects by divisionId for student-wise entry
   const filteredSubjectsByClass = useMemo(() => {
@@ -141,12 +143,14 @@ const ResultReport = (): ReactElement => {
   }, [subjects?.data, formData.divisionId])
 
   // For student-wise entry
-  const [studentWiseResults, setStudentWiseResults] =
-    useState<StudentResultEntry[]>([])
+  const [studentWiseResults, setStudentWiseResults] = useState<
+    StudentResultEntry[]
+  >([])
 
   // For subject-wise entry
-  const [subjectWiseStudents, setSubjectWiseStudents] =
-    useState<{ studentId: number | null; gainedMarks: number }[]>([])
+  const [subjectWiseStudents, setSubjectWiseStudents] = useState<
+    { studentId: number | null; gainedMarks: number }[]
+  >([])
 
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
@@ -158,6 +162,7 @@ const ResultReport = (): ReactElement => {
     examGroupName: string
     sessionName: string
     divisionName: string
+    className: string
     results: GetExamResultsType[]
   } | null>(null)
 
@@ -182,6 +187,7 @@ const ResultReport = (): ReactElement => {
           [name]: value ? Number(value) : null,
           divisionId: selectedStudent.studentDetails.divisionId || null,
           sessionId: selectedStudent.studentDetails.sessionId || null,
+          classId: selectedStudent.studentDetails.classId || null, // ← add this
         }))
       }
     } else {
@@ -202,6 +208,7 @@ const ResultReport = (): ReactElement => {
       createdBy: userData?.userId || 0,
       updatedBy: null,
       divisionId: null,
+      classId: null,
     })
     setStudentWiseResults([])
     setSubjectWiseStudents([])
@@ -238,6 +245,8 @@ const ResultReport = (): ReactElement => {
         result.studentName?.toLowerCase().includes(searchLower) ||
         result.examGroupName?.toLowerCase().includes(searchLower) ||
         result.sessionName?.toLowerCase().includes(searchLower) ||
+        result.divisionName?.toLowerCase().includes(searchLower) ||
+        result.className?.toLowerCase().includes(searchLower) ||
         result.examSubjectName?.toLowerCase().includes(searchLower)
       )
     })
@@ -259,6 +268,7 @@ const ResultReport = (): ReactElement => {
               studentId: number
               studentName: string
               divisionName: string
+              className: string
               results: GetExamResultsType[]
             }
           >
@@ -295,8 +305,9 @@ const ResultReport = (): ReactElement => {
         if (!parentGroup.studentGroups.has(studentKey)) {
           parentGroup.studentGroups.set(studentKey, {
             studentId: result.studentId || 0,
-            studentName: result.studentName || 'Unassigned',
-            divisionName: result.divisionName || 'Unassigned',
+            studentName: result.studentName || 'N/A',
+            divisionName: result.divisionName || 'N/A',
+            className: result.className || 'N/A',
             results: [],
           })
         }
@@ -337,6 +348,7 @@ const ResultReport = (): ReactElement => {
               examSubjectId: number
               subjectName: string
               divisionName: string
+              className: string
               results: GetExamResultsType[]
             }
           >
@@ -373,8 +385,9 @@ const ResultReport = (): ReactElement => {
         if (!parentGroup.subjectGroups.has(subjectId)) {
           parentGroup.subjectGroups.set(subjectId, {
             examSubjectId: subjectId,
-            subjectName: result.examSubjectName || 'Unassigned',
-            divisionName: result.divisionName || 'Unassigned',
+            subjectName: result.examSubjectName || 'N/A',
+            divisionName: result.divisionName || 'N/A',
+            className: result.className || 'N/A',
             results: [],
           })
         }
@@ -410,146 +423,6 @@ const ResultReport = (): ReactElement => {
 
   const totalPages = Math.ceil(groupedExamResults.length / itemsPerPage)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    if (entryMode === 'single') {
-      // Single entry mode
-      if (!formData.sessionId) {
-        setError('Please select a session')
-        return
-      }
-      if (!formData.divisionId) {
-        setError('Please select a division')
-        return
-      }
-      if (!formData.studentId) {
-        setError('Please select a student')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (!formData.examSubjectId) {
-        setError('Please select a subject')
-        return
-      }
-      if (formData.gainedMarks < 0) {
-        setError('Please enter valid gained marks')
-        return
-      }
-
-      try {
-        if (isEditMode && editingExamResultId) {
-          updateMutation.mutate({
-            id: editingExamResultId,
-            data: {
-              ...formData,
-              updatedBy: userData?.userId || 0,
-            },
-          })
-        } else {
-          addMutation.mutate(formData)
-        }
-      } catch (err) {
-        setError('Failed to save exam result')
-        console.error(err)
-      }
-    } else if (entryMode === 'student-wise') {
-      // Student-wise entry: one student, multiple subjects
-      if (!formData.studentId) {
-        setError('Please select a student')
-        return
-      }
-      if (!formData.sessionId) {
-        setError('Session not found for selected student')
-        return
-      }
-      if (!formData.divisionId) {
-        setError('Division not found for selected student')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (studentWiseResults.length === 0) {
-        setError('Please add at least one subject result')
-        return
-      }
-
-      try {
-        const promises = studentWiseResults.map((entry) => {
-          const resultData: CreateExamResultsType = {
-            sessionId: formData.sessionId,
-            examGroupsId: formData.examGroupsId,
-            divisionId: formData.divisionId,
-            studentId: formData.studentId,
-            examSubjectId: entry.examSubjectId,
-            gainedMarks: entry.gainedMarks,
-            createdBy: userData?.userId || 0,
-            updatedBy: null,
-          }
-          console.log('[v0] Student-wise result data:', resultData)
-          return addMutation.mutateAsync(resultData)
-        })
-
-        await Promise.all(promises)
-        resetForm()
-      } catch (err) {
-        setError('Failed to save student results')
-        console.error(err)
-      }
-    } else if (entryMode === 'subject-wise') {
-      // Subject-wise entry: one subject, multiple students
-      if (!formData.divisionId) {
-        setError('Please select a division')
-        return
-      }
-      if (!formData.sessionId) {
-        setError('Please select a session')
-        return
-      }
-      if (!formData.examGroupsId) {
-        setError('Please select an exam group')
-        return
-      }
-      if (!formData.examSubjectId) {
-        setError('Please select a subject')
-        return
-      }
-      if (subjectWiseStudents.length === 0) {
-        setError('Please add at least one student result')
-        return
-      }
-
-      try {
-        const promises = subjectWiseStudents.map((entry) => {
-          const resultData: CreateExamResultsType = {
-            sessionId: formData.sessionId,
-            examGroupsId: formData.examGroupsId,
-            divisionId: formData.divisionId,
-            studentId: entry.studentId,
-            examSubjectId: formData.examSubjectId,
-            gainedMarks: entry.gainedMarks,
-            createdBy: userData?.userId || 0,
-            updatedBy: null,
-          }
-          console.log('[v0] Subject-wise result data:', resultData)
-          return addMutation.mutateAsync(resultData)
-        })
-
-        await Promise.all(promises)
-        resetForm()
-      } catch (err) {
-        setError('Failed to save subject results')
-        console.error(err)
-      }
-    }
-  }
-
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
       setError('Error saving exam result')
@@ -566,16 +439,12 @@ const ResultReport = (): ReactElement => {
       createdBy: result.createdBy,
       updatedBy: userData?.userId || 0,
       divisionId: (result as any)?.divisionId ?? null,
+      classId: (result as any)?.classId ?? null,
     })
     setEditingExamResultId(result.examResultId || null)
     setIsEditMode(true)
     setEntryMode('single')
     setIsPopupOpen(true)
-  }
-
-  const handleDeleteClick = (examResultId: number) => {
-    setDeletingExamResultId(examResultId)
-    setIsDeleteDialogOpen(true)
   }
 
   const handlePrintGroup = (group: any) => {
@@ -587,6 +456,7 @@ const ResultReport = (): ReactElement => {
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
         divisionName: group.divisionName,
+        className: group.className,
         results: group.results,
       })
     } else {
@@ -597,6 +467,7 @@ const ResultReport = (): ReactElement => {
         examGroupName: group.examGroupName,
         sessionName: group.sessionName,
         divisionName: group.divisionName,
+        className: group.className,
         results: group.results,
       })
     }
@@ -641,6 +512,7 @@ const ResultReport = (): ReactElement => {
         'Exam Group Name': result.examGroupName || '',
         'Student Name': result.studentName || '',
         'Division Name': result.divisionName || '',
+        'Class Name': result.className || '',
         'Subject Name': result.examSubjectName || '',
         'Gained Marks': result.gainedMarks || 0,
       })) || []
@@ -677,6 +549,7 @@ const ResultReport = (): ReactElement => {
             'Exam Group Name': parentGroup.examGroupName || '',
             'Student Name': studentGroup.studentName || '',
             'Division Name': studentGroup.divisionName || '',
+            'Class Name': studentGroup.className || '',
             'Subject Name': result.examSubjectName || '',
             'Gained Marks': result.gainedMarks || 0,
           })
@@ -690,6 +563,7 @@ const ResultReport = (): ReactElement => {
             'Exam Group Name': parentGroup.examGroupName || '',
             'Student Name': result.studentName || '',
             'Division Name': subjectGroup.divisionName || '',
+            'Class Name': subjectGroup.className || '',
             'Subject Name': subjectGroup.subjectName || '',
             'Gained Marks': result.gainedMarks || 0,
           })
@@ -927,6 +801,7 @@ const ResultReport = (): ReactElement => {
                                           sessionName: parentGroup.sessionName,
                                           divisionName:
                                             studentGroup.divisionName,
+                                          className: studentGroup.className,
                                           results: studentGroup.results,
                                         })
                                       }}
@@ -1037,6 +912,7 @@ const ResultReport = (): ReactElement => {
                                           sessionName: parentGroup.sessionName,
                                           divisionName:
                                             subjectGroup.divisionName,
+                                          className: subjectGroup.className,
                                           results: subjectGroup.results,
                                         })
                                       }}
@@ -1163,6 +1039,7 @@ const ResultReport = (): ReactElement => {
               <ReportCard
                 studentName={selectedGroupForPrint.studentName || ''}
                 divisionName={selectedGroupForPrint.divisionName}
+                className={selectedGroupForPrint.className}
                 examGroupName={selectedGroupForPrint.examGroupName}
                 results={selectedGroupForPrint.results}
                 sessionName={selectedGroupForPrint.sessionName}
@@ -1173,6 +1050,7 @@ const ResultReport = (): ReactElement => {
               <SubjectReportCard
                 subjectName={selectedGroupForPrint.subjectName || ''}
                 divisionName={selectedGroupForPrint.divisionName}
+                className={selectedGroupForPrint.className}
                 examGroupName={selectedGroupForPrint.examGroupName}
                 results={selectedGroupForPrint.results}
                 sessionName={selectedGroupForPrint.sessionName}

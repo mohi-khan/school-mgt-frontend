@@ -22,6 +22,7 @@ interface StudentWiseEntryModeFieldsProps {
   examGroups: any
   filteredSubjectsByDivision: any[]
   examResults: any
+  classes?: any
 }
 
 export const StudentWiseEntryModeFields: React.FC<
@@ -37,6 +38,7 @@ export const StudentWiseEntryModeFields: React.FC<
   examGroups = { data: [] },
   filteredSubjectsByDivision = [],
   examResults = { data: [] },
+  classes = { data: [] },
 }) => {
   const getExistingResult = (subjectId: number) => {
     if (!formData.studentId || !formData.examGroupsId || !formData.sessionId)
@@ -75,6 +77,7 @@ export const StudentWiseEntryModeFields: React.FC<
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Exam Group */}
         <div className="space-y-2">
           <Label htmlFor="examGroupsId">
             Exam Group <span className="text-red-500">*</span>
@@ -103,6 +106,8 @@ export const StudentWiseEntryModeFields: React.FC<
             placeholder="Select exam group"
           />
         </div>
+
+        {/* Student */}
         <div className="space-y-2">
           <Label htmlFor="studentId">
             Student <span className="text-red-500">*</span>
@@ -139,6 +144,7 @@ export const StudentWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Session */}
         <div className="space-y-2">
           <Label htmlFor="sessionId">Session</Label>
           <CustomCombobox
@@ -167,6 +173,7 @@ export const StudentWiseEntryModeFields: React.FC<
           />
         </div>
 
+        {/* Division */}
         <div className="space-y-2">
           <Label htmlFor="divisionId">Division</Label>
           <CustomCombobox
@@ -190,6 +197,39 @@ export const StudentWiseEntryModeFields: React.FC<
             onChange={(value) =>
               handleSelectChange('divisionId', value ? String(value.id) : '')
             }
+            placeholder="Auto-selected from student"
+            disabled={!!formData.studentId}
+          />
+        </div>
+
+        {/* Class */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="classId">
+            Class <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              (classes?.data || [])?.map((cls: any) => ({
+                id: cls?.classData?.classId?.toString() || '0',
+                name: cls?.classData?.className || 'Unnamed class',
+              })) || []
+            }
+            value={
+              formData.classId
+                ? {
+                    id: formData.classId.toString(),
+                    name:
+                      (classes?.data || [])?.find(
+                        (c: any) => c?.classData?.classId === formData.classId
+                      )?.classData?.className || '',
+                  }
+                : null
+            }
+            onChange={(value) => {
+              if (!formData.studentId) {
+                handleSelectChange('classId', value ? String(value.id) : '')
+              }
+            }}
             placeholder="Auto-selected from student"
             disabled={!!formData.studentId}
           />
