@@ -384,6 +384,7 @@ export type GetExamResultsType = z.infer<typeof examResultsSchema> & {
   examGroupName: string
   studentName: string
   examSubjectName: string
+  totalMarks: number
 }
 
 export const incomeHeadSchema = z.object({

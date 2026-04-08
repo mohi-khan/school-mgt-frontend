@@ -25,59 +25,23 @@ import {
 import {
   Search,
   FileText,
-  Edit2,
-  Trash2,
   Download,
-  Upload,
   ChevronDown,
   ChevronUp,
   Printer,
-  Users,
-  BookOpen,
   ArrowUpDown,
   FileSpreadsheet,
 } from 'lucide-react'
-import type { CreateExamResultsType, GetExamResultsType } from '@/utils/type'
-import { useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom } from 'jotai'
-import {
-  useAddExamResult,
-  useGetExamResults,
-  useUpdateExamResult,
-  useDeleteExamResult,
-  useGetSessions,
-  useGetAllStudents,
-  useGetExamSubjects,
-  useGetClasses,
-  useGetSections,
-  useGetSectionsByClassId,
-  useGetExamGroups,
-} from '@/hooks/use-api'
+import type { GetExamResultsType } from '@/utils/type'
+import { useGetExamResults } from '@/hooks/use-api'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
-import ExcelFileInput from '@/utils/excel-file-input'
 import { useReactToPrint } from 'react-to-print'
 import ReportCard from '../../exams-management/exam-results/report-card'
 import SubjectReportCard from '../../exams-management/exam-results/subject-report-card'
 
-type StudentResultEntry = {
-  examSubjectId: number | null
-  gainedMarks: number
-}
-
 const ResultReport = (): ReactElement => {
-  useInitializeUser()
-  const [userData] = useAtom(userDataAtom)
-
   const { data: examResults } = useGetExamResults()
-  const { data: sessions } = useGetSessions()
-  const { data: examGroups } = useGetExamGroups()
-  const { data: students } = useGetAllStudents()
-  const { data: classes } = useGetClasses()
-  const { data: sections } = useGetSections()
-  const { data: subjects } = useGetExamSubjects()
-
-  const [error, setError] = useState<string | null>(null)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
@@ -95,63 +59,6 @@ const ResultReport = (): ReactElement => {
     new Set()
   )
 
-  const [isPopupOpen, setIsPopupOpen] = useState(false)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [editingExamResultId, setEditingExamResultId] = useState<number | null>(
-    null
-  )
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingExamResultId, setDeletingExamResultId] = useState<
-    number | null
-  >(null)
-
-  const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
-
-  // Entry mode: 'single', 'student-wise', 'subject-wise'
-  const [entryMode, setEntryMode] = useState<
-    'single' | 'student-wise' | 'subject-wise'
-  >('single')
-
-  const [formData, setFormData] = useState<
-    CreateExamResultsType & {
-      divisionId?: number | null
-      className?: string
-    }
-  >({
-    sessionId: null,
-    examGroupsId: null,
-    studentId: null,
-    examSubjectId: null,
-    gainedMarks: 0,
-    createdBy: userData?.userId || 0,
-    updatedBy: null,
-    divisionId: null,
-    classId: null,
-  })
-  // Dynamic sections based on selected division for subject-wise entry
-  const { data: sectionsByClass } = useGetSectionsByClassId(
-    formData.divisionId || 0
-  )
-
-  // Filtered subjects by divisionId for student-wise entry
-  const filteredSubjectsByClass = useMemo(() => {
-    if (!subjects?.data || !formData.divisionId) return []
-    return subjects.data.filter(
-      (subject) => subject.classId === formData.divisionId
-    )
-  }, [subjects?.data, formData.divisionId])
-
-  // For student-wise entry
-  const [studentWiseResults, setStudentWiseResults] = useState<
-    StudentResultEntry[]
-  >([])
-
-  // For subject-wise entry
-  const [subjectWiseStudents, setSubjectWiseStudents] = useState<
-    { studentId: number | null; gainedMarks: number }[]
-  >([])
-
   const contentRef = useRef<HTMLDivElement>(null)
   const reactToPrintFn = useReactToPrint({ contentRef })
   const [selectedGroupForPrint, setSelectedGroupForPrint] = useState<{
@@ -165,77 +72,6 @@ const ResultReport = (): ReactElement => {
     className: string
     results: GetExamResultsType[]
   } | null>(null)
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'gainedMarks' ? Number(value) : value,
-    }))
-  }
-
-  const handleSelectChange = (name: string, value: string) => {
-    if (name === 'studentId') {
-      const selectedStudent = students?.data?.find(
-        (s) => s.studentDetails.studentId === Number(value)
-      )
-      if (selectedStudent) {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value ? Number(value) : null,
-          divisionId: selectedStudent.studentDetails.divisionId || null,
-          sessionId: selectedStudent.studentDetails.sessionId || null,
-          classId: selectedStudent.studentDetails.classId || null, // ← add this
-        }))
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value ? Number(value) : null,
-      }))
-    }
-  }
-
-  const resetForm = () => {
-    setFormData({
-      sessionId: null,
-      examGroupsId: null,
-      studentId: null,
-      examSubjectId: null,
-      gainedMarks: 0,
-      createdBy: userData?.userId || 0,
-      updatedBy: null,
-      divisionId: null,
-      classId: null,
-    })
-    setStudentWiseResults([])
-    setSubjectWiseStudents([])
-    setEditingExamResultId(null)
-    setIsEditMode(false)
-    setIsPopupOpen(false)
-    setError(null)
-    setEntryMode('single')
-  }
-
-  const closePopup = useCallback(() => {
-    setIsPopupOpen(false)
-    setError(null)
-  }, [])
-
-  const addMutation = useAddExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-  const updateMutation = useUpdateExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-  const deleteMutation = useDeleteExamResult({
-    onClose: closePopup,
-    reset: resetForm,
-  })
 
   const filteredExamResults = useMemo(() => {
     if (!examResults?.data) return []
@@ -423,30 +259,6 @@ const ResultReport = (): ReactElement => {
 
   const totalPages = Math.ceil(groupedExamResults.length / itemsPerPage)
 
-  useEffect(() => {
-    if (addMutation.error || updateMutation.error) {
-      setError('Error saving exam result')
-    }
-  }, [addMutation.error, updateMutation.error])
-
-  const handleEditClick = (result: GetExamResultsType) => {
-    setFormData({
-      sessionId: result.sessionId ?? null,
-      examGroupsId: result.examGroupsId ?? null,
-      studentId: result.studentId ?? null,
-      examSubjectId: result.examSubjectId ?? null,
-      gainedMarks: result.gainedMarks,
-      createdBy: result.createdBy,
-      updatedBy: userData?.userId || 0,
-      divisionId: (result as any)?.divisionId ?? null,
-      classId: (result as any)?.classId ?? null,
-    })
-    setEditingExamResultId(result.examResultId || null)
-    setIsEditMode(true)
-    setEntryMode('single')
-    setIsPopupOpen(true)
-  }
-
   const handlePrintGroup = (group: any) => {
     if (group.type === 'student') {
       setSelectedGroupForPrint({
@@ -515,6 +327,7 @@ const ResultReport = (): ReactElement => {
         'Class Name': result.className || '',
         'Subject Name': result.examSubjectName || '',
         'Gained Marks': result.gainedMarks || 0,
+        'Total Marks': result.totalMarks || 0,
       })) || []
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
@@ -552,6 +365,7 @@ const ResultReport = (): ReactElement => {
             'Class Name': studentGroup.className || '',
             'Subject Name': result.examSubjectName || '',
             'Gained Marks': result.gainedMarks || 0,
+            'Total Marks': result.totalMarks || 0,
           })
         })
       })
@@ -566,6 +380,7 @@ const ResultReport = (): ReactElement => {
             'Class Name': subjectGroup.className || '',
             'Subject Name': subjectGroup.subjectName || '',
             'Gained Marks': result.gainedMarks || 0,
+            'Total Marks': result.totalMarks || 0,
           })
         })
       })
@@ -837,7 +652,8 @@ const ResultReport = (): ReactElement => {
                                                     '-'}
                                                 </TableCell>
                                                 <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
+                                                  {result.gainedMarks}/
+                                                  {result.totalMarks}
                                                 </TableCell>
                                               </TableRow>
                                             )
@@ -947,7 +763,8 @@ const ResultReport = (): ReactElement => {
                                                   {result.studentName || '-'}
                                                 </TableCell>
                                                 <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
+                                                  {result.gainedMarks}/
+                                                  {result.totalMarks}
                                                 </TableCell>
                                               </TableRow>
                                             )

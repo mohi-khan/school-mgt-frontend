@@ -1270,7 +1270,7 @@ const ExamResults = (): ReactElement => {
                                                     '-'}
                                                 </TableCell>
                                                 <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
+                                                  {result.gainedMarks}/{result.totalMarks}
                                                 </TableCell>
                                                 <TableCell>
                                                   <div className="flex justify-end gap-2">
@@ -1406,7 +1406,7 @@ const ExamResults = (): ReactElement => {
                                                   {result.studentName || '-'}
                                                 </TableCell>
                                                 <TableCell className="font-semibold text-gray-800 text-right text-base">
-                                                  {result.gainedMarks}
+                                                  {result.gainedMarks}/{result.totalMarks}
                                                 </TableCell>
                                                 <TableCell>
                                                   <div className="flex justify-end gap-2">
