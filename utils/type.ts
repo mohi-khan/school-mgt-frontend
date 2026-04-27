@@ -508,6 +508,7 @@ export const paymentReportSchema = z.object({
   studentName: z.string(),
   studentClass: z.string(),
   studentSection: z.string(),
+  studentDivision: z.string(),
   studentSession: z.string(),
   method: z.string(),
   bankName: z.string().nullable().optional(),
