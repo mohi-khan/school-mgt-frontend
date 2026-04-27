@@ -60,6 +60,7 @@ const PaymentReport = () => {
       Class: report.studentClass,
       Section: report.studentSection,
       Session: report.studentSession,
+      Division: report.studentDivision,
       Method: report.method,
 
       'Bank Info':
@@ -320,6 +321,7 @@ const PaymentReport = () => {
                     <TableRow>
                       <TableHead className="font-bold">Payment Date</TableHead>
                       <TableHead className="font-bold">Student Name</TableHead>
+                      <TableHead className="font-bold">Division</TableHead>
                       <TableHead className="font-bold">Class</TableHead>
                       <TableHead className="font-bold">Section</TableHead>
                       <TableHead className="font-bold">Session</TableHead>
@@ -337,6 +339,7 @@ const PaymentReport = () => {
                           {formatDate(new Date(report.paymentDate))}
                         </TableCell>
                         <TableCell>{report.studentName}</TableCell>
+                        <TableCell>{report.studentDivision}</TableCell>
                         <TableCell>{report.studentClass}</TableCell>
                         <TableCell>{report.studentSection}</TableCell>
                         <TableCell>{report.studentSession}</TableCell>
