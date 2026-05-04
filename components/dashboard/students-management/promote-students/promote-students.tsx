@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Users, AlertCircle } from 'lucide-react'
+import { Users, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import type { PromotionResponseType, StudentPromotionsType } from '@/utils/type'
@@ -22,13 +22,13 @@ import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
 import { formatDate, formatNumber } from '@/utils/conversions'
 import {
-  useGetStudentFeesByClassSection,
+  useGetStudentFeesByClassSectionDivision,
   usePromoteStudents,
   useGetFeesMasters,
   useGetClasses,
-  useGetSections,
   useGetSessions,
   useGetSectionsByClassId,
+  useGetDivisions,
 } from '@/hooks/use-api'
 
 const PromoteStudents = () => {
@@ -39,14 +39,18 @@ const PromoteStudents = () => {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
+  // Filter state
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
     null
   )
+  const [selectedDivisionId, setSelectedDivisionId] = useState<number | null>(
+    null
+  )
+
   const [failedPromotions, setFailedPromotions] = useState<
     PromotionResponseType['notPromotedStudents']
   >([])
-  console.log('🚀 ~ PromoteStudents ~ failedPromotions:', failedPromotions)
   const [showFailedPopup, setShowFailedPopup] = useState(false)
 
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(
@@ -57,30 +61,41 @@ const PromoteStudents = () => {
   const [isPromotionPopupOpen, setIsPromotionPopupOpen] = useState(false)
   const [promoteClassId, setPromoteClassId] = useState<number | null>(null)
   const [promoteSectionId, setPromoteSectionId] = useState<number | null>(null)
+  const [promoteDivisionId, setPromoteDivisionId] = useState<number | null>(
+    null
+  )
   const [promoteSessionId, setPromoteSessionId] = useState<number | null>(null)
   const [selectedFeesMasters, setSelectedFeesMasters] = useState<Set<number>>(
     new Set()
   )
 
+  // Accordion state for fees masters groups
+  const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
+
+  // --- Data fetching ---
   const { data: classesData } = useGetClasses()
-  // For students filter
+
+  // For student filter
   const { data: sectionsData } = useGetSectionsByClassId(selectedClassId ?? 0)
+
+  // Division is independent — fetched once, used everywhere
+  const { data: divisionsData } = useGetDivisions()
 
   // For promotion popup
   const { data: promoteSectionsData } = useGetSectionsByClassId(
     promoteClassId ?? 0
   )
 
-  console.log('🚀 ~ PromoteStudents ~ sectionsData:', sectionsData)
-
   const { data: sessionsData } = useGetSessions()
 
-  const { data: studentsData } = useGetStudentFeesByClassSection(
+  const { data: studentsData } = useGetStudentFeesByClassSectionDivision(
     selectedClassId || 0,
-    selectedSectionId || 0
+    selectedSectionId || 0,
+    selectedDivisionId || 0
   )
   const { data: feesMastersData } = useGetFeesMasters()
 
+  // --- Derived data ---
   const students = useMemo(() => {
     return (
       studentsData?.data?.map((item: any) => ({
@@ -89,13 +104,14 @@ const PromoteStudents = () => {
         rollNo: item.studentDetails?.rollNo,
         firstName: item.studentDetails?.firstName,
         lastName: item.studentDetails?.lastName,
-        email: item.studentDetails?.email,
         phoneNumber: item.studentDetails?.phoneNumber,
         classId: item.studentDetails?.classId,
         sectionId: item.studentDetails?.sectionId,
+        divisionId: item.studentDetails?.divisionId,
         sessionId: item.studentDetails?.sessionId,
         className: item.studentDetails?.className,
         sectionName: item.studentDetails?.sectionName,
+        divisionName: item.studentDetails?.divisionName,
       })) || []
     )
   }, [studentsData?.data])
@@ -110,6 +126,7 @@ const PromoteStudents = () => {
     }, {})
   }, [feesMastersData?.data])
 
+  // --- Handlers ---
   const handleSelectAllToggle = () => {
     if (selectAll) {
       setSelectedStudents(new Set())
@@ -136,7 +153,6 @@ const PromoteStudents = () => {
     const isGroupSelected = groupFeeIds.every((id) =>
       selectedFeesMasters.has(id)
     )
-
     if (isGroupSelected) {
       groupFeeIds.forEach((id) => newSelected.delete(id))
     } else {
@@ -145,13 +161,21 @@ const PromoteStudents = () => {
     setSelectedFeesMasters(newSelected)
   }
 
+  const toggleAccordion = (groupName: string) => {
+    const newOpen = new Set(openAccordions)
+    if (newOpen.has(groupName)) {
+      newOpen.delete(groupName)
+    } else {
+      newOpen.add(groupName)
+    }
+    setOpenAccordions(newOpen)
+  }
+
   const promoteMutation = usePromoteStudents({
     onClose: () => setIsPromotionPopupOpen(false),
     setFailedPromotions: setFailedPromotions,
     setShowFailedPopup: setShowFailedPopup,
     onSuccess: (response) => {
-      console.log('🚀 ~ PromoteStudents ~ response:', response)
-
       if (response.notPromotedStudents?.length > 0) {
         setFailedPromotions(response.notPromotedStudents)
         setShowFailedPopup(true)
@@ -163,6 +187,7 @@ const PromoteStudents = () => {
       setSelectedFeesMasters(new Set())
       setPromoteClassId(null)
       setPromoteSectionId(null)
+      setPromoteDivisionId(null)
       setPromoteSessionId(null)
     },
   })
@@ -191,23 +216,22 @@ const PromoteStudents = () => {
 
     try {
       const promotionData: StudentPromotionsType = {
-        students: Array.from(selectedStudents).map((studentId) => {
-          const student = students.find((s) => s.studentId === studentId)
-          return {
-            studentId,
-            classId: promoteClassId,
-            secitionId: promoteSectionId,
-            sessionId: promoteSessionId,
-            currentResult: 'Pass',
-            nextSession: 'Continue',
-          }
-        }),
+        students: Array.from(selectedStudents).map((studentId) => ({
+          studentId,
+          classId: promoteClassId,
+          secitionId: promoteSectionId,
+          divisionId: promoteDivisionId ?? undefined,
+          sessionId: promoteSessionId,
+          currentResult: 'Pass',
+          nextSession: 'Continue',
+        })),
         feesMasterIds: Array.from(selectedFeesMasters),
       }
 
       promoteMutation.mutate({ data: promotionData })
       setSelectedClassId(null)
       setSelectedSectionId(null)
+      setSelectedDivisionId(null)
     } catch (err) {
       setError('Failed to promote students')
       console.error(err)
@@ -237,7 +261,8 @@ const PromoteStudents = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Filter Row */}
+      <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="classId">Class</Label>
           <CustomCombobox
@@ -261,6 +286,7 @@ const PromoteStudents = () => {
             onChange={(value) => {
               setSelectedClassId(value ? Number(value.id) : null)
               setSelectedSectionId(null)
+              setSelectedDivisionId(null)
               setSelectedStudents(new Set())
               setSelectAll(false)
             }}
@@ -296,6 +322,35 @@ const PromoteStudents = () => {
             placeholder="Select section"
           />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="divisionId">Division</Label>
+          <CustomCombobox
+            items={
+              divisionsData?.data?.map((division) => ({
+                id: division?.divisionId?.toString() || '0',
+                name: division.divisionName || 'Unnamed division',
+              })) || []
+            }
+            value={
+              selectedDivisionId
+                ? {
+                    id: selectedDivisionId.toString(),
+                    name:
+                      divisionsData?.data?.find(
+                        (d) => d.divisionId === selectedDivisionId
+                      )?.divisionName || '',
+                  }
+                : null
+            }
+            onChange={(value) => {
+              setSelectedDivisionId(value ? Number(value.id) : null)
+              setSelectedStudents(new Set())
+              setSelectAll(false)
+            }}
+            placeholder="Select division"
+          />
+        </div>
       </div>
 
       {/* Students Table */}
@@ -313,23 +368,23 @@ const PromoteStudents = () => {
               </TableHead>
               <TableHead>Roll No</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Section</TableHead>
+              <TableHead>Division</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!studentsData ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No students found. Please select class and section.
+                  No students found. Please select at least one filter.
                 </TableCell>
               </TableRow>
             ) : students.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No students found for this class and section
+                  No students found for the selected filters.
                 </TableCell>
               </TableRow>
             ) : (
@@ -343,12 +398,12 @@ const PromoteStudents = () => {
                       className="w-4 h-4"
                     />
                   </TableCell>
-                  <TableCell>{student.rollNo}</TableCell>
-                  <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
-                  <TableCell className="text-sm">{student.email}</TableCell>
-                  <TableCell>{student.phoneNumber}</TableCell>
-                  <TableCell>{student.className}</TableCell>
-                  <TableCell>{student.sectionName}</TableCell>
+                  <TableCell>{student.rollNo || '-'}</TableCell>
+                  <TableCell>{`${student.firstName} ${student.lastName}` || '-'}</TableCell>
+                  <TableCell>{student.phoneNumber || '-'}</TableCell>
+                  <TableCell>{student.className || '-'}</TableCell>
+                  <TableCell>{student.sectionName || '-'}</TableCell>
+                  <TableCell>{student.divisionName || '-'}</TableCell>
                 </TableRow>
               ))
             )}
@@ -356,6 +411,7 @@ const PromoteStudents = () => {
         </Table>
       </div>
 
+      {/* Promotion Popup */}
       <Popup
         isOpen={isPromotionPopupOpen}
         onClose={() => setIsPromotionPopupOpen(false)}
@@ -372,19 +428,19 @@ const PromoteStudents = () => {
                   <TableRow>
                     <TableHead>Roll No</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Section</TableHead>
+                    <TableHead>Division</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {getSelectedStudentsData().map((student) => (
                     <TableRow key={student.studentId}>
-                      <TableCell>{student.rollNo}</TableCell>
-                      <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
-                      <TableCell>{student.email}</TableCell>
-                      <TableCell>{student.className}</TableCell>
-                      <TableCell>{student.sectionName}</TableCell>
+                      <TableCell>{student.rollNo || '-'}</TableCell>
+                      <TableCell>{`${student.firstName} ${student.lastName}` || '-'}</TableCell>
+                      <TableCell>{student.className || '-'}</TableCell>
+                      <TableCell>{student.sectionName || '-'}</TableCell>
+                      <TableCell>{student.divisionName || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -395,7 +451,7 @@ const PromoteStudents = () => {
           {/* Promotion Configuration */}
           <div className="border p-4 rounded-lg bg-slate-50">
             <h3 className="text-md font-semibold mb-4">Promotion Details</h3>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="promoteClassId">Class</Label>
                 <CustomCombobox
@@ -416,9 +472,11 @@ const PromoteStudents = () => {
                         }
                       : null
                   }
-                  onChange={(value) =>
+                  onChange={(value) => {
                     setPromoteClassId(value ? Number(value.id) : null)
-                  }
+                    setPromoteSectionId(null)
+                    setPromoteDivisionId(null)
+                  }}
                   placeholder="Select class"
                 />
               </div>
@@ -443,10 +501,37 @@ const PromoteStudents = () => {
                         }
                       : null
                   }
-                  onChange={(value) =>
+                  onChange={(value) => {
                     setPromoteSectionId(value ? Number(value.id) : null)
-                  }
+                  }}
                   placeholder="Select section"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promoteDivisionId">Division</Label>
+                <CustomCombobox
+                  items={
+                    divisionsData?.data?.map((division) => ({
+                      id: division?.divisionId?.toString() || '0',
+                      name: division.divisionName || 'Unnamed division',
+                    })) || []
+                  }
+                  value={
+                    promoteDivisionId
+                      ? {
+                          id: promoteDivisionId.toString(),
+                          name:
+                            divisionsData?.data?.find(
+                              (d) => d.divisionId === promoteDivisionId
+                            )?.divisionName || '',
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setPromoteDivisionId(value ? Number(value.id) : null)
+                  }
+                  placeholder="Select division"
                 />
               </div>
 
@@ -479,31 +564,58 @@ const PromoteStudents = () => {
             </div>
           </div>
 
+          {/* Fees Masters — Accordion */}
           <div className="border p-4 rounded-lg bg-slate-50">
             <h3 className="text-md font-semibold mb-4">Assign Fees Masters</h3>
-            <div className="space-y-6">
+            <div className="space-y-2">
               {Object.entries(groupedFeesMasters).map(
                 ([groupName, groupFees]) => {
                   const groupFeeIds = groupFees.map((f) => f.feesMasterId || 0)
                   const isGroupSelected = groupFeeIds.every((id) =>
                     selectedFeesMasters.has(id)
                   )
+                  const isOpen = openAccordions.has(groupName)
 
                   return (
-                    <div key={groupName} className="space-y-3">
-                      <div className="flex items-center gap-3">
+                    <div
+                      key={groupName}
+                      className="border rounded-lg overflow-hidden bg-white"
+                    >
+                      {/* Accordion Header */}
+                      <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
                         <Input
                           type="checkbox"
-                          className="w-4 h-4"
+                          className="w-4 h-4 flex-shrink-0"
                           checked={isGroupSelected}
                           onChange={() =>
                             handleGroupFeesMastersToggle(groupFeeIds)
                           }
+                          onClick={(e) => e.stopPropagation()}
                         />
-                        <h4 className="font-medium text-sm">{groupName}</h4>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 flex-1 text-left"
+                          onClick={() => toggleAccordion(groupName)}
+                        >
+                          <span className="font-medium text-sm">
+                            {groupName}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({groupFees.length} item
+                            {groupFees.length !== 1 ? 's' : ''})
+                          </span>
+                          <span className="ml-auto text-gray-400">
+                            {isOpen ? (
+                              <ChevronDown size={16} />
+                            ) : (
+                              <ChevronRight size={16} />
+                            )}
+                          </span>
+                        </button>
                       </div>
 
-                      <div className="border rounded-md overflow-hidden bg-white">
+                      {/* Accordion Body */}
+                      {isOpen && (
                         <Table>
                           <TableHeader className="bg-gray-50">
                             <TableRow>
@@ -512,7 +624,6 @@ const PromoteStudents = () => {
                               <TableHead>Amount (BDT)</TableHead>
                             </TableRow>
                           </TableHeader>
-
                           <TableBody>
                             {groupFees.map((fee) => (
                               <TableRow key={fee.feesMasterId}>
@@ -529,7 +640,7 @@ const PromoteStudents = () => {
                             ))}
                           </TableBody>
                         </Table>
-                      </div>
+                      )}
                     </div>
                   )
                 }
@@ -558,6 +669,7 @@ const PromoteStudents = () => {
         </form>
       </Popup>
 
+      {/* Failed Promotions Popup */}
       <Popup
         isOpen={showFailedPopup}
         onClose={() => setShowFailedPopup(false)}
