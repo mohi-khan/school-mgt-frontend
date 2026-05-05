@@ -77,7 +77,7 @@ import {
   getAllSectionsByClassId,
   getAllSessions,
   getAllStudents,
-  getAllStudentsByClassSection,
+  getAllStudentsByClassSectionDivision,
   getBankPaymentReport,
   getCashPaymentReport,
   getExpenseReport,
@@ -1148,20 +1148,26 @@ export const useGetStudentById = (id: number) => {
   })
 }
 
-export const useGetStudentFeesByClassSection = (
+export const useGetStudentFeesByClassSectionDivision = (
   classId: number,
-  sectionId: number
+  sectionId: number,
+  divisionId: number
 ) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['studentFees', classId, sectionId],
+    queryKey: ['studentFees', classId, sectionId, divisionId],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
-      return getAllStudentsByClassSection(token, classId, sectionId)
+      return getAllStudentsByClassSectionDivision(
+        token,
+        classId,
+        sectionId,
+        divisionId
+      )
     },
-    enabled: !!token && classId > 0 && sectionId > 0,
+    enabled: !!token && (classId > 0 || sectionId > 0 || divisionId > 0), // ✅ at least one
   })
 }
 

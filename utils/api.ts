@@ -509,13 +509,14 @@ export async function getStudentById(token: string, id: number) {
   })
 }
 
-export async function getAllStudentsByClassSection(
+export async function getAllStudentsByClassSectionDivision(
   token: string,
   classId: number,
-  sectionId: number
+  sectionId: number,
+  divisionId: number
 ) {
   return fetchApi<GetStudentWithFeesType[]>({
-    url: `api/students/getall?classId=${classId}&sectionId=${sectionId}`,
+    url: `api/students/getall?classId=${classId}&sectionId=${sectionId}&divisionId=${divisionId}`,
     method: 'GET',
     headers: {
       Authorization: token,

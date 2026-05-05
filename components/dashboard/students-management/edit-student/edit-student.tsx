@@ -107,28 +107,50 @@ const EditStudent = () => {
 
   // Populate form with student data
   useEffect(() => {
-    if (student?.data) {
+    if (student?.data && student.data.studentDetails) {
       const studentData = student.data
+      const studentDetails = studentData.studentDetails
+
+      // Safely extract gender with proper type
       const genderValue =
-        studentData.studentDetails.gender?.toLowerCase() || 'male'
-      const populatedData = {
+        studentDetails.gender?.toLowerCase() === 'female' ? 'female' : 'male'
+
+      const populatedData: CreateStudentWithFeesType = {
         studentDetails: {
-          ...studentData.studentDetails,
-          divisionId: studentData.studentDetails.divisionId ?? null,
-          dateOfBirth: studentData.studentDetails.dateOfBirth
-            ? new Date(studentData.studentDetails.dateOfBirth)
-                .toISOString()
-                .split('T')[0]
+          admissionNo: studentDetails.admissionNo || 0,
+          rollNo: studentDetails.rollNo || 0,
+          classId: studentDetails.classId ?? null,
+          divisionId: studentDetails.divisionId ?? null,
+          sectionId: studentDetails.sectionId ?? null,
+          sessionId: studentDetails.sessionId ?? null,
+          firstName: studentDetails.firstName || '',
+          lastName: studentDetails.lastName || '',
+          gender: genderValue,
+          dateOfBirth: studentDetails.dateOfBirth
+            ? new Date(studentDetails.dateOfBirth).toISOString().split('T')[0]
             : '',
-          admissionDate: studentData.studentDetails.admissionDate
-            ? new Date(studentData.studentDetails.admissionDate)
-                .toISOString()
-                .split('T')[0]
+          religion: studentDetails.religion || null,
+          bloodGroup: studentDetails.bloodGroup || null,
+          height: studentDetails.height ?? null,
+          weight: studentDetails.weight ?? null,
+          address: studentDetails.address || null,
+          phoneNumber: studentDetails.phoneNumber || '',
+          email: studentDetails.email || '',
+          admissionDate: studentDetails.admissionDate
+            ? new Date(studentDetails.admissionDate).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0],
-          gender: (genderValue === 'female' ? 'female' : 'male') as
-            | 'male'
-            | 'female',
-          bloodGroup: studentData.studentDetails.bloodGroup || null,
+          photoUrl: studentDetails.photoUrl || null,
+          isActive: studentDetails.isActive ?? true,
+          fatherName: studentDetails.fatherName || null,
+          fatherPhone: studentDetails.fatherPhone || '',
+          fatherEmail: studentDetails.fatherEmail || '',
+          fatherOccupation: studentDetails.fatherOccupation || null,
+          fatherPhotoUrl: studentDetails.fatherPhotoUrl || null,
+          motherName: studentDetails.motherName || null,
+          motherPhone: studentDetails.motherPhone || '',
+          motherEmail: studentDetails.motherEmail || '',
+          motherOccupation: studentDetails.motherOccupation || null,
+          motherPhotoUrl: studentDetails.motherPhotoUrl || null,
         },
         studentFees: studentData.studentFees || [],
       }
@@ -139,7 +161,7 @@ const EditStudent = () => {
       const feesMasterIds =
         studentData.studentFees
           ?.map((fee) => fee.feesMasterId)
-          .filter((id): id is number => id !== null) || []
+          .filter((id): id is number => id !== null && id !== undefined) || []
       setSelectedFeesMasters(feesMasterIds)
     }
   }, [student])
