@@ -204,11 +204,6 @@ const PromoteStudents = () => {
     e.preventDefault()
     setError(null)
 
-    if (!promoteDivisionId || !promoteSessionId) {
-      setError('Please select division and session for promotion')
-      return
-    }
-
     if (selectedFeesMasters.size === 0) {
       setError('Please select at least one fees master')
       return
@@ -219,11 +214,11 @@ const PromoteStudents = () => {
         students: Array.from(selectedStudents).map((studentId) => ({
           studentId,
           classId: promoteClassId,
-          secitionId: promoteSectionId,
-          divisionId: promoteDivisionId ?? undefined,
+          sectionId: promoteSectionId,
+          divisionId: promoteDivisionId,
           sessionId: promoteSessionId,
-          currentResult: 'Pass',
-          nextSession: 'Continue',
+          currentResult: 'Pass' as const,
+          nextSession: 'Continue' as const,
         })),
         feesMasterIds: Array.from(selectedFeesMasters),
       }
@@ -453,20 +448,23 @@ const PromoteStudents = () => {
               <div className="space-y-2">
                 <Label htmlFor="promoteClassId">Class</Label>
                 <CustomCombobox
-                  items={
-                    classesData?.data?.map((cls) => ({
+                  items={[
+                    { id: '0', name: 'Remove' },
+                    ...(classesData?.data?.map((cls) => ({
                       id: cls?.classData?.classId?.toString() || '0',
                       name: cls.classData?.className || 'Unnamed class',
-                    })) || []
-                  }
+                    })) || []),
+                  ]}
                   value={
-                    promoteClassId
+                    promoteClassId !== null
                       ? {
                           id: promoteClassId.toString(),
                           name:
-                            classesData?.data?.find(
-                              (c) => c.classData?.classId === promoteClassId
-                            )?.classData?.className || '',
+                            promoteClassId === 0
+                              ? 'Remove'
+                              : classesData?.data?.find(
+                                  (c) => c.classData?.classId === promoteClassId
+                                )?.classData?.className || '',
                         }
                       : null
                   }
@@ -481,20 +479,23 @@ const PromoteStudents = () => {
               <div className="space-y-2">
                 <Label htmlFor="promoteSectionId">Section</Label>
                 <CustomCombobox
-                  items={
-                    promoteSectionsData?.data?.map((section) => ({
+                  items={[
+                    { id: '0', name: 'Remove' },
+                    ...(promoteSectionsData?.data?.map((section) => ({
                       id: section?.sectionId?.toString() || '0',
                       name: section.sectionName || 'Unnamed section',
-                    })) || []
-                  }
+                    })) || []),
+                  ]}
                   value={
-                    promoteSectionId
+                    promoteSectionId !== null
                       ? {
                           id: promoteSectionId.toString(),
                           name:
-                            promoteSectionsData?.data?.find(
-                              (s) => s.sectionId === promoteSectionId
-                            )?.sectionName || '',
+                            promoteSectionId === 0
+                              ? 'Remove'
+                              : promoteSectionsData?.data?.find(
+                                  (s) => s.sectionId === promoteSectionId
+                                )?.sectionName || '',
                         }
                       : null
                   }
@@ -508,20 +509,23 @@ const PromoteStudents = () => {
               <div className="space-y-2">
                 <Label htmlFor="promoteDivisionId">Division</Label>
                 <CustomCombobox
-                  items={
-                    divisionsData?.data?.map((division) => ({
+                  items={[
+                    { id: '0', name: 'Remove' },
+                    ...(divisionsData?.data?.map((division) => ({
                       id: division?.divisionId?.toString() || '0',
                       name: division.divisionName || 'Unnamed division',
-                    })) || []
-                  }
+                    })) || []),
+                  ]}
                   value={
-                    promoteDivisionId
+                    promoteDivisionId !== null
                       ? {
                           id: promoteDivisionId.toString(),
                           name:
-                            divisionsData?.data?.find(
-                              (d) => d.divisionId === promoteDivisionId
-                            )?.divisionName || '',
+                            promoteDivisionId === 0
+                              ? 'Remove'
+                              : divisionsData?.data?.find(
+                                  (d) => d.divisionId === promoteDivisionId
+                                )?.divisionName || '',
                         }
                       : null
                   }
@@ -535,20 +539,23 @@ const PromoteStudents = () => {
               <div className="space-y-2">
                 <Label htmlFor="promoteSessionId">Session</Label>
                 <CustomCombobox
-                  items={
-                    sessionsData?.data?.map((session) => ({
+                  items={[
+                    { id: '0', name: 'Remove' },
+                    ...(sessionsData?.data?.map((session) => ({
                       id: session?.sessionId?.toString() || '0',
                       name: session.sessionName || 'Unnamed session',
-                    })) || []
-                  }
+                    })) || []),
+                  ]}
                   value={
-                    promoteSessionId
+                    promoteSessionId !== null
                       ? {
                           id: promoteSessionId.toString(),
                           name:
-                            sessionsData?.data?.find(
-                              (s) => s.sessionId === promoteSessionId
-                            )?.sessionName || '',
+                            promoteSessionId === 0
+                              ? 'Remove'
+                              : sessionsData?.data?.find(
+                                  (s) => s.sessionId === promoteSessionId
+                                )?.sessionName || '',
                         }
                       : null
                   }
