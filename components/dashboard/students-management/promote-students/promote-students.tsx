@@ -204,8 +204,8 @@ const PromoteStudents = () => {
     e.preventDefault()
     setError(null)
 
-    if (!promoteClassId || !promoteSectionId || !promoteSessionId) {
-      setError('Please select class, section, and session for promotion')
+    if (!promoteDivisionId || !promoteSessionId) {
+      setError('Please select division and session for promotion')
       return
     }
 
@@ -231,7 +231,6 @@ const PromoteStudents = () => {
       promoteMutation.mutate({ data: promotionData })
       setSelectedClassId(null)
       setSelectedSectionId(null)
-      setSelectedDivisionId(null)
     } catch (err) {
       setError('Failed to promote students')
       console.error(err)
@@ -286,7 +285,6 @@ const PromoteStudents = () => {
             onChange={(value) => {
               setSelectedClassId(value ? Number(value.id) : null)
               setSelectedSectionId(null)
-              setSelectedDivisionId(null)
               setSelectedStudents(new Set())
               setSelectAll(false)
             }}
@@ -398,12 +396,12 @@ const PromoteStudents = () => {
                       className="w-4 h-4"
                     />
                   </TableCell>
-                  <TableCell>{student.rollNo || '-'}</TableCell>
-                  <TableCell>{`${student.firstName} ${student.lastName}` || '-'}</TableCell>
-                  <TableCell>{student.phoneNumber || '-'}</TableCell>
-                  <TableCell>{student.className || '-'}</TableCell>
-                  <TableCell>{student.sectionName || '-'}</TableCell>
-                  <TableCell>{student.divisionName || '-'}</TableCell>
+                  <TableCell>{student.rollNo}</TableCell>
+                  <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
+                  <TableCell>{student.phoneNumber}</TableCell>
+                  <TableCell>{student.className}</TableCell>
+                  <TableCell>{student.sectionName}</TableCell>
+                  <TableCell>{student.divisionName}</TableCell>
                 </TableRow>
               ))
             )}
@@ -436,11 +434,11 @@ const PromoteStudents = () => {
                 <TableBody>
                   {getSelectedStudentsData().map((student) => (
                     <TableRow key={student.studentId}>
-                      <TableCell>{student.rollNo || '-'}</TableCell>
-                      <TableCell>{`${student.firstName} ${student.lastName}` || '-'}</TableCell>
-                      <TableCell>{student.className || '-'}</TableCell>
-                      <TableCell>{student.sectionName || '-'}</TableCell>
-                      <TableCell>{student.divisionName || '-'}</TableCell>
+                      <TableCell>{student.rollNo}</TableCell>
+                      <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
+                      <TableCell>{student.className}</TableCell>
+                      <TableCell>{student.sectionName}</TableCell>
+                      <TableCell>{student.divisionName}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -475,7 +473,6 @@ const PromoteStudents = () => {
                   onChange={(value) => {
                     setPromoteClassId(value ? Number(value.id) : null)
                     setPromoteSectionId(null)
-                    setPromoteDivisionId(null)
                   }}
                   placeholder="Select class"
                 />
