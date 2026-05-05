@@ -263,8 +263,9 @@ export const promoteStudentsSchema = z.object({
     z.object({
       studentId: z.number(),
       classId: z.number().nullable(),
-      secitionId: z.number().nullable(),
-      sessionId: z.number(),
+      sectionId: z.number().nullable(),
+      divisionId: z.number().nullable(),
+      sessionId: z.number().nullable(),
       currentResult: z.enum(['Pass', 'Fail']),
       nextSession: z.enum(['Continue', 'Leave']),
     })
