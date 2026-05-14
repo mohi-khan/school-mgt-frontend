@@ -84,6 +84,8 @@ const Students = () => {
   const [paidAmounts, setPaidAmounts] = useState<Record<number, string>>({})
   // Per-fee remarks for single collect
   const [feeRemarks, setFeeRemarks] = useState<Record<number, string>>({})
+  // Per-fee payment dates for single collect
+  const [feeDates, setFeeDates] = useState<Record<number, string>>({})
 
   const [isFeeCollectionOpen, setIsFeeCollectionOpen] = useState(false)
   const [isBulkCollectOpen, setIsBulkCollectOpen] = useState(false)
@@ -98,6 +100,7 @@ const Students = () => {
     name: string
   } | null>(null)
   const [mfsId, setMfsId] = useState<{ id: string; name: string } | null>(null)
+  // paymentDate kept for legacy / receipt use; per-fee dates now drive actual submission
   const [paymentDate, setPaymentDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
@@ -168,6 +171,7 @@ const Students = () => {
     setShowAllFees(false)
     setPaidAmounts({})
     setFeeRemarks({})
+    setFeeDates({})
   }, [])
 
   const closePopup = useCallback(() => {
@@ -274,6 +278,8 @@ const Students = () => {
       return
     }
 
+    const today = new Date().toISOString().split('T')[0]
+
     const feeData = selectedFees.map((studentFeesId) => {
       const fee = studentFees?.data?.find(
         (f: any) => f.studentFeesId === studentFeesId
@@ -302,7 +308,8 @@ const Students = () => {
           MFS_METHODS.includes(paymentMethod) && mfsId
             ? Number(mfsId.id)
             : null,
-        paymentDate,
+        // Use per-fee date; fall back to today if not set
+        paymentDate: feeDates[studentFeesId] || today,
         // Use per-fee remark; fallback to global remarks if any
         remarks: feeRemarks[studentFeesId] || remarks || '',
       }
@@ -681,6 +688,8 @@ const Students = () => {
         setPaidAmounts={setPaidAmounts}
         feeRemarks={feeRemarks}
         setFeeRemarks={setFeeRemarks}
+        feeDates={feeDates}
+        setFeeDates={setFeeDates}
         bankAccountItems={bankAccountItems}
         filteredMfsAccounts={filteredMfsAccounts}
         selectedStudentIdForFees={selectedStudentIdForFees}
