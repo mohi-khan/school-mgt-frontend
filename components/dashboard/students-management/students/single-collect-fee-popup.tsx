@@ -43,9 +43,12 @@ type SingleCollectFeesDialogProps = {
   setShowAllFees: (v: boolean) => void
   paidAmounts: Record<number, string>
   setPaidAmounts: React.Dispatch<React.SetStateAction<Record<number, string>>>
-  // NEW: per-fee remarks
+  // Per-fee remarks
   feeRemarks: Record<number, string>
   setFeeRemarks: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  // Per-fee payment dates
+  feeDates: Record<number, string>
+  setFeeDates: React.Dispatch<React.SetStateAction<Record<number, string>>>
   bankAccountItems: { id: string; name: string }[]
   filteredMfsAccounts: { id: string; name: string }[]
   selectedStudentIdForFees: number | null
@@ -77,6 +80,8 @@ const SingleCollectFeesDialog = ({
   setPaidAmounts,
   feeRemarks,
   setFeeRemarks,
+  feeDates,
+  setFeeDates,
   bankAccountItems,
   filteredMfsAccounts,
   selectedStudentIdForFees,
@@ -84,6 +89,8 @@ const SingleCollectFeesDialog = ({
   onSubmit,
   onPrintReceipt,
 }: SingleCollectFeesDialogProps) => {
+  const today = new Date().toISOString().split('T')[0]
+
   const filteredAndSortedFees = useMemo(() => {
     if (!studentFees?.data) return []
     let fees = studentFees.data
@@ -106,6 +113,11 @@ const SingleCollectFeesDialog = ({
         ? prev.filter((id) => id !== feeId)
         : [...prev, feeId]
     )
+    // Set default date for newly selected fee
+    setFeeDates((prev) => ({
+      ...prev,
+      [feeId]: prev[feeId] || today,
+    }))
   }
 
   const handleSelectAllFees = (checked: boolean) => {
@@ -115,6 +127,14 @@ const SingleCollectFeesDialog = ({
           ?.filter((fee: any) => fee.status !== 'Paid')
           .map((fee: any) => fee.studentFeesId) || []
       setSelectedFees(unpaidFees)
+      // Set default dates for all selected fees
+      setFeeDates((prev) => {
+        const next = { ...prev }
+        unpaidFees.forEach((id: number) => {
+          if (!next[id]) next[id] = today
+        })
+        return next
+      })
     } else {
       setSelectedFees([])
     }
@@ -134,7 +154,6 @@ const SingleCollectFeesDialog = ({
   const isSubmitDisabled =
     !selectedStudentIdForFees ||
     !paymentMethod ||
-    !paymentDate ||
     selectedFees.length === 0 ||
     (paymentMethod === 'bank' && !bankAccountId) ||
     (MFS_METHODS.includes(paymentMethod) && !mfsId)
@@ -143,7 +162,7 @@ const SingleCollectFeesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="max-w-8xl max-h-[100vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             Collect Fees
@@ -151,6 +170,7 @@ const SingleCollectFeesDialog = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Payment method row — date removed from here */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="method">Payment Method</Label>
@@ -187,15 +207,6 @@ const SingleCollectFeesDialog = ({
                 />
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="paymentDate">Payment Date</Label>
-              <Input
-                id="paymentDate"
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-              />
-            </div>
           </div>
 
           <div className="space-y-4">
@@ -257,6 +268,7 @@ const SingleCollectFeesDialog = ({
                       <TableHead>Paid Amount</TableHead>
                       {hasSelectedFees && <TableHead>Pay Amount</TableHead>}
                       {hasSelectedFees && <TableHead>Reference</TableHead>}
+                      {hasSelectedFees && <TableHead>Payment Date</TableHead>}
                       <TableHead>Due Date</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -348,6 +360,25 @@ const SingleCollectFeesDialog = ({
                                   value={feeRemarks[fee.studentFeesId] || ''}
                                   onChange={(e) =>
                                     setFeeRemarks((prev) => ({
+                                      ...prev,
+                                      [fee.studentFeesId]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-36 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {hasSelectedFees && (
+                            <TableCell>
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="date"
+                                  value={feeDates[fee.studentFeesId] || today}
+                                  onChange={(e) =>
+                                    setFeeDates((prev) => ({
                                       ...prev,
                                       [fee.studentFeesId]: e.target.value,
                                     }))

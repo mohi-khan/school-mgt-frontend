@@ -32,6 +32,7 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  X,
 } from 'lucide-react'
 import type { CollectFeesType } from '@/utils/type'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -186,15 +187,17 @@ const GroupAccordion = React.memo(
           method: string
           bankAccountId: { id: string; name: string } | null
           mfsId: { id: string; name: string } | null
-          date: string
           selectedIndices: number[]
           amounts: string[]
           studentRemarks: string[]
+          studentDates: string[]
         }
       ) => void
     >
     isSubmitting?: boolean
   }) => {
+    const today = new Date().toISOString().split('T')[0]
+
     const [expanded, setExpanded] = useState(false)
     const [studentSearch, setStudentSearch] = useState('')
 
@@ -207,7 +210,6 @@ const GroupAccordion = React.memo(
     const [mfsId, setMfsId] = useState<{ id: string; name: string } | null>(
       null
     )
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
 
     const n = group.students.length
     const [selected, setSelected] = useState<boolean[]>(() =>
@@ -217,6 +219,10 @@ const GroupAccordion = React.memo(
     // Per-student remarks
     const [studentRemarks, setStudentRemarks] = useState<string[]>(() =>
       Array(n).fill('')
+    )
+    // Per-student payment dates
+    const [studentDates, setStudentDates] = useState<string[]>(() =>
+      Array(n).fill(today)
     )
 
     const mfsItems = useMemo(() => {
@@ -306,6 +312,14 @@ const GroupAccordion = React.memo(
       })
     }
 
+    const setStudentDate = (i: number, value: string) => {
+      setStudentDates((prev) => {
+        const next = [...prev]
+        next[i] = value
+        return next
+      })
+    }
+
     const handleCollect = () => {
       console.log('[GroupAccordion handleCollect] group:', group.feesTypeName)
       console.log(
@@ -317,10 +331,10 @@ const GroupAccordion = React.memo(
         method,
         bankAccountId,
         mfsId,
-        date,
         selectedIndices,
         amounts,
         studentRemarks,
+        studentDates,
       })
       setSelected((prev) => {
         const next = [...prev]
@@ -340,6 +354,13 @@ const GroupAccordion = React.memo(
         const next = [...prev]
         selectedIndices.forEach((i) => {
           next[i] = ''
+        })
+        return next
+      })
+      setStudentDates((prev) => {
+        const next = [...prev]
+        selectedIndices.forEach((i) => {
+          next[i] = today
         })
         return next
       })
@@ -427,23 +448,14 @@ const GroupAccordion = React.memo(
         {/* Body */}
         {expanded && (
           <div className="bg-white border-t border-amber-200">
-            {/* Payment Controls — no group-level remarks */}
+            {/* Payment Controls — date removed from here */}
             <div className="p-4 bg-gray-50 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Payment Settings — applies to all selected students in this
                 group
               </p>
-              <div className='flex justify-between items-end'>
+              <div className="flex justify-between items-end">
                 <div className="flex flex-wrap gap-3 items-end">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Date</Label>
-                    <Input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="h-[2.4rem] text-sm w-36 py-4"
-                    />
-                  </div>
                   <div className="space-y-1 w-36">
                     <Label className="text-xs">Method</Label>
                     <Select
@@ -535,6 +547,9 @@ const GroupAccordion = React.memo(
                     {someSelected && (
                       <TableHead className="w-36">Reference</TableHead>
                     )}
+                    {someSelected && (
+                      <TableHead className="w-36">Payment Date</TableHead>
+                    )}
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -542,7 +557,7 @@ const GroupAccordion = React.memo(
                   {filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={someSelected ? 10 : 8}
+                        colSpan={someSelected ? 11 : 8}
                         className="text-center py-6 text-gray-400 text-sm"
                       >
                         No students match your search.
@@ -556,6 +571,7 @@ const GroupAccordion = React.memo(
                       const isSelected = selected[i] === true
                       const customAmount = amounts[i] ?? ''
                       const customRemark = studentRemarks[i] ?? ''
+                      const customDate = studentDates[i] ?? today
 
                       const rowBg = isPaid
                         ? 'bg-green-50'
@@ -626,6 +642,22 @@ const GroupAccordion = React.memo(
                               )}
                             </TableCell>
                           )}
+                          {someSelected && (
+                            <TableCell>
+                              {!isPaid && isSelected ? (
+                                <Input
+                                  type="date"
+                                  value={customDate}
+                                  onChange={(e) =>
+                                    setStudentDate(i, e.target.value)
+                                  }
+                                  className="h-7 text-sm w-36"
+                                />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell>
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -682,10 +714,10 @@ const BulkCollectFeesDialog = ({
         method: string
         bankAccountId: { id: string; name: string } | null
         mfsId: { id: string; name: string } | null
-        date: string
         selectedIndices: number[]
         amounts: string[]
         studentRemarks: string[]
+        studentDates: string[]
       }
     ) => void
   >(null as any)
@@ -712,7 +744,8 @@ const BulkCollectFeesDialog = ({
             MFS_METHODS.includes(payload.method) && payload.mfsId
               ? Number(payload.mfsId.id)
               : null,
-          paymentDate: payload.date,
+          // Each student gets their own payment date
+          paymentDate: payload.studentDates[i],
           // Each student gets their own remarks
           remarks: payload.studentRemarks[i] || '',
         }
@@ -727,16 +760,26 @@ const BulkCollectFeesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto bg-white p-0">
+      <DialogContent className="max-w-8xl max-h-[100vh] overflow-y-auto bg-white p-0">
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-              <div className="bg-amber-100 p-1.5 rounded-md">
-                <Layers className="h-5 w-5 text-amber-600" />
-              </div>
-              Bulk Collect Fees
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                <div className="bg-amber-100 p-1.5 rounded-md">
+                  <Layers className="h-5 w-5 text-amber-600" />
+                </div>
+                Bulk Collect Fees
+              </DialogTitle>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
+            </div>
           </DialogHeader>
           <p className="text-sm text-gray-500 mt-1">
             Fees are grouped by fees master. Expand a group, select students,

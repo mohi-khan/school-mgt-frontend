@@ -1160,7 +1160,12 @@ export const useGetStudentFeesByClassSectionDivision = (
     queryKey: ['studentFees', classId, sectionId, divisionId],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
-      return getAllStudentsByClassSectionDivision(token, classId, sectionId, divisionId)
+      return getAllStudentsByClassSectionDivision(
+        token,
+        classId,
+        sectionId,
+        divisionId
+      )
     },
     enabled: !!token && (classId > 0 || sectionId > 0 || divisionId > 0), // ✅ at least one
   })
@@ -1297,7 +1302,10 @@ export const useGetStudentFeesById = (id: number) => {
       return getStudentFeesById(token, id)
     },
     enabled: !!token && id > 0,
-    select: (data) => data,
+    select: (data) => ({
+      ...data,
+      data: Array.isArray(data?.data) ? data.data : [],
+    }),
   })
 }
 
