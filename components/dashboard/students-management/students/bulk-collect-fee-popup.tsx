@@ -67,6 +67,7 @@ export type BulkStudentFeeEntry = {
   remainingAmount: number
   status: 'Paid' | 'Partial' | 'Unpaid'
   dueDate: string
+  isActive: boolean // ← new: carries student active status
 }
 
 export type BulkFeesMasterGroup = {
@@ -132,6 +133,7 @@ export function buildFeesMasterGroups(
         remainingAmount: fee.remainingAmount || 0,
         status: fee.status || 'Unpaid',
         dueDate: fee.dueDate || '',
+        isActive: detail.isActive ?? true, // ← carry through from studentDetails
       }
 
       map.get(groupKey)!.students.push(entry)
@@ -210,7 +212,6 @@ const GroupAccordion = React.memo(
     const [expanded, setExpanded] = useState(false)
     const [studentSearch, setStudentSearch] = useState('')
 
-    // Default method is 'cash'
     const [method, setMethod] = useState('cash')
     const [bankAccountId, setBankAccountId] = useState<{
       id: string
@@ -225,11 +226,9 @@ const GroupAccordion = React.memo(
       Array(n).fill(false)
     )
     const [amounts, setAmounts] = useState<string[]>(() => Array(n).fill(''))
-    // Per-student remarks
     const [studentRemarks, setStudentRemarks] = useState<string[]>(() =>
       Array(n).fill('')
     )
-    // Per-student payment dates
     const [studentDates, setStudentDates] = useState<string[]>(() =>
       Array(n).fill(today)
     )
@@ -265,12 +264,15 @@ const GroupAccordion = React.memo(
       0
     )
 
-    const unpaidIndices = group.students
+    // A row is selectable only if: not Paid AND student isActive
+    const selectableIndices = group.students
       .map((s, i) => ({ s, i }))
-      .filter(({ s }) => s.status !== 'Paid')
+      .filter(({ s }) => s.status !== 'Paid' && s.isActive)
       .map(({ i }) => i)
 
-    const selectedIndices = unpaidIndices.filter((i) => selected[i] === true)
+    const selectedIndices = selectableIndices.filter(
+      (i) => selected[i] === true
+    )
 
     const willCollect = selectedIndices.reduce((sum, i) => {
       const amt = amounts[i]
@@ -282,8 +284,8 @@ const GroupAccordion = React.memo(
     }, 0)
 
     const allSelected =
-      unpaidIndices.length > 0 &&
-      unpaidIndices.every((i) => selected[i] === true)
+      selectableIndices.length > 0 &&
+      selectableIndices.every((i) => selected[i] === true)
     const someSelected = selectedIndices.length > 0
     const showBank = method === 'bank'
     const showMfs = MFS_METHODS.includes(method)
@@ -291,7 +293,8 @@ const GroupAccordion = React.memo(
     const toggleSelectAll = (checked: boolean) => {
       setSelected((prev) => {
         const next = [...prev]
-        unpaidIndices.forEach((i) => {
+        // Only toggle selectable indices (active + not paid)
+        selectableIndices.forEach((i) => {
           next[i] = checked
         })
         return next
@@ -458,7 +461,7 @@ const GroupAccordion = React.memo(
         {/* Body */}
         {expanded && (
           <div className="bg-white border-t border-amber-200">
-            {/* Payment Controls — date removed from here */}
+            {/* Payment Controls */}
             <div className="p-4 bg-gray-50 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Payment Settings — applies to all selected students in this
@@ -542,6 +545,8 @@ const GroupAccordion = React.memo(
                     <TableHead className="w-10">
                       <Checkbox
                         checked={allSelected}
+                        // Disabled if there are no selectable (active + unpaid) students
+                        disabled={selectableIndices.length === 0}
                         onCheckedChange={(c) => toggleSelectAll(!!c)}
                       />
                     </TableHead>
@@ -569,7 +574,7 @@ const GroupAccordion = React.memo(
                   {filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={someSelected ? 11 : 8}
+                        colSpan={someSelected ? 13 : 10}
                         className="text-center py-6 text-gray-400 text-sm"
                       >
                         No students match your search.
@@ -580,6 +585,9 @@ const GroupAccordion = React.memo(
                       const i = group.students.indexOf(student)
                       const isPaid = student.status === 'Paid'
                       const isPartial = student.status === 'Partial'
+                      const isInactive = !student.isActive
+                      // A row is disabled for selection if paid OR student is inactive
+                      const isDisabled = isPaid || isInactive
                       const isSelected = selected[i] === true
                       const customAmount = amounts[i] ?? ''
                       const customRemark = studentRemarks[i] ?? ''
@@ -587,23 +595,32 @@ const GroupAccordion = React.memo(
 
                       const rowBg = isPaid
                         ? 'bg-green-50'
-                        : isPartial
-                          ? 'bg-yellow-50'
-                          : isSelected
-                            ? 'bg-amber-50'
-                            : ''
+                        : isInactive
+                          ? 'bg-gray-100 opacity-60' // visually muted for inactive
+                          : isPartial
+                            ? 'bg-yellow-50'
+                            : isSelected
+                              ? 'bg-amber-50'
+                              : ''
 
                       return (
                         <TableRow key={i} className={rowBg}>
                           <TableCell>
                             <Checkbox
                               checked={isSelected}
-                              disabled={isPaid}
+                              disabled={isDisabled}
                               onCheckedChange={(c) => toggleOne(i, !!c)}
                             />
                           </TableCell>
                           <TableCell className="font-medium text-gray-800">
-                            {student.studentName}
+                            <div className="flex items-center gap-1.5">
+                              {student.studentName}
+                              {isInactive && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500 font-medium">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-gray-600 text-sm">
                             {student.admissionNo}
@@ -628,7 +645,7 @@ const GroupAccordion = React.memo(
                           </TableCell>
                           {someSelected && (
                             <TableCell>
-                              {!isPaid && isSelected ? (
+                              {!isDisabled && isSelected ? (
                                 <Input
                                   type="number"
                                   min={1}
@@ -645,7 +662,7 @@ const GroupAccordion = React.memo(
                           )}
                           {someSelected && (
                             <TableCell>
-                              {!isPaid && isSelected ? (
+                              {!isDisabled && isSelected ? (
                                 <Input
                                   type="text"
                                   value={customRemark}
@@ -662,7 +679,7 @@ const GroupAccordion = React.memo(
                           )}
                           {someSelected && (
                             <TableCell>
-                              {!isPaid && isSelected ? (
+                              {!isDisabled && isSelected ? (
                                 <Input
                                   type="date"
                                   value={customDate}
@@ -762,9 +779,7 @@ const BulkCollectFeesDialog = ({
             MFS_METHODS.includes(payload.method) && payload.mfsId
               ? Number(payload.mfsId.id)
               : null,
-          // Each student gets their own payment date
           paymentDate: payload.studentDates[i],
-          // Each student gets their own remarks
           remarks: payload.studentRemarks[i] || '',
         }
 

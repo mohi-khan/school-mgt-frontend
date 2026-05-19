@@ -585,6 +585,7 @@ const Students = () => {
                                 )
                                 setIsFeeCollectionOpen(true)
                               }}
+                              disabled={student.studentDetails.isActive === false}
                             >
                               <DollarSign className="h-4 w-4" />
                             </Button>
