@@ -24,7 +24,6 @@ import {
   Search,
   Users,
   Edit2,
-  Trash2,
   DollarSign,
   Layers,
 } from 'lucide-react'
@@ -41,11 +40,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   useGetAllStudents,
-  useDeleteStudent,
   useGetStudentFeesById,
   useCollectFees,
   useGetBankAccounts,
   useGetMfss,
+  useActivateStudent,
+  useDeactivateStudent,
 } from '@/hooks/use-api'
 import type { GetStudentWithFeesType } from '@/utils/type'
 import Link from 'next/link'
@@ -62,6 +62,7 @@ import BulkCollectFeesDialog, {
 } from './bulk-collect-fee-popup'
 import SingleCollectFeesDialog from './single-collect-fee-popup'
 import MoneyReceipt from './money-receipt'
+import CustomSwitch from '@/utils/custom-switch'
 
 const Students = () => {
   const router = useRouter()
@@ -77,14 +78,17 @@ const Students = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingStudentId, setDeletingStudentId] = useState<number | null>(
-    null
-  )
+  // ── Activate / Deactivate state ──────────────────────────────────────────
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
+  const [pendingStatusStudent, setPendingStatusStudent] = useState<{
+    id: number
+    currentlyActive: boolean
+  } | null>(null)
+  // Local mirror of each student's active state — only updated after confirmed API success
+  const [activeStates, setActiveStates] = useState<Record<number, boolean>>({})
+
   const [paidAmounts, setPaidAmounts] = useState<Record<number, string>>({})
-  // Per-fee remarks for single collect
   const [feeRemarks, setFeeRemarks] = useState<Record<number, string>>({})
-  // Per-fee payment dates for single collect
   const [feeDates, setFeeDates] = useState<Record<number, string>>({})
 
   const [isFeeCollectionOpen, setIsFeeCollectionOpen] = useState(false)
@@ -93,14 +97,12 @@ const Students = () => {
     number | null
   >(null)
 
-  // Default payment method is 'cash'
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
   const [bankAccountId, setBankAccountId] = useState<{
     id: string
     name: string
   } | null>(null)
   const [mfsId, setMfsId] = useState<{ id: string; name: string } | null>(null)
-  // paymentDate kept for legacy / receipt use; per-fee dates now drive actual submission
   const [paymentDate, setPaymentDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
@@ -132,6 +134,53 @@ const Students = () => {
     selectedStudentIdForFees ? Number(selectedStudentIdForFees) : 0
   )
 
+  // ── Activate / Deactivate mutations ──────────────────────────────────────
+
+  const closeStatusDialog = useCallback(() => {
+    setIsStatusDialogOpen(false)
+    setPendingStatusStudent(null)
+  }, [])
+
+  const activateMutation = useActivateStudent({
+    onClose: closeStatusDialog,
+    reset: () => setPendingStatusStudent(null),
+  })
+
+  const deactivateMutation = useDeactivateStudent({
+    onClose: closeStatusDialog,
+    reset: () => setPendingStatusStudent(null),
+  })
+
+  const handleStatusToggle = (studentId: number, currentlyActive: boolean) => {
+    // Do NOT change switch visually here — only open dialog
+    setPendingStatusStudent({ id: studentId, currentlyActive })
+    setIsStatusDialogOpen(true)
+  }
+
+  const handleConfirmStatusChange = () => {
+    if (!pendingStatusStudent) return
+    const { id, currentlyActive } = pendingStatusStudent
+    if (currentlyActive) {
+      deactivateMutation.mutate(
+        { id },
+        {
+          onSuccess: () => {
+            setActiveStates((prev) => ({ ...prev, [id]: false }))
+          },
+        }
+      )
+    } else {
+      activateMutation.mutate(
+        { id },
+        {
+          onSuccess: () => {
+            setActiveStates((prev) => ({ ...prev, [id]: true }))
+          },
+        }
+      )
+    }
+  }
+
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const filteredMfsAccounts = useMemo(() => {
@@ -153,7 +202,6 @@ const Students = () => {
     )
   }, [bankAccounts?.data])
 
-  // Grouped data for bulk collect
   const feesMasterGroups = useMemo(
     () => buildFeesMasterGroups(studentsData?.data || []),
     [studentsData?.data]
@@ -162,7 +210,7 @@ const Students = () => {
   // ── Single fee collect ────────────────────────────────────────────────────
 
   const resetForm = useCallback(() => {
-    setPaymentMethod('cash') // reset back to cash default
+    setPaymentMethod('cash')
     setBankAccountId(null)
     setMfsId(null)
     setPaymentDate(new Date().toISOString().split('T')[0])
@@ -183,16 +231,6 @@ const Students = () => {
   const collectFeesMutation = useCollectFees({
     onClose: closePopup,
     reset: resetForm,
-  })
-
-  const closeDeleteDialog = useCallback(() => {
-    setIsDeleteDialogOpen(false)
-    setDeletingStudentId(null)
-  }, [])
-
-  const deleteMutation = useDeleteStudent({
-    onClose: closeDeleteDialog,
-    reset: () => setDeletingStudentId(null),
   })
 
   const handleSort = (
@@ -308,9 +346,7 @@ const Students = () => {
           MFS_METHODS.includes(paymentMethod) && mfsId
             ? Number(mfsId.id)
             : null,
-        // Use per-fee date; fall back to today if not set
         paymentDate: feeDates[studentFeesId] || today,
-        // Use per-fee remark; fallback to global remarks if any
         remarks: feeRemarks[studentFeesId] || remarks || '',
       }
     })
@@ -456,19 +492,19 @@ const Students = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   Loading students...
                 </TableCell>
               </TableRow>
             ) : studentsData?.data?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No students found
                 </TableCell>
               </TableRow>
             ) : paginatedStudents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No students match your search
                 </TableCell>
               </TableRow>
@@ -502,6 +538,12 @@ const Students = () => {
                     0
                   ) || 0
 
+                // Use local state if set (post-confirm), otherwise fall back to API value
+                const isActive =
+                  activeStates[student.studentDetails.studentId] ??
+                  student.studentDetails.isActive ??
+                  true
+
                 return (
                   <TableRow key={student.studentDetails.studentId}>
                     <TableCell>
@@ -530,7 +572,7 @@ const Students = () => {
                     <TableCell>{formatNumber(totalRemainingAmount)}</TableCell>
                     <TableCell>{formatNumber(totalPaidAmount)}</TableCell>
                     <TableCell>
-                      <div className="flex justify-start gap-2">
+                      <div className="flex justify-start items-center gap-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -561,19 +603,26 @@ const Students = () => {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            setDeletingStudentId(
-                              student.studentDetails.studentId ?? 0
-                            )
-                            setIsDeleteDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <CustomSwitch
+                                checked={isActive}
+                                onChange={() =>
+                                  handleStatusToggle(
+                                    student.studentDetails.studentId ?? 0,
+                                    isActive
+                                  )
+                                }
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isActive
+                              ? 'Deactivate student'
+                              : 'Activate student'}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -716,32 +765,39 @@ const Students = () => {
         </div>
       </div>
 
-      {/* Delete Dialog */}
+      {/* ── Activate / Deactivate Confirmation Dialog ──────────────────────── */}
       <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        open={isStatusDialogOpen}
+        onOpenChange={setIsStatusDialogOpen}
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Student</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingStatusStudent?.currentlyActive
+                ? 'Deactivate Student'
+                : 'Activate Student'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this student? This action cannot
-              be undone.
+              {pendingStatusStudent?.currentlyActive
+                ? 'Are you sure you want to deactivate this student? They will lose access to the system.'
+                : 'Are you sure you want to activate this student? They will regain access to the system.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+            <AlertDialogCancel onClick={closeStatusDialog}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (deletingStudentId)
-                  deleteMutation.mutate({ id: deletingStudentId })
-                setIsDeleteDialogOpen(false)
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleConfirmStatusChange}
+              className={
+                pendingStatusStudent?.currentlyActive
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }
             >
-              Delete
+              {pendingStatusStudent?.currentlyActive
+                ? 'Deactivate'
+                : 'Activate'}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

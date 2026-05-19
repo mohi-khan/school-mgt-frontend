@@ -551,6 +551,32 @@ export async function editStudentWithFees(
   })
 }
 
+export async function activateStudent(
+  id: number,
+  token: string
+) {
+  return fetchApi<{id: number}>({
+    url: `api/students/activate/${id}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
+    }
+  })
+}
+
+export async function deactivateStudent(
+  id: number,
+  token: string
+) {
+  return fetchApi<{id: number}>({
+    url: `api/students/deactivate/${id}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
+    }
+  })
+}
+
 export async function deleteStudent(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/students/delete/${id}`,

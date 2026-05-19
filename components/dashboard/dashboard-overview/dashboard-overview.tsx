@@ -65,6 +65,7 @@ const DashboardOverview = () => {
   console.log('🚀 ~ DashboardOverview ~ paymentSummary:', paymentSummary)
 
   const { data: students } = useGetAllStudents()
+  console.log("🚀 ~ DashboardOverview ~ students:", students)
   const { data: incomeSummary } = useGetIncomeSummary()
   const { data: expenseSummary } = useGetExpenseSummary()
 

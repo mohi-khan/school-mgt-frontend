@@ -59,6 +59,7 @@ export type BulkStudentFeeEntry = {
   admissionNo: string
   className: string
   sectionName: string
+  divisionName: string
   studentFeesId: number
   feesTypeName: string
   amount: number
@@ -123,6 +124,7 @@ export function buildFeesMasterGroups(
         admissionNo: String(detail.admissionNo ?? ''),
         className: detail.className || '',
         sectionName: detail.sectionName || '',
+        divisionName: detail.divisionName || '',
         studentFeesId: fee.studentFeesId ?? fee.studentFeeId ?? fee.id ?? 0,
         feesTypeName: fee.feesTypeName || '',
         amount: fee.amount || 0,
@@ -136,11 +138,18 @@ export function buildFeesMasterGroups(
     })
   })
 
-  return Array.from(map.values()).sort((a, b) => {
-    const aUnpaid = a.students.filter((s) => s.status !== 'Paid').length
-    const bUnpaid = b.students.filter((s) => s.status !== 'Paid').length
-    return bUnpaid - aUnpaid
-  })
+  return Array.from(map.values())
+    .map((group) => ({
+      ...group,
+      students: [...group.students].sort((a, b) =>
+        a.studentName.localeCompare(b.studentName)
+      ),
+    }))
+    .sort((a, b) => {
+      const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+      const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+      return aDate - bDate
+    })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,6 +252,7 @@ const GroupAccordion = React.memo(
           s.studentName.toLowerCase().includes(lower) ||
           s.admissionNo.toLowerCase().includes(lower) ||
           s.className.toLowerCase().includes(lower) ||
+          s.divisionName.toLowerCase().includes(lower) ||
           s.sectionName.toLowerCase().includes(lower)
       )
     }, [group.students, studentSearch])
@@ -510,8 +520,8 @@ const GroupAccordion = React.memo(
                     <Input
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      placeholder="Search by name, admission no, class..."
-                      className="pl-8 h-[2.4rem] text-sm"
+                      placeholder="Search by name, admission no, class, division..."
+                      className="pl-8 h-[2.4rem] text-sm w-full"
                     />
                   </div>
                   {studentSearch && (
@@ -537,7 +547,9 @@ const GroupAccordion = React.memo(
                     </TableHead>
                     <TableHead>Student</TableHead>
                     <TableHead>Admission No</TableHead>
-                    <TableHead>Class / Section</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Section</TableHead>
+                    <TableHead>Division</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Paid</TableHead>
                     <TableHead>Due</TableHead>
@@ -597,7 +609,13 @@ const GroupAccordion = React.memo(
                             {student.admissionNo}
                           </TableCell>
                           <TableCell className="text-gray-600 text-sm">
-                            {student.className} / {student.sectionName}
+                            {student.className || '-'}
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm">
+                            {student.sectionName || '-'}
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm">
+                            {student.divisionName || '-'}
                           </TableCell>
                           <TableCell className="text-gray-700">
                             {formatNumber(student.amount)}

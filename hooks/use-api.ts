@@ -3,6 +3,7 @@ import { useAtom } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
+  activateStudent,
   collectFees,
   createBankAccount,
   createBankMfsCash,
@@ -22,6 +23,7 @@ import {
   createMfs,
   createOpeningBalance,
   createStudentWithFees,
+  deactivateStudent,
   deleteBankAccount,
   deleteBankMfsCash,
   deleteClass,
@@ -1199,6 +1201,72 @@ export const useUpdateStudentWithFees = ({
     },
     onError: (error) => {
       console.error('Error editing student:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useActivateStudent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return activateStudent(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Student activated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error activating student:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeactivateStudent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deactivateStudent(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Student deactivated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error deactivating student:', error)
     },
   })
 
