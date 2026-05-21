@@ -27,7 +27,7 @@ import {
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Popup } from '@/utils/popup'
 import {
   Table,
@@ -64,7 +64,13 @@ const DashboardOverview = () => {
   const { data: paymentSummary } = useGetPaymentSummary()
   console.log('🚀 ~ DashboardOverview ~ paymentSummary:', paymentSummary)
 
-  const { data: students } = useGetAllStudents()
+  const { data: studentsData } = useGetAllStudents()
+  const students = useMemo(() => {
+  return studentsData?.data?.filter(
+    (s: any) => s.studentDetails.isActive === true
+  ) || []
+}, [studentsData])
+
   const { data: incomeSummary } = useGetIncomeSummary()
   const { data: expenseSummary } = useGetExpenseSummary()
 
@@ -139,7 +145,7 @@ const DashboardOverview = () => {
     },
     {
       title: 'Total Students',
-      value: students?.data?.length || 0,
+      value: students?.length || 0,
       icon: User,
       color: 'bg-amber-500',
       onClick: undefined,

@@ -98,21 +98,24 @@ const PromoteStudents = () => {
   // --- Derived data ---
   const students = useMemo(() => {
     return (
-      studentsData?.data?.map((item: any) => ({
-        studentId: item.studentDetails?.studentId,
-        admissionNo: item.studentDetails?.admissionNo,
-        rollNo: item.studentDetails?.rollNo,
-        firstName: item.studentDetails?.firstName,
-        lastName: item.studentDetails?.lastName,
-        phoneNumber: item.studentDetails?.phoneNumber,
-        classId: item.studentDetails?.classId,
-        sectionId: item.studentDetails?.sectionId,
-        divisionId: item.studentDetails?.divisionId,
-        sessionId: item.studentDetails?.sessionId,
-        className: item.studentDetails?.className,
-        sectionName: item.studentDetails?.sectionName,
-        divisionName: item.studentDetails?.divisionName,
-      })) || []
+      studentsData?.data
+        // Only include active students — inactive students cannot be promoted
+        ?.filter((item: any) => item.studentDetails?.isActive !== false)
+        ?.map((item: any) => ({
+          studentId: item.studentDetails?.studentId,
+          admissionNo: item.studentDetails?.admissionNo,
+          rollNo: item.studentDetails?.rollNo,
+          firstName: item.studentDetails?.firstName,
+          lastName: item.studentDetails?.lastName,
+          phoneNumber: item.studentDetails?.phoneNumber,
+          classId: item.studentDetails?.classId,
+          sectionId: item.studentDetails?.sectionId,
+          divisionId: item.studentDetails?.divisionId,
+          sessionId: item.studentDetails?.sessionId,
+          className: item.studentDetails?.className,
+          sectionName: item.studentDetails?.sectionName,
+          divisionName: item.studentDetails?.divisionName,
+        })) || []
     )
   }, [studentsData?.data])
 
@@ -377,7 +380,7 @@ const PromoteStudents = () => {
             ) : students.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No students found for the selected filters.
+                  No active students found for the selected filters.
                 </TableCell>
               </TableRow>
             ) : (

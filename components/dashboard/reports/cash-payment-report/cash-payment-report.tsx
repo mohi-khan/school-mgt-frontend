@@ -27,7 +27,12 @@ const CashPaymentReport = () => {
   const [toDate, setToDate] = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
 
-  const { data: students } = useGetAllStudents()
+  const { data: studentsData } = useGetAllStudents()
+  const students = useMemo(() => {
+  return studentsData?.data?.filter(
+    (s: any) => s.studentDetails.isActive === true
+  ) || []
+}, [studentsData])
   const { data: paymentReports } = useGetCashPaymentReport(fromDate, toDate)
 
   // Filter payment data based on selected student
@@ -39,7 +44,7 @@ const CashPaymentReport = () => {
     }
 
     // Find the selected student's name to filter by
-    const selectedStudent = students?.data?.find(
+    const selectedStudent = students?.find(
       (s) => s.studentDetails.studentId?.toString() === selectedStudentId
     )
 
@@ -255,7 +260,7 @@ const CashPaymentReport = () => {
             </Label>
             <CustomCombobox
               items={
-                students?.data?.map((student) => ({
+                students?.map((student) => ({
                   id: student?.studentDetails?.studentId?.toString() || '0',
                   name:
                     `${student.studentDetails.firstName} ${student.studentDetails.lastName}` ||
@@ -267,7 +272,7 @@ const CashPaymentReport = () => {
                   ? {
                       id: selectedStudentId,
                       name:
-                        students?.data?.find(
+                        students?.find(
                           (s) =>
                             s.studentDetails.studentId?.toString() ===
                             selectedStudentId

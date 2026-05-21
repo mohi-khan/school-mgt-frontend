@@ -105,7 +105,12 @@ const ExamResults = (): ReactElement => {
   console.log('🚀 ~ ExamResults ~ examResults:', examResults)
   const { data: sessions } = useGetSessions()
   const { data: examGroups } = useGetExamGroups()
-  const { data: students } = useGetAllStudents()
+  const { data: studentsData } = useGetAllStudents()
+  const students = useMemo(() => {
+  return studentsData?.data?.filter(
+    (s: any) => s.studentDetails.isActive === true
+  ) || []
+}, [studentsData])
   const { data: divisions } = useGetDivisions()
   const { data: classes } = useGetClasses()
   const { data: subjects } = useGetExamSubjects()
@@ -198,7 +203,7 @@ const ExamResults = (): ReactElement => {
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'studentId') {
-      const selectedStudent = students?.data?.find(
+      const selectedStudent = students?.find(
         (s: any) => s.studentDetails.studentId === Number(value)
       )
       if (selectedStudent) {
@@ -653,7 +658,7 @@ const ExamResults = (): ReactElement => {
     )
 
     // "First Last | studentId | divisionId"
-    const studentLabels: string[] = (students?.data ?? []).map((s: any) => {
+    const studentLabels: string[] = (students ?? []).map((s: any) => {
       const det = s.studentDetails ?? s
       const name =
         `${det.firstName ?? ''} ${det.lastName ?? ''}`.trim() || 'Unnamed'

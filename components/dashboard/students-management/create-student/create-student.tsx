@@ -1047,7 +1047,7 @@ const CreateStudent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="sectionId">
-                Section <span className="text-red-500">*</span>
+                Section
               </Label>
               <CustomCombobox
                 items={
