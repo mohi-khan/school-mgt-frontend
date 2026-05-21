@@ -601,6 +601,7 @@ const Students = () => {
                               `/dashboard/students-management/edit-student/${student.studentDetails.studentId}`
                             )
                           }
+                          disabled={student.studentDetails.isActive === false}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
