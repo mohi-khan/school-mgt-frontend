@@ -31,8 +31,7 @@ const IncomeReport = () => {
   const exportToExcel = () => {
     const flatData = incomeReports?.data?.map((report) => ({
       Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
-      Name: report.name || 'N/A',
-      'Income Head': report.incomeHead || 'N/A',
+      Name: report.name || report.incomeHead || 'N/A',
       'Money Receit Number': report.invoiceNumber || 'N/A',
       Method: report.method || 'N/A',
       'Bank Account':
@@ -259,7 +258,6 @@ const IncomeReport = () => {
                     <TableRow>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Name</TableHead>
-                      <TableHead className="font-bold">Income Head</TableHead>
                       <TableHead className="font-bold">
                         Money Receit Number
                       </TableHead>
@@ -277,8 +275,7 @@ const IncomeReport = () => {
                             ? formatDate(new Date(report.date))
                             : '-'}
                         </TableCell>
-                        <TableCell>{report.name || '-'}</TableCell>
-                        <TableCell>{report.incomeHead || '-'}</TableCell>
+                        <TableCell>{report.name || report.incomeHead || '-'}</TableCell>
                         <TableCell>{report.invoiceNumber || '-'}</TableCell>
                         <TableCell className="capitalize">
                           {report.method || '-'}

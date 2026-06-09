@@ -30,8 +30,7 @@ const ExpenseReport = () => {
   const exportToExcel = () => {
     const flatData = expenseReports?.data?.map((report) => ({
       Date: report.date ? formatDate(new Date(report.date)) : 'N/A',
-      Name: report.name || 'N/A',
-      'Expense Head': report.expenseHead || 'N/A',
+      Name: report.name || report.expenseHead || 'N/A',
       'Voucher Number': report.invoiceNumber || 'N/A',
       Amount: report.amount || 0,
     }))
@@ -249,7 +248,6 @@ const ExpenseReport = () => {
                     <TableRow>
                       <TableHead className="font-bold">Date</TableHead>
                       <TableHead className="font-bold">Name</TableHead>
-                      <TableHead className="font-bold">Expense Head</TableHead>
                       <TableHead className="font-bold">
                         Voucher Number
                       </TableHead>
@@ -268,8 +266,7 @@ const ExpenseReport = () => {
                             : 'N/A'}
                         </TableCell>
                         <TableCell>{report.name || 'N/A'}</TableCell>
-                        <TableCell>{report.expenseHead || 'N/A'}</TableCell>
-                        <TableCell>{report.invoiceNumber || 'N/A'}</TableCell>
+                        <TableCell>{report.expenseHead || report.invoiceNumber || 'N/A'}</TableCell>
                         <TableCell className="capitalize">
                           {report.method || '-'}
                         </TableCell>
