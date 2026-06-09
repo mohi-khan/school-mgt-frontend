@@ -403,7 +403,6 @@ export type GetIncomeHeadsType = z.infer<typeof incomeHeadSchema>
 export const incomeSchema = z.object({
   incomeId: z.number().optional(),
   incomeHeadId: z.number(),
-  name: z.string(),
   invoiceNumber: z.number(),
   date: z.string(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),
@@ -441,7 +440,6 @@ export type GetExpenseHeadsType = z.infer<typeof expenseHeadSchema>
 export const expenseSchema = z.object({
   expenseId: z.number().optional(),
   expenseHeadId: z.number(),
-  name: z.string(),
   invoiceNumber: z.number(),
   date: z.string(),
   method: z.enum(['cash', 'bank', 'bkash', 'nagad', 'rocket']),

@@ -92,7 +92,6 @@ const Expenses = () => {
 
   const [formData, setFormData] = useState<CreateExpensesType>({
     expenseHeadId: 0,
-    name: '',
     invoiceNumber: 0,
     date: new Date().toISOString().split('T')[0],
     method: 'cash',
@@ -119,7 +118,6 @@ const Expenses = () => {
   const resetForm = () => {
     setFormData({
       expenseHeadId: 0,
-      name: '',
       invoiceNumber: 0,
       date: new Date().toISOString().split('T')[0],
       method: 'cash',
@@ -184,9 +182,9 @@ const Expenses = () => {
     return expenses.data.filter((expense: GetExpensesType) => {
       const searchLower = searchTerm.toLowerCase()
       return (
-        expense.name?.toLowerCase().includes(searchLower) ||
         expense.invoiceNumber?.toString().includes(searchLower) ||
         expense.amount?.toString().includes(searchLower) ||
+        expense.description?.toLowerCase().includes(searchLower) ||
         expense.expenseHead?.toLowerCase().includes(searchLower)
       )
     })
@@ -221,11 +219,6 @@ const Expenses = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    if (!formData.name || formData.name.trim() === '') {
-      setError('Please enter name')
-      return
-    }
 
     if (!formData.invoiceNumber || formData.invoiceNumber === 0) {
       setError('Please enter invoice number')
@@ -273,7 +266,6 @@ const Expenses = () => {
     const method = income.method
     setFormData({
       expenseHeadId: income.expenseHeadId ?? null,
-      name: income.name,
       invoiceNumber: income.invoiceNumber,
       date: formatDateForInput(income.date),
       amount: income.amount,
@@ -347,22 +339,10 @@ const Expenses = () => {
           <TableHeader className="bg-amber-100">
             <TableRow>
               <TableHead
-                onClick={() => handleSort('name')}
-                className="cursor-pointer"
-              >
-                Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
                 onClick={() => handleSort('expenseHead')}
                 className="cursor-pointer"
               >
                 Expense Head <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('invoiceNumber')}
-                className="cursor-pointer"
-              >
-                Voucher Number <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('date')}
@@ -384,7 +364,7 @@ const Expenses = () => {
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('bankAccountId')}
+                onClick={() => handleSort('mfsId')}
                 className="cursor-pointer"
               >
                 MFS Details
@@ -395,6 +375,12 @@ const Expenses = () => {
                 className="cursor-pointer"
               >
                 Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('description')}
+                className="cursor-pointer"
+              >
+                Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
@@ -421,11 +407,9 @@ const Expenses = () => {
             ) : (
               paginatedExpenses.map((expense) => (
                 <TableRow key={expense.expenseId}>
-                  <TableCell className="capitalize">{expense.name}</TableCell>
                   <TableCell className="capitalize">
                     {expense.expenseHead || 'N/A'}
                   </TableCell>
-                  <TableCell>{expense.invoiceNumber}</TableCell>
                   <TableCell>{formatDate(new Date(expense.date))}</TableCell>
                   <TableCell>{expense.method}</TableCell>
                   <TableCell>
@@ -441,6 +425,7 @@ const Expenses = () => {
                   <TableCell>
                     {formatNumber(expense.amount.toFixed(2))}
                   </TableCell>
+                  <TableCell>{expense.description || '-'}</TableCell>
                   <TableCell>
                     <div className="flex justify-start gap-2">
                       <Button
@@ -569,21 +554,6 @@ const Expenses = () => {
                   }))
                 }
                 placeholder="Select expense head"
-              />
-            </div>
-
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
               />
             </div>
 
