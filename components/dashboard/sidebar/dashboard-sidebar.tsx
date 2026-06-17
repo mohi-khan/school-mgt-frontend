@@ -183,6 +183,10 @@ export function DashboardSidebar() {
       href: '/dashboard/reports',
       subItems: [
         {
+          title: 'Student Report',
+          href: '/dashboard/reports/student-report',
+        },
+        {
           title: 'Payment Report',
           href: '/dashboard/reports/payment-report',
         },
