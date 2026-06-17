@@ -39,8 +39,13 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
 
 export function DashboardSidebar() {
+  useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
+  console.log('🚀 ~ DashboardSidebar ~ userData:', userData)
   const pathname = usePathname()
 
   const navItems = [
@@ -178,6 +183,10 @@ export function DashboardSidebar() {
       href: '/dashboard/reports',
       subItems: [
         {
+          title: 'Student Report',
+          href: '/dashboard/reports/student-report',
+        },
+        {
           title: 'Payment Report',
           href: '/dashboard/reports/payment-report',
         },
@@ -213,6 +222,11 @@ export function DashboardSidebar() {
     },
   ]
 
+  const filteredNavItems =
+    userData?.roleId === 2
+      ? navItems.filter((item) => item.title === 'Reports')
+      : navItems
+
   // Check if the current path is in the submenu items
   const isSubItemActive = (item: any) => {
     if (!item.subItems) return false
@@ -235,13 +249,16 @@ export function DashboardSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {!item.subItems ? (
-                    // Regular menu item without submenu
                     <SidebarMenuButton
                       asChild
-                      className={`${isItemActive(item) ? 'bg-yellow-400 text-black hover:bg-yellow-400' : ''}  `}
+                      className={
+                        isItemActive(item)
+                          ? 'bg-yellow-400 text-black hover:bg-yellow-400'
+                          : ''
+                      }
                     >
                       <Link href={item.href}>
                         <item.icon className="mr-2 w-4" />
@@ -249,27 +266,35 @@ export function DashboardSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   ) : (
-                    // Menu item with submenu as accordion
                     <Collapsible
                       defaultOpen={isItemActive(item)}
                       className="w-full"
                     >
                       <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton
-                          className={`${isItemActive(item) ? 'bg-yellow-400 text-black hover:bg-yellow-400' : ''}  `}
+                          className={
+                            isItemActive(item)
+                              ? 'bg-yellow-400 text-black hover:bg-yellow-400'
+                              : ''
+                          }
                         >
                           <item.icon className="mr-2 w-4" />
                           <span>{item.title}</span>
                           <ChevronDown className="ml-auto w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
+
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {item.subItems.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 asChild
-                                className={`${pathname === subItem.href ? 'bg-gray-100 text-black' : ''}`}
+                                className={
+                                  pathname === subItem.href
+                                    ? 'bg-gray-100 text-black'
+                                    : ''
+                                }
                               >
                                 <Link
                                   className="h-auto mt-2"

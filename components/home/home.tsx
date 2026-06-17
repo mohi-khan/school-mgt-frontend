@@ -74,7 +74,11 @@ export default function SignIn() {
         console.log('Current user info stored:', userInfo)
 
         // Redirect to dashboard
-        router.push('/dashboard/dashboard-overview')
+        if (roleId == 1) {
+          router.push('/dashboard/dashboard-overview')
+        } else if (roleId == 2) {
+          router.push('/dashboard/reports/payment-report')
+        }
         toast({
           title: 'Success',
           description: 'you are signined in',

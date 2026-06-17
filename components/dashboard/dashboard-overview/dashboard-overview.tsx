@@ -43,6 +43,7 @@ import {
   useGetIncomeSummary,
   useGetPaymentSummary,
 } from '@/hooks/use-api'
+import { GetExpenseSummaryType, GetIncomeSummaryType } from '@/utils/type'
 
 const DashboardOverview = () => {
   useInitializeUser()
@@ -66,13 +67,17 @@ const DashboardOverview = () => {
 
   const { data: studentsData } = useGetAllStudents()
   const students = useMemo(() => {
-  return studentsData?.data?.filter(
-    (s: any) => s.studentDetails.isActive === true
-  ) || []
-}, [studentsData])
+    return (
+      studentsData?.data?.filter(
+        (s: any) => s.studentDetails.isActive === true
+      ) || []
+    )
+  }, [studentsData])
 
   const { data: incomeSummary } = useGetIncomeSummary()
+  console.log('🚀 ~ DashboardOverview ~ incomeSummary:', incomeSummary)
   const { data: expenseSummary } = useGetExpenseSummary()
+  console.log('🚀 ~ DashboardOverview ~ expenseSummary:', expenseSummary)
 
   // Static inventory data for modal
   const InventoryItems = {
@@ -310,7 +315,9 @@ const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="w-full h-80">
-              {incomeSummary?.data && Array.isArray(incomeSummary.data) && incomeSummary.data.length > 0 ? (
+              {incomeSummary?.data &&
+              Array.isArray(incomeSummary.data) &&
+              incomeSummary.data.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={incomeSummary.data}
@@ -328,7 +335,7 @@ const DashboardOverview = () => {
                       textAnchor="end"
                       height={80}
                       tick={{ fontSize: 12, fill: '#6b7280' }}
-                      />
+                    />
 
                     <YAxis
                       tick={{ fontSize: 12, fill: '#6b7280' }}
@@ -337,17 +344,39 @@ const DashboardOverview = () => {
                     />
 
                     <Tooltip
-                      formatter={(value: number) =>
-                        value.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })
-                      }
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const d = payload[0].payload as GetIncomeSummaryType
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+                            <p className="font-semibold text-gray-700 mb-2">
+                              {d.month}
+                            </p>
+                            {d.incomeHeads.map((h) => (
+                              <div
+                                key={h.id}
+                                className="flex justify-between gap-6 text-gray-600"
+                              >
+                                <span>{h.incomeHead}</span>
+                                <span>
+                                  {h.amount.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between gap-6 font-bold text-green-700 border-t border-gray-200 mt-2 pt-2">
+                              <span>Total</span>
+                              <span>
+                                {d.totalAmount.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        )
                       }}
                       cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
                     />
@@ -359,7 +388,7 @@ const DashboardOverview = () => {
 
                     <Line
                       type="monotone"
-                      dataKey="amount"
+                      dataKey="totalAmount"
                       stroke="#059669"
                       name="Income"
                       strokeWidth={2.5}
@@ -386,7 +415,9 @@ const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="w-full h-80">
-              {expenseSummary?.data && Array.isArray(expenseSummary.data) && expenseSummary.data.length > 0 ? (
+              {expenseSummary?.data &&
+              Array.isArray(expenseSummary.data) &&
+              expenseSummary.data.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={expenseSummary.data}
@@ -413,17 +444,39 @@ const DashboardOverview = () => {
                     />
 
                     <Tooltip
-                      formatter={(value: number) =>
-                        value.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })
-                      }
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const d = payload[0].payload as GetExpenseSummaryType
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+                            <p className="font-semibold text-gray-700 mb-2">
+                              {d.month}
+                            </p>
+                            {d.expenseHeads.map((h) => (
+                              <div
+                                key={h.id}
+                                className="flex justify-between gap-6 text-gray-600"
+                              >
+                                <span>{h.expenseHead}</span>
+                                <span>
+                                  {h.amount.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between gap-6 font-bold text-red-700 border-t border-gray-200 mt-2 pt-2">
+                              <span>Total</span>
+                              <span>
+                                {d.totalAmount.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        )
                       }}
                       cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
                     />
@@ -435,7 +488,7 @@ const DashboardOverview = () => {
 
                     <Line
                       type="monotone"
-                      dataKey="amount"
+                      dataKey="totalAmount"
                       stroke="#dc2626"
                       name="Expense"
                       strokeWidth={2.5}
