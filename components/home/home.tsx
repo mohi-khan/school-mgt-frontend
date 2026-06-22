@@ -77,7 +77,7 @@ export default function SignIn() {
         if (roleId == 1) {
           router.push('/dashboard/dashboard-overview')
         } else if (roleId == 2) {
-          router.push('/dashboard/reports/payment-report')
+          router.push('/dashboard/reports/student-report')
         }
         toast({
           title: 'Success',
