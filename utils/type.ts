@@ -42,6 +42,32 @@ export const SignInResponseSchema = z.object({
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
 
+export const RegisterUserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+  roleId: z.number(),
+  tenantId: z.number().optional(),
+  isPasswordResetRequired: z.boolean().default(false),
+})
+export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
+
+export const tenantSchema = z.object({
+  tenantId: z.number().optional(),
+  tenantName: z.string().min(1).max(100),
+  status: z.boolean().default(true),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+})
+export const createTenantSchema = z.object({
+  tenantData: tenantSchema,
+  userData: RegisterUserSchema
+})
+export type CreateTenantType = z.infer<typeof createTenantSchema>
+export type GetTenantType = z.infer<typeof tenantSchema>
+
 export const sectionsSchema = z.object({
   sectionId: z.number().int().optional(),
   sectionName: z.string().min(1),

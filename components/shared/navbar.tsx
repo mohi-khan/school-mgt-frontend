@@ -1,34 +1,34 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { PlusCircle, User2 } from 'lucide-react'
+import { ArrowRightIcon, Key, KeyIcon, LogOut, PlusCircle, User2, UserCircleIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, List } from 'lucide-react';
+import { Search, List } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 
 export default function Navbar() {
   useInitializeUser()
-    const [userData] = useAtom(userDataAtom)
-    const [token] = useAtom(tokenAtom)
-  
-    const router = useRouter()
-  
-    useEffect(() => {
-      const checkUserData = () => {
-        const storedUserData = localStorage.getItem('currentUser')
-        const storedToken = localStorage.getItem('authToken')
-  
-        if (!storedUserData || !storedToken) {
-          console.log('No user data or token found in localStorage')
-          router.push('/')
-          return
-        }
+  const [userData] = useAtom(userDataAtom)
+  const [token] = useAtom(tokenAtom)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkUserData = () => {
+      const storedUserData = localStorage.getItem('currentUser')
+      const storedToken = localStorage.getItem('authToken')
+
+      if (!storedUserData || !storedToken) {
+        console.log('No user data or token found in localStorage')
+        router.push('/')
+        return
       }
-  
-      checkUserData()
-    }, [userData, token, router])
+    }
+
+    checkUserData()
+  }, [userData, token, router])
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
   const companiesRef = useRef<HTMLDivElement>(null)
@@ -50,7 +50,7 @@ export default function Navbar() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [profileRef, companiesRef])
-  
+
   const handleSignOut = () => {
     localStorage.removeItem('currentUser')
     localStorage.removeItem('authToken')
@@ -80,25 +80,36 @@ export default function Navbar() {
                 <User2 className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
               </button>
               {isProfileOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg">
+                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg">
                   <div
                     className="py-1 rounded-md bg-white shadow-xs"
                     role="menu"
                     aria-orientation="vertical"
                     aria-labelledby="user-menu"
                   >
+                    {/* User info with avatar */}
+                    <div className="px-4 py-3 text-sm border-b border-gray-200 bg-yellow-50 flex items-center gap-2">
+                      <User2 className="h-5 w-5 text-blue-500" />
+                      <div className="first-letter:uppercase font-medium text-gray-900">
+                        {userData?.username || 'Guest'}
+                      </div>
+                    </div>
+
                     <Link
                       href="/change-password"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors duration-150"
                       role="menuitem"
                     >
+                      <KeyIcon className="h-5 w-5 text-green-600" />
                       Change Password
                     </Link>
+
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors duration-150"
                       role="menuitem"
                     >
+                      <LogOut className="h-5 w-5 text-red-500" />
                       Sign out
                     </button>
                   </div>
