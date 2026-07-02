@@ -152,12 +152,15 @@ const ExamSubjects = () => {
     }
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value ? Number(value) : null,
-    }))
-  }
+  const handleSelectChange = (name: string, value: string | null) => {
+  setFormData((prev) => ({
+    ...prev,
+    [name]:
+      value === null || value === '' || value === '0'
+        ? null
+        : Number(value),
+  }))
+}
 
   const resetForm = () => {
     setFormData({
@@ -816,7 +819,7 @@ const ExamSubjects = () => {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="examGroupsId">Exam Group</Label>
+              <Label htmlFor="examGroupsId">Exam Group <span className="text-red-500">*</span></Label>
               <CustomCombobox
                 items={
                   examGroups?.data?.map((group) => ({
@@ -846,7 +849,7 @@ const ExamSubjects = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sessionId">Session</Label>
+              <Label htmlFor="sessionId">Session <span className="text-red-500">*</span></Label>
               <CustomCombobox
                 items={
                   sessions?.data?.map((session) => ({
@@ -925,7 +928,7 @@ const ExamSubjects = () => {
                     : null
                 }
                 onChange={(value) =>
-                  handleSelectChange('classId', value ? String(value.id) : '0')
+                  handleSelectChange('classId', value ? String(value.id) : null)
                 }
                 placeholder="Select class"
               />
