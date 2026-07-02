@@ -57,6 +57,7 @@ import {
   CreateDivisionType,
   CreateTenantType,
   GetTenantType,
+  ChangePasswordRequest,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -65,6 +66,22 @@ export async function signIn(credentials: SignInRequest) {
     method: 'POST',
     body: credentials,
     schema: SignInResponseSchema,
+  })
+}
+
+export async function changePassword(
+  userId: number,
+  data: ChangePasswordRequest,
+  token: string
+) {
+  return fetchApi<ChangePasswordRequest>({
+    url: `api/auth/change-password/${userId}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 }
 

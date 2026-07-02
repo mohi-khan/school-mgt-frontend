@@ -1,12 +1,23 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { ArrowRightIcon, Key, KeyIcon, LogOut, PlusCircle, User2, UserCircleIcon } from 'lucide-react'
-import Link from 'next/link'
+import { KeyIcon, LogOut, User2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { Search, List } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useChangePassword } from '@/hooks/use-api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ChangePasswordRequest, changePasswordSchema } from '@/utils/type'
 
 export default function Navbar() {
   useInitializeUser()
@@ -29,9 +40,16 @@ export default function Navbar() {
 
     checkUserData()
   }, [userData, token, router])
+
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
   const companiesRef = useRef<HTMLDivElement>(null)
+
+  // State for password visibility
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -56,6 +74,37 @@ export default function Navbar() {
     localStorage.removeItem('authToken')
     setIsProfileOpen(false)
     router.push('/')
+  }
+
+  // --- Change password form/modal logic ---
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ChangePasswordRequest>({
+    resolver: zodResolver(changePasswordSchema),
+  })
+
+  const mutation = useChangePassword({
+    onClose: () => setIsChangePasswordOpen(false),
+    reset,
+  })
+
+  const onSubmitChangePassword = (data: ChangePasswordRequest) => {
+    if (!userData?.userId) return
+    mutation.mutate({ userId: userData.userId, data })
+  }
+
+  const handleChangePasswordOpenChange = (open: boolean) => {
+    if (!open) {
+      reset()
+      // Reset password visibility states when closing
+      setShowCurrentPassword(false)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
+    }
+    setIsChangePasswordOpen(open)
   }
 
   return (
@@ -95,23 +144,28 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <Link
-                      href="/change-password"
-                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors duration-150"
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setIsChangePasswordOpen(true)
+                        setIsProfileOpen(false)
+                      }}
+                      className="w-full justify-start px-4 py-2 h-auto text-sm text-gray-700 hover:bg-gray-100 rounded-none gap-3 font-normal"
                       role="menuitem"
                     >
                       <KeyIcon className="h-5 w-5 text-green-600" />
                       Change Password
-                    </Link>
+                    </Button>
 
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors duration-150"
+                      className="w-full justify-start px-4 py-2 h-auto text-sm text-gray-700 hover:bg-gray-100 rounded-none gap-3 font-normal"
                       role="menuitem"
                     >
                       <LogOut className="h-5 w-5 text-red-500" />
                       Sign out
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -119,6 +173,127 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={isChangePasswordOpen}
+        onOpenChange={handleChangePasswordOpenChange}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+
+          <form
+            onSubmit={handleSubmit(onSubmitChangePassword)}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  {...register('currentPassword')}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.currentPassword && (
+                <p className="text-xs text-red-500">
+                  {errors.currentPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  {...register('newPassword')}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="text-xs text-red-500">
+                  {errors.newPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmNewPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  {...register('confirmNewPassword')}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmNewPassword && (
+                <p className="text-xs text-red-500">
+                  {errors.confirmNewPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleChangePasswordOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={mutation.isPending}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black"
+              >
+                {mutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                {mutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </nav>
   )
 }

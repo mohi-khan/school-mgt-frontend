@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
   activateStudent,
+  changePassword,
   collectFees,
   createBankAccount,
   createBankMfsCash,
@@ -99,6 +100,7 @@ import {
   promoteStudents,
 } from '@/utils/api'
 import {
+  ChangePasswordRequest,
   CollectFeesType,
   CreateBankAccountsType,
   CreateBankMfsCashType,
@@ -129,6 +131,40 @@ import {
   PromotionResponseType,
   StudentPromotionsType,
 } from '@/utils/type'
+
+export const useChangePassword = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ userId, data }: { userId: number; data: ChangePasswordRequest }) => {
+      return changePassword(userId, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Password changed successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['auth'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error changing password:', error)
+    },
+  })
+
+  return mutation
+}
 
 export const useGetTenants = () => {
   const [token] = useAtom(tokenAtom)

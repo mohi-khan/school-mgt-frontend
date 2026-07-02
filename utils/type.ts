@@ -52,6 +52,22 @@ export const RegisterUserSchema = z.object({
 })
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8, 'New password must be at least 8 characters'),
+    confirmNewPassword: z
+      .string()
+      .min(8, 'Confirm new password must be at least 8 characters'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords don't match",
+    path: ['confirmNewPassword'],
+  })
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>
+
 export const tenantSchema = z.object({
   tenantId: z.number().optional(),
   tenantName: z.string().min(1).max(100),
@@ -63,7 +79,7 @@ export const tenantSchema = z.object({
 })
 export const createTenantSchema = z.object({
   tenantData: tenantSchema,
-  userData: RegisterUserSchema
+  userData: RegisterUserSchema,
 })
 export type CreateTenantType = z.infer<typeof createTenantSchema>
 export type GetTenantType = z.infer<typeof tenantSchema>
@@ -663,13 +679,13 @@ export const incomeSummarySchema = z.object({
   id: z.number(),
   month: z.string(),
   totalAmount: z.number(),
-  incomeHeads: z.array(z.object(
-    {
+  incomeHeads: z.array(
+    z.object({
       id: z.number(),
       incomeHead: z.string(),
       amount: z.number(),
-    }
-  )),
+    })
+  ),
 })
 export type GetIncomeSummaryType = z.infer<typeof incomeSummarySchema>
 
@@ -677,12 +693,12 @@ export const expenseSummarySchema = z.object({
   id: z.number(),
   month: z.string(),
   totalAmount: z.number(),
-  expenseHeads: z.array(z.object(
-    {
+  expenseHeads: z.array(
+    z.object({
       id: z.number(),
       expenseHead: z.string(),
       amount: z.number(),
-    }
-  )),
+    })
+  ),
 })
 export type GetExpenseSummaryType = z.infer<typeof expenseSummarySchema>
