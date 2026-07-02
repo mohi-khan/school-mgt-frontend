@@ -1519,6 +1519,8 @@ export const usePromoteStudents = ({
   const mutation = useMutation({
     mutationFn: async ({ data }: { data: StudentPromotionsType }) => {
       const response = await promoteStudents(data, token)
+      console.log("Axios response:", response)
+  console.log("response.data:", response.data)
       return response.data! // <-- add ! to assert non-null
     },
     onSuccess: (response: PromotionResponseType) => {
