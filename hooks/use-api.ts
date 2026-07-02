@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
   activateStudent,
+  changePassword,
   collectFees,
   createBankAccount,
   createBankMfsCash,
@@ -23,6 +24,7 @@ import {
   createMfs,
   createOpeningBalance,
   createStudentWithFees,
+  createTenant,
   deactivateStudent,
   deleteBankAccount,
   deleteBankMfsCash,
@@ -41,6 +43,7 @@ import {
   deleteIncomeHead,
   deleteMfs,
   deleteStudent,
+  deleteTenant,
   editBankAccount,
   editBankMfsCash,
   editClass,
@@ -58,6 +61,7 @@ import {
   editIncomeHead,
   editMfs,
   editStudentWithFees,
+  editTenant,
   getAllBankAccounts,
   getAllBankMfsCash,
   getAllClasses,
@@ -80,6 +84,7 @@ import {
   getAllSessions,
   getAllStudents,
   getAllStudentsByClassSectionDivision,
+  getAllTenants,
   getBankPaymentReport,
   getCashPaymentReport,
   getExpenseReport,
@@ -95,6 +100,7 @@ import {
   promoteStudents,
 } from '@/utils/api'
 import {
+  ChangePasswordRequest,
   CollectFeesType,
   CreateBankAccountsType,
   CreateBankMfsCashType,
@@ -113,21 +119,205 @@ import {
   CreateIncomesType,
   CreateMfssType,
   CreateOpeningBalancesType,
-  CreateStudentWithFeesType,
+  CreateTenantType,
   GetClassType,
   GetExamGroupType,
-  GetExamsType,
   GetExamSubjectsType,
   GetExpenseHeadsType,
   GetFeesGroupType,
-  GetFeesMasterType,
   GetFeesTypeType,
   GetIncomeHeadsType,
-  GetIncomesType,
-  GetStudentFeesType,
+  GetTenantType,
   PromotionResponseType,
   StudentPromotionsType,
 } from '@/utils/type'
+
+export const useChangePassword = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ userId, data }: { userId: number; data: ChangePasswordRequest }) => {
+      return changePassword(userId, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Password changed successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['auth'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error changing password:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useGetTenants = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['tenants'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllTenants(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateTenantType) => {
+      const res = await createTenant(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create department',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Tenant created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding tenant:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetTenantType }) => {
+      return editTenant(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'tenant edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing tenant:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteTenant(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete tenant')
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'tenant is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
 
 //section
 export const useGetSections = () => {

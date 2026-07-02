@@ -55,6 +55,9 @@ import {
   CreateOpeningBalancesType,
   GetDivisionType,
   CreateDivisionType,
+  CreateTenantType,
+  GetTenantType,
+  ChangePasswordRequest,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -63,6 +66,73 @@ export async function signIn(credentials: SignInRequest) {
     method: 'POST',
     body: credentials,
     schema: SignInResponseSchema,
+  })
+}
+
+export async function changePassword(
+  userId: number,
+  data: ChangePasswordRequest,
+  token: string
+) {
+  return fetchApi<ChangePasswordRequest>({
+    url: `api/auth/change-password/${userId}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//tenants APIs
+export async function getAllTenants(token: string) {
+  return fetchApi<GetTenantType[]>({
+    url: 'api/tenants/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createTenant(data: CreateTenantType, token: string) {
+  return fetchApi<CreateTenantType>({
+    url: 'api/tenants/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editTenant(
+  id: number,
+  data: GetTenantType,
+  token: string
+) {
+  return fetchApi<GetTenantType>({
+    url: `api/tenants/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteTenant(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/tenants/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
   })
 }
 
