@@ -80,11 +80,13 @@ export default function SignIn() {
         localStorage.setItem('authToken', token)
         localStorage.setItem('currentUser', JSON.stringify({ userId, roleId, username }))
 
-        if (roleId == 1) {
-          router.push('/dashboard/dashboard-overview')
-        } else if (roleId == 2) {
-          router.push('/dashboard/reports/student-report')
-        }
+        router.push('/dashboard/dashboard-overview')
+
+        // if (roleId == 1) {
+        //   router.push('/dashboard/dashboard-overview')
+        // } else if (roleId == 2) {
+        //   router.push('/dashboard/reports/student-report')
+        // }
 
         toast({ title: 'Success', description: 'You are signed in' })
       }
