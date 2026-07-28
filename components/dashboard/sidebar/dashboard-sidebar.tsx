@@ -224,7 +224,9 @@ export function DashboardSidebar() {
 
   const filteredNavItems =
     userData?.roleId === 2
-      ? navItems.filter((item) => item.title === 'Reports')
+      ? navItems.filter((item) =>
+          ['Reports', 'Dashboard Overview'].includes(item.title)
+        )
       : navItems
 
   // Check if the current path is in the submenu items
